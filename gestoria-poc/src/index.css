@@ -61,6 +61,7 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  z-index: 100;
 }
 
 .sidebar-logo {
@@ -411,3 +412,168 @@ select.form-control { cursor: pointer; }
 .text-right { text-align: right; }
 .w-full { width: 100%; }
 .section-gap { margin-bottom: 28px; }
+
+/* Hover Card styling */
+.nav-item {
+  position: relative;
+}
+
+.nav-item .hover-card {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(12px);
+  width: 250px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(200, 197, 186, 0.5);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+/* Bridging the gap for hover continuity */
+.nav-item .hover-card::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 0;
+  width: 25px;
+  height: 100%;
+  background: transparent;
+}
+
+.nav-item:hover .hover-card {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) translateX(4px);
+}
+
+.hover-card-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.hover-card-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hover-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.hover-section:hover {
+  background: var(--surface2);
+}
+
+.hover-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--bg);
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.hover-section:hover .hover-section-icon {
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+
+.hover-section-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.hover-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.hover-section-desc {
+  font-size: 10px;
+  color: var(--text-2);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Home Landing Page styling */
+.home-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  background: #111111;
+  background-image: radial-gradient(circle at center, rgba(76, 166, 106, 0.15) 0%, transparent 70%),
+                    linear-gradient(135deg, #090909 0%, #1c1c1c 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle architectural grid lines in background for an "Urbana" feel */
+.home-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.008) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.008) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center;
+  pointer-events: none;
+}
+
+.home-logo-section-large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInLogo 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+@keyframes fadeInLogo {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.home-logo-img {
+  max-width: 680px;
+  width: 90%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+
