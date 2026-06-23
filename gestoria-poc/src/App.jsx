@@ -359,6 +359,14 @@ const Icon = ({ name, size = 16, style = {} }) => {
     trash: <><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" /></>,
     edit: <><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></>,
     receipt: <><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2" /><line x1="8" y1="8" x2="16" y2="8" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="16" x2="14" y2="16" /></>,
+    lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></>,
+    unlock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 019.9-1" /></>,
+    shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></>,
+    key: <><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></>,
+    database: <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" /></>,
+    globe: <><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></>,
+    eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>,
+    eyeoff: <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></>,
   }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
@@ -367,114 +375,175 @@ const Icon = ({ name, size = 16, style = {} }) => {
   )
 }
 
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-const navItems = [
-  { id: 'presupuestos', label: 'Presupuestos', icon: 'dollar' },
-  { id: 'administracion', label: 'Administración', icon: 'user' },
-  { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
-  { id: 'catalogo', label: 'Catálogo', icon: 'file' },
-  { id: 'cotizaciones', label: 'Cotizaciones', icon: 'receipt' },
+const AVAILABLE_MODULES = [
+  { id: 'presupuestos', label: 'Presupuestos' },
+  { id: 'administracion', label: 'Administración' },
+  { id: 'tareas', label: 'Tareas Diarias' },
+  { id: 'catalogo', label: 'Catálogo' },
+  { id: 'cotizaciones', label: 'Cotizaciones' }
 ]
 
-function Sidebar({ active, setActive }) {
+const getDefaultModulos = (rol) => {
+  if (rol === 'admin') return ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones']
+  if (rol === 'empleado') return ['presupuestos', 'tareas', 'catalogo', 'cotizaciones']
+  return ['presupuestos', 'cotizaciones']
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function Sidebar({ active, setActive, session, onLogout }) {
   const handleSectionClick = (e, targetTab) => {
     e.stopPropagation()
     setActive(targetTab)
   }
 
+  const allowed = session.modulos || getDefaultModulos(session.rol)
+
+  const dynamicNavItems = (session.rol === 'cliente' ? [
+    { id: 'cotizaciones', label: 'Mis Cotizaciones', icon: 'receipt' },
+    { id: 'presupuestos', label: 'Mis Presupuestos', icon: 'dollar' },
+    { id: 'tramites', label: 'Mis Trámites', icon: 'map' },
+  ] : [
+    { id: 'presupuestos', label: 'Presupuestos', icon: 'dollar' },
+    { id: 'administracion', label: 'Administración', icon: 'user' },
+    { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
+    { id: 'catalogo', label: 'Catálogo', icon: 'file' },
+    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'receipt' },
+  ]).filter(item => {
+    if (session.rol === 'cliente' && item.id === 'tramites') return true;
+    return allowed.includes(item.id);
+  })
+
+  const getRolLabel = (rol) => {
+    if (rol === 'admin') return 'Administrador'
+    if (rol === 'empleado') return 'Empleado / Gestor'
+    return 'Cliente'
+  }
+
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo" onClick={() => setActive('home')} style={{ cursor: 'pointer' }}>
+      <div className="-logo" onClick={() => setActive('home')} style={{ cursor: 'pointer' }}>
         <div className="wordmark">GIU</div>
         <div className="tagline">Gestoría de Construcción</div>
       </div>
       <div className="sidebar-section-label">Módulos</div>
-      {navItems.map(n => (
+      {dynamicNavItems.map(n => (
         <div key={n.id} className={`nav-item ${active === n.id ? 'active' : ''}`} onClick={() => setActive(n.id)}>
           <Icon name={n.icon} size={15} />
           <span>{n.label}</span>
 
-          <div className="hover-card" onClick={(e) => e.stopPropagation()}>
-            <div className="hover-card-header">Accesos Rápidos</div>
-            <div className="hover-card-sections">
-              <div className="hover-section" onClick={(e) => handleSectionClick(e, 'catalogo')}>
-                <div className="hover-section-icon" style={{ color: 'var(--accent)' }}>
-                  <Icon name="list" size={13} />
-                </div>
-                <div className="hover-section-content">
-                  <div className="hover-section-title">Conceptos</div>
-                  <div className="hover-section-desc">Precios y claves</div>
-                </div>
-              </div>
-              <div className="hover-section" onClick={(e) => handleSectionClick(e, 'administracion')}>
-                <div className="hover-section-icon" style={{ color: 'var(--blue)' }}>
-                  <Icon name="user" size={13} />
-                </div>
-                <div className="hover-section-content">
-                  <div className="hover-section-title">Clientes</div>
-                  <div className="hover-section-desc">Directorio de contactos</div>
-                </div>
-              </div>
-              <div className="hover-section" onClick={(e) => handleSectionClick(e, 'tramites')}>
-                <div className="hover-section-icon" style={{ color: 'var(--amber)' }}>
-                  <Icon name="map" size={13} />
-                </div>
-                <div className="hover-section-content">
-                  <div className="hover-section-title">Proyectos</div>
-                  <div className="hover-section-desc">Hojas de ruta y avance</div>
-                </div>
+          {session.rol !== 'cliente' && (
+            <div className="hover-card" onClick={(e) => e.stopPropagation()}>
+              <div className="hover-card-header">Accesos Rápidos</div>
+              <div className="hover-card-sections">
+                {allowed.includes('catalogo') && (
+                  <div className="hover-section" onClick={(e) => handleSectionClick(e, 'catalogo')}>
+                    <div className="hover-section-icon" style={{ color: 'var(--accent)' }}>
+                      <Icon name="list" size={13} />
+                    </div>
+                    <div className="hover-section-content">
+                      <div className="hover-section-title">Conceptos</div>
+                      <div className="hover-section-desc">Precios y claves</div>
+                    </div>
+                  </div>
+                )}
+                {allowed.includes('administracion') && (
+                  <div className="hover-section" onClick={(e) => handleSectionClick(e, 'administracion')}>
+                    <div className="hover-section-icon" style={{ color: 'var(--blue)' }}>
+                      <Icon name="user" size={13} />
+                    </div>
+                    <div className="hover-section-content">
+                      <div className="hover-section-title">Clientes</div>
+                      <div className="hover-section-desc">Directorio de contactos</div>
+                    </div>
+                  </div>
+                )}
+                {(session.rol === 'admin' || session.rol === 'empleado') && (
+                  <div className="hover-section" onClick={(e) => handleSectionClick(e, 'tramites')}>
+                    <div className="hover-section-icon" style={{ color: 'var(--amber)' }}>
+                      <Icon name="map" size={13} />
+                    </div>
+                    <div className="hover-section-content">
+                      <div className="hover-section-title">Proyectos</div>
+                      <div className="hover-section-desc">Hojas de ruta y avance</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
-      <div className="sidebar-footer">PoC v1.0 · Querétaro, MX</div>
+      {session && (
+        <div className="sidebar-user-widget">
+          <div className="sidebar-user-avatar" style={{ background: session.color }}>
+            {session.avatar}
+          </div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{session.nombre}</div>
+            <div className="sidebar-user-role">{getRolLabel(session.rol)}</div>
+          </div>
+          <button className="sidebar-logout-btn" onClick={onLogout} title="Cerrar Sesión">
+            <Icon name="lock" size={14} />
+          </button>
+        </div>
+      )}
+      <div className="sidebar-footer" style={{ borderTop: session ? 'none' : '1px solid rgba(255, 255, 255, 0.08)' }}>
+        PoC v1.0 · Merida, MX
+      </div>
     </aside>
   )
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function Dashboard({ cotizaciones, tareas, setActive }) {
-  const totalCotizado = cotizaciones.reduce((s, c) => s + cotTotal(c), 0)
-  const totalAbonado = cotizaciones.reduce((s, c) => s + cotAbonado(c), 0)
-  const pendienteCobro = cotizaciones.reduce((s, c) => s + Math.max(0, cotSaldo(c)), 0)
-  const tareasHoy = tareas.filter(t => t.fecha === fmt(hoy) && !t.hecho).length
-  const tramitesActivos = TRAMITES_MOCK.length
+function Dashboard({ cotizaciones, tareas, setActive, session }) {
+  const clientCotizaciones = session.rol === 'cliente'
+    ? cotizaciones.filter(c => c.clienteId === session.clienteId)
+    : cotizaciones
+
+  const clientTramites = session.rol === 'cliente'
+    ? TRAMITES_MOCK.filter(t => t.clienteId === session.clienteId)
+    : TRAMITES_MOCK
+
+  const totalCotizado = clientCotizaciones.reduce((s, c) => s + cotTotal(c), 0)
+  const totalAbonado = clientCotizaciones.reduce((s, c) => s + cotAbonado(c), 0)
+  const pendienteCobro = clientCotizaciones.reduce((s, c) => s + Math.max(0, cotSaldo(c)), 0)
+  const tareasHoy = session.rol === 'cliente' ? 0 : tareas.filter(t => t.fecha === fmt(hoy) && !t.hecho).length
+  const tramitesActivos = clientTramites.length
 
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Dashboard General</div>
-        <div className="page-subtitle">Vista ejecutiva · {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        <div className="page-title">{session.rol === 'cliente' ? 'Mi Portal de Gestiones' : 'Dashboard General'}</div>
+        <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el estatus de tus trámites y pagos' : 'Vista ejecutiva'} · {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
       </div>
 
       <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="metric-card">
           <div className="metric-label">Total Cotizado</div>
           <div className="metric-value" style={{ color: 'var(--text)' }}>{money(totalCotizado)}</div>
-          <div className="metric-sub">{cotizaciones.length} cotizaciones</div>
+          <div className="metric-sub">{clientCotizaciones.length} cotizaciones</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Total Abonado</div>
           <div className="metric-value text-green">{money(totalAbonado)}</div>
-          <div className="metric-sub">{Math.round(totalAbonado / totalCotizado * 100)}% del total</div>
+          <div className="metric-sub">{totalCotizado > 0 ? Math.round(totalAbonado / totalCotizado * 100) : 0}% del total</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Saldo Pendiente</div>
           <div className="metric-value text-amber">{money(pendienteCobro)}</div>
-          <div className="metric-sub">por recuperar</div>
+          <div className="metric-sub">por liquidar</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Trámites Activos</div>
           <div className="metric-value" style={{ color: 'var(--blue)' }}>{tramitesActivos}</div>
-          <div className="metric-sub">{tareasHoy} tareas hoy</div>
+          <div className="metric-sub">{session.rol === 'cliente' ? 'en gestión' : `${tareasHoy} tareas hoy`}</div>
         </div>
       </div>
 
       <div className="two-col">
         <div className="card">
           <div className="card-title">Cotizaciones Recientes</div>
-          {cotizaciones.slice(0, 5).map(c => {
+          {clientCotizaciones.slice(0, 5).map(c => {
             const cli = getCliente(c.clienteId)
             const saldo = cotSaldo(c)
             return (
@@ -493,13 +562,13 @@ function Dashboard({ cotizaciones, tareas, setActive }) {
             )
           })}
           <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setActive('cotizaciones')}>
-            Ver todas →
+            {session.rol === 'cliente' ? 'Ver mis cotizaciones →' : 'Ver todas →'}
           </button>
         </div>
 
         <div className="card">
           <div className="card-title">Trámites en Curso</div>
-          {TRAMITES_MOCK.map(t => {
+          {clientTramites.map(t => {
             const tipo = TRAMITES_TIPOS[t.tipo]
             const total = tipo.pasos.length
             const pct = Math.round((t.pasoActual / total) * 100)
@@ -680,7 +749,7 @@ function Catalogo({ conceptos, setConceptos }) {
 }
 
 // ─── COTIZACIONES ─────────────────────────────────────────────────────────────
-function Cotizaciones({ cotizaciones, setCotizaciones, clientes }) {
+function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session }) {
   const [vista, setVista] = useState('lista') // 'lista' | 'nueva'
   const [clienteId, setClienteId] = useState('')
   const [busqueda, setBusqueda] = useState('')
@@ -911,6 +980,7 @@ function Cotizaciones({ cotizaciones, setCotizaciones, clientes }) {
 
   // ── Vista: lista de cotizaciones ───────────────────────────────────────────
   const filteredCotizaciones = cotizaciones.filter(c => {
+    if (session.rol === 'cliente' && c.clienteId !== session.clienteId) return false;
     const cli = getCliente(c.clienteId)
     const clientName = cli ? cli.nombre.toLowerCase() : ''
     const contactName = cli ? cli.contacto.toLowerCase() : ''
@@ -923,12 +993,14 @@ function Cotizaciones({ cotizaciones, setCotizaciones, clientes }) {
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-title">Cotizaciones</div>
+          <div className="page-title">{session.rol === 'cliente' ? 'Mis Cotizaciones' : 'Cotizaciones'}</div>
           <div className="page-subtitle">{filteredCotizaciones.length} cotizaciones registradas</div>
         </div>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setVista('nueva') }}>
-          <Icon name="plus" size={14} /> Nueva Cotización
-        </button>
+        {session.rol !== 'cliente' && (
+          <button className="btn btn-primary" onClick={() => { resetForm(); setVista('nueva') }}>
+            <Icon name="plus" size={14} /> Nueva Cotización
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -1531,7 +1603,7 @@ function VistaPresupuesto({ p, onCerrar }) {
   )
 }
 
-function Presupuestos({ clientes }) {
+function Presupuestos({ clientes, session }) {
   const [tab, setTab] = useState('catalogo')  // 'catalogo' | 'nuevo' | 'ver'
   const [presupuestos, setPresupuestos] = useState(() => {
     const saved = localStorage.getItem('giu_presupuestos')
@@ -1554,6 +1626,7 @@ function Presupuestos({ clientes }) {
   if (tab === 'ver' && verPres) return <VistaPresupuesto p={verPres} onCerrar={() => setTab('catalogo')} />
 
   const filtrados = presupuestos.filter(p => {
+    if (session.rol === 'cliente' && p.clienteId !== session.clienteId) return false;
     const cli = p.clienteId ? getCliente(p.clienteId) : null
     const clientName = cli ? cli.nombre.toLowerCase() : ''
     return p.titulo.toLowerCase().includes(q.toLowerCase()) ||
@@ -1569,12 +1642,14 @@ function Presupuestos({ clientes }) {
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-title">Presupuestos</div>
+          <div className="page-title">{session.rol === 'cliente' ? 'Mis Presupuestos' : 'Presupuestos'}</div>
           <div className="page-subtitle">Catálogo de conceptos y presupuestos detallados con calculadora de costos</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setTab('nuevo')}>
-          <Icon name="plus" size={14} /> Nuevo Presupuesto
-        </button>
+        {session.rol !== 'cliente' && (
+          <button className="btn btn-primary" onClick={() => setTab('nuevo')}>
+            <Icon name="plus" size={14} /> Nuevo Presupuesto
+          </button>
+        )}
       </div>
 
       {/* Buscador global */}
@@ -1667,13 +1742,28 @@ function Presupuestos({ clientes }) {
 }
 
 // ─── HOJAS DE RUTA ────────────────────────────────────────────────────────────
-function HojasRuta() {
-  const [selectedTramite, setSelectedTramite] = useState(TRAMITES_MOCK[0])
-  const [pasoActual, setPasoActual] = useState(TRAMITES_MOCK[0].pasoActual)
+function HojasRuta({ session }) {
+  const clientTramitesList = session.rol === 'cliente'
+    ? TRAMITES_MOCK.filter(t => t.clienteId === session.clienteId)
+    : TRAMITES_MOCK
+
+  const [selectedTramite, setSelectedTramite] = useState(clientTramitesList[0] || null)
+  const [pasoActual, setPasoActual] = useState(clientTramitesList[0]?.pasoActual || 0)
 
   const seleccionar = (t) => {
     setSelectedTramite(t)
     setPasoActual(t.pasoActual)
+  }
+
+  if (!selectedTramite) {
+    return (
+      <div>
+        <div className="page-header">
+          <div className="page-title">{session.rol === 'cliente' ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
+          <div className="page-subtitle">{session.rol === 'cliente' ? 'No tienes ningún trámite en proceso actualmente.' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
+        </div>
+      </div>
+    )
   }
 
   const tipo = TRAMITES_TIPOS[selectedTramite.tipo]
@@ -1694,13 +1784,13 @@ function HojasRuta() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Hojas de Ruta por Trámite</div>
-        <div className="page-subtitle">Seguimiento de requisitos y pasos predefinidos para cada gestión</div>
+        <div className="page-title">{session.rol === 'cliente' ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
+        <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el avance de tus gestiones de construcción' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
         <div>
-          {TRAMITES_MOCK.map(t => {
+          {clientTramitesList.map(t => {
             const tp = TRAMITES_TIPOS[t.tipo]
             const c = COLOR_MAP[tp.color]
             const bg = BG_MAP[tp.color]
@@ -1803,14 +1893,21 @@ function HojasRuta() {
             })}
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-secondary" onClick={retroceder} disabled={pasoActual === 0} style={{ opacity: pasoActual === 0 ? 0.4 : 1 }}>
-              ← Paso anterior
-            </button>
-            <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= tipo.pasos.length} style={{ opacity: pasoActual >= tipo.pasos.length ? 0.4 : 1 }}>
-              {pasoActual >= tipo.pasos.length ? '✓ Trámite completado' : 'Siguiente paso →'}
-            </button>
-          </div>
+          {session.rol !== 'cliente' ? (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-secondary" onClick={retroceder} disabled={pasoActual === 0} style={{ opacity: pasoActual === 0 ? 0.4 : 1 }}>
+                ← Paso anterior
+              </button>
+              <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= tipo.pasos.length} style={{ opacity: pasoActual >= tipo.pasos.length ? 0.4 : 1 }}>
+                {pasoActual >= tipo.pasos.length ? '✓ Trámite completado' : 'Siguiente paso →'}
+              </button>
+            </div>
+          ) : (
+            <div className="alert alert-green" style={{ display: 'flex', alignItems: 'center' }}>
+              <Icon name="shield" size={14} style={{ marginRight: 6 }} />
+              <span>El progreso de este trámite es actualizado por el gestor asignado.</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1983,14 +2080,361 @@ function TareasDiarias() {
   )
 }
 
+// ─── SEGURIDAD Y AUDITORÍA ───────────────────────────────────────────────────
+function SecurityDashboard() {
+  const [checklist, setChecklist] = useState({
+    ssl: true,
+    hsts: false,
+    cors: false,
+    bcrypt: true,
+    cookies: false,
+    helmet: false,
+    dbEncrypt: false,
+  })
+
+  const toggleCheck = (key) => {
+    setChecklist(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const totalItems = Object.keys(checklist).length
+  const checkedItems = Object.values(checklist).filter(Boolean).length
+  const score = Math.round(40 + (checkedItems / totalItems) * 60)
+
+  return (
+    <div style={{ animation: 'slideUpLogin 0.5s ease-out' }}>
+      <div className="security-score-card">
+        <div className="security-score-circle">
+          {score}%
+        </div>
+        <div className="security-score-info">
+          <h3 style={{ color: '#fff' }}>Auditoría e Indicador de Seguridad (PoC)</h3>
+          <p>
+            Actualmente estás en <strong>Entorno de Desarrollo Local (HTTP)</strong>. En producción, la activación de certificados SSL/TLS (HTTPS) y las directivas del checklist elevarán tu score a 100% de cumplimiento.
+          </p>
+          <div style={{ marginTop: 10, fontSize: 11, background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20, display: 'inline-block' }}>
+            🔒 Conexión local: segura para pruebas no-productivas
+          </div>
+        </div>
+      </div>
+
+      <div className="two-col" style={{ alignItems: 'start' }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="shield" size={16} style={{ color: 'var(--accent)' }} /> Componentes de Seguridad en esta App
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="security-status-card">
+              <div className="security-status-icon secure">
+                <Icon name="shield" size={16} />
+              </div>
+              <div className="security-status-content">
+                <div className="security-status-header">
+                  <div className="security-status-title">Autenticación por Roles</div>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>Activo (Mock)</span>
+                </div>
+                <div className="security-status-desc">
+                  Acceso restringido a vistas según rol (Administrador vs. Gestor) con expiración en `sessionStorage` para evitar secuestro de sesión.
+                </div>
+                <div className="security-status-tech-note">
+                  SessionStorage Token Validation
+                </div>
+              </div>
+            </div>
+
+            <div className="security-status-card">
+              <div className="security-status-icon warning">
+                <Icon name="globe" size={16} />
+              </div>
+              <div className="security-status-content">
+                <div className="security-status-header">
+                  <div className="security-status-title">Protocolo de Red (HTTP vs. HTTPS)</div>
+                  <span className="badge badge-amber" style={{ fontSize: 10 }}>Desarrollo (HTTP)</span>
+                </div>
+                <div className="security-status-desc">
+                  Vite corre localmente en `http://localhost`. En producción, el hosting (Vercel/Netlify) instala certificados SSL/TLS Let's Encrypt automáticamente para encriptar todo el tráfico.
+                </div>
+                <div className="security-status-tech-note">
+                  SSL/TLS cert (AES-256 bits)
+                </div>
+              </div>
+            </div>
+
+            <div className="security-status-card">
+              <div className="security-status-icon secure">
+                <Icon name="key" size={16} />
+              </div>
+              <div className="security-status-content">
+                <div className="security-status-header">
+                  <div className="security-status-title">Cifrado de Contraseñas (Hashing)</div>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>Simulado</span>
+                </div>
+                <div className="security-status-desc">
+                  Las contraseñas de producción se procesan con algoritmos de hashing lento (Bcrypt con factor de costo 12). Nunca se guardan en texto plano en la base de datos.
+                </div>
+                <div className="security-status-tech-note">
+                  Bcrypt Hash + Salt (cost = 12)
+                </div>
+              </div>
+            </div>
+
+            <div className="security-status-card">
+              <div className="security-status-icon danger">
+                <Icon name="database" size={16} />
+              </div>
+              <div className="security-status-content">
+                <div className="security-status-header">
+                  <div className="security-status-title">Base de Datos y API</div>
+                  <span className="badge badge-red" style={{ fontSize: 10 }}>Local Storage</span>
+                </div>
+                <div className="security-status-desc">
+                  Los datos actuales están en la memoria persistente del navegador (`localStorage`). En producción, se requiere un backend (NodeJS, Supabase o Firebase) con reglas de fila (RLS) seguras.
+                </div>
+                <div className="security-status-tech-note">
+                  No-SQL / PostgreSQL con Row-Level Security
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: 20 }}>
+            <div className="card-title">Diagrama: Hashing Seguro de Contraseñas (Producción)</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
+              Así viajan y se almacenan tus contraseñas para evitar hackeos a la base de datos:
+            </div>
+            <div className="password-hash-diagram">
+              <div className="diagram-node" style={{ borderColor: 'var(--border-strong)' }}>
+                <strong>Contraseña</strong><br />
+                <span className="mono" style={{ fontSize: 10, color: 'var(--red)' }}>"admin123"</span>
+              </div>
+              <div className="diagram-arrow">
+                SSL Encriptado
+              </div>
+              <div className="diagram-node" style={{ borderColor: 'var(--blue)', background: 'var(--blue-light)' }}>
+                <strong>Bcrypt Engine</strong><br />
+                <span style={{ fontSize: 9, color: 'var(--blue-text)' }}>+ Salt aleatoria</span>
+              </div>
+              <div className="diagram-arrow">
+                Hash de 60 char
+              </div>
+              <div className="diagram-node" style={{ borderColor: 'var(--accent)', background: 'var(--accent-light)' }}>
+                <strong>Base de Datos</strong><br />
+                <span className="mono" style={{ fontSize: 8, color: 'var(--accent-text)' }}>$2b$12$K8j...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-title">Checklist de Despliegue de Seguridad (Producción)</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
+              Activa estas opciones para simular las configuraciones y ver cómo sube el score de seguridad de tu plataforma:
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.ssl ? 'checked' : ''}`} onClick={() => toggleCheck('ssl')}>
+                {checklist.ssl && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Habilitar HTTPS / Certificado SSL/TLS</div>
+                <div className="checklist-desc">Encripta la conexión para evitar que atacantes intercepten los datos en tránsito (ataques Man-in-the-Middle).</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.hsts ? 'checked' : ''}`} onClick={() => toggleCheck('hsts')}>
+                {checklist.hsts && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Directiva HSTS (Strict-Transport-Security)</div>
+                <div className="checklist-desc">Fuerza a los navegadores a interactuar con el sitio únicamente mediante HTTPS en lugar de HTTP plano.</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.cors ? 'checked' : ''}`} onClick={() => toggleCheck('cors')}>
+                {checklist.cors && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Políticas CORS Restringidas (Cross-Origin)</div>
+                <div className="checklist-desc">Restringe la API para aceptar peticiones únicamente desde el dominio oficial de tu gestoría, bloqueando sitios web externos maliciosos.</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.bcrypt ? 'checked' : ''}`} onClick={() => toggleCheck('bcrypt')}>
+                {checklist.bcrypt && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Cifrado de datos en reposo y Bcrypt</div>
+                <div className="checklist-desc">Protección criptográfica para las contraseñas y encriptación AES-256 en la base de datos PostgreSQL.</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.cookies ? 'checked' : ''}`} onClick={() => toggleCheck('cookies')}>
+                {checklist.cookies && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Cookies HttpOnly y Secure</div>
+                <div className="checklist-desc">Guarda los tokens de sesión en cookies inaccesibles para Javascript (previniendo robos de tokens a través de ataques XSS).</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.helmet ? 'checked' : ''}`} onClick={() => toggleCheck('helmet')}>
+                {checklist.helmet && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Cabeceras de Seguridad (Helmet NodeJS)</div>
+                <div className="checklist-desc">Configura CSP (Content Security Policy), X-Frame-Options para evitar clickjacking, y bloquea el rastreo de MIME-types.</div>
+              </div>
+            </div>
+
+            <div className="deployment-checklist-item">
+              <div className={`checklist-checkbox ${checklist.dbEncrypt ? 'checked' : ''}`} onClick={() => toggleCheck('dbEncrypt')}>
+                {checklist.dbEncrypt && <Icon name="check" size={12} />}
+              </div>
+              <div className="checklist-content">
+                <div className="checklist-title">Cifrado de Base de Datos en la Nube</div>
+                <div className="checklist-desc">Encripta los discos de datos (Storage) para proteger expedientes y presupuestos de los clientes ante un robo físico del servidor.</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title">💡 Nota sobre HTTPS Local</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
+              Si deseas correr este proyecto con <strong>HTTPS local</strong> para realizar pruebas de seguridad en tu máquina local, puedes instalar la utilidad <code className="mono">mkcert</code> y configurar Vite agregando la directiva <code className="mono">https: true</code> en el archivo <code className="mono">vite.config.js</code>. Esto generará certificados locales firmados que tu computadora reconocerá como válidos.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── ADMINISTRACIÓN ───────────────────────────────────────────────────────────
-function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab, setActive }) {
+function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab, setActive, session, setSession, usuarios, setUsuarios }) {
   const [adminTab, setAdminTab] = useState('clientes')
   const [qClientes, setQClientes] = useState('')
   const [showAddClienteModal, setShowAddClienteModal] = useState(false)
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: '', contacto: '', email: '', tel: '', tipo: 'empresa', rfc: '', ciudad: ''
   })
+
+  // User management states
+  const [qUsuarios, setQUsuarios] = useState('')
+  const [showAddUsuarioModal, setShowAddUsuarioModal] = useState(false)
+  const [showEditUsuarioModal, setShowEditUsuarioModal] = useState(false)
+  const [nuevoUsuario, setNuevoUsuario] = useState({
+    nombre: '', email: '', contrasenia: '', rol: 'empleado', modulos: getDefaultModulos('empleado')
+  })
+  const [editandoUsuario, setEditandoUsuario] = useState(null)
+
+  const filteredUsuarios = (usuarios || []).filter(u =>
+    u.nombre.toLowerCase().includes(qUsuarios.toLowerCase()) ||
+    u.email.toLowerCase().includes(qUsuarios.toLowerCase())
+  )
+
+  const handleAddUsuario = () => {
+    if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) return
+    const emailClean = nuevoUsuario.email.trim().toLowerCase()
+
+    if (usuarios.some(u => u.email.toLowerCase() === emailClean)) {
+      alert(`El correo "${emailClean}" ya está registrado.`);
+      return
+    }
+
+    const words = nuevoUsuario.nombre.trim().split(' ')
+    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U'
+    const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085']
+    const color = colors[Math.floor(Math.random() * colors.length)]
+
+    const modulos = nuevoUsuario.modulos || []
+    const rol = modulos.includes('administracion') ? 'admin' : 'empleado'
+
+    const nuevo = {
+      id: `usr-${Date.now()}`,
+      nombre: nuevoUsuario.nombre.trim(),
+      email: emailClean,
+      contrasenia: nuevoUsuario.contrasenia,
+      rol,
+      modulos,
+      avatar,
+      color
+    }
+
+    setUsuarios(prev => [...prev, nuevo])
+    setShowAddUsuarioModal(false)
+    setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'empleado', modulos: getDefaultModulos('empleado') })
+  }
+
+  const handleEditClick = (u) => {
+    setEditandoUsuario({
+      ...u,
+      modulos: u.modulos || getDefaultModulos(u.rol)
+    })
+    setShowEditUsuarioModal(true)
+  }
+
+  const handleSaveEditUsuario = () => {
+    if (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) return
+    const emailClean = editandoUsuario.email.trim().toLowerCase()
+
+    if (usuarios.some(u => u.email.toLowerCase() === emailClean && u.id !== editandoUsuario.id)) {
+      alert(`El correo "${emailClean}" ya está en uso por otro usuario.`);
+      return
+    }
+
+    const words = editandoUsuario.nombre.trim().split(' ')
+    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U'
+
+    const modulos = editandoUsuario.modulos || []
+    const rol = modulos.includes('administracion') ? 'admin' : (editandoUsuario.clienteId ? 'cliente' : 'empleado')
+
+    const updatedUser = {
+      ...editandoUsuario,
+      nombre: editandoUsuario.nombre.trim(),
+      email: emailClean,
+      rol,
+      modulos,
+      avatar
+    }
+
+    setUsuarios(prev => prev.map(u => u.id === editandoUsuario.id ? updatedUser : u))
+
+    if (session.id === editandoUsuario.id) {
+      const updatedSession = {
+        ...session,
+        nombre: editandoUsuario.nombre.trim(),
+        email: emailClean,
+        rol,
+        modulos,
+        avatar
+      };
+      sessionStorage.setItem('giu_session', JSON.stringify(updatedSession));
+      setSession(updatedSession);
+    }
+
+    setShowEditUsuarioModal(false)
+    setEditandoUsuario(null)
+  }
+
+  const handleEliminarUsuario = (u) => {
+    if (u.email.toLowerCase() === 'gabrielcoc@gmail.com') {
+      alert('No se puede eliminar el administrador principal.')
+      return
+    }
+    if (u.id === session.id) {
+      alert('No puedes eliminar tu propio usuario activo.')
+      return
+    }
+    if (window.confirm(`¿Estás seguro de que deseas eliminar al usuario ${u.nombre}?`)) {
+      setUsuarios(prev => prev.filter(item => item.id !== u.id))
+    }
+  }
 
   const filteredClientes = clientes.filter(c =>
     c.nombre.toLowerCase().includes(qClientes.toLowerCase()) ||
@@ -2060,6 +2504,22 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
         >
           Gestión de Conceptos
         </button>
+        {session.rol === 'admin' && (
+          <button
+            className={`tab-btn ${adminTab === 'seguridad' ? 'active' : ''}`}
+            onClick={() => setAdminTab('seguridad')}
+          >
+            Seguridad y Despliegue
+          </button>
+        )}
+        {session.rol === 'admin' && (
+          <button
+            className={`tab-btn ${adminTab === 'usuarios' ? 'active' : ''}`}
+            onClick={() => setAdminTab('usuarios')}
+          >
+            Control de Usuarios
+          </button>
+        )}
       </div>
 
       {/* Subview Clientes */}
@@ -2127,6 +2587,281 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
               </button>
             </div>
             <Catalogo conceptos={conceptos} setConceptos={setConceptos} />
+          </div>
+        </div>
+      )}
+
+      {/* Subview Seguridad */}
+      {adminTab === 'seguridad' && session.rol === 'admin' && (
+        <SecurityDashboard />
+      )}
+
+      {/* Subview Usuarios */}
+      {adminTab === 'usuarios' && session.rol === 'admin' && (
+        <div className="card" style={{ animation: 'slideUpLogin 0.5s ease-out' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div className="search-wrap" style={{ maxWidth: 380, flex: 1 }}>
+              <Icon name="search" size={14} />
+              <input
+                className="form-control search-input"
+                placeholder="Buscar usuarios por nombre o correo…"
+                value={qUsuarios}
+                onChange={e => setQUsuarios(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowAddUsuarioModal(true)}>
+              <Icon name="plus" size={14} /> Registrar Usuario
+            </button>
+          </div>
+
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Correo Electrónico</th>
+                  <th>Rol</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsuarios.map(u => (
+                  <tr key={u.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="sidebar-user-avatar" style={{ background: u.color, width: 28, height: 28, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%', fontWeight: 'bold' }}>
+                          {u.avatar}
+                        </div>
+                        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
+                      </div>
+                    </td>
+                    <td style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>{u.email}</td>
+                    <td>
+                      <span className={`badge ${u.rol === 'admin' ? 'badge-green' : u.rol === 'empleado' ? 'badge-blue' : 'badge-purple'}`}>
+                        {u.rol === 'admin' ? 'Administrador' : u.rol === 'empleado' ? 'Empleado' : 'Cliente'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEditClick(u)} title="Editar">
+                          <Icon name="edit" size={12} />
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleEliminarUsuario(u)}
+                          disabled={u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id}
+                          title="Eliminar"
+                          style={{ opacity: (u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id) ? 0.3 : 1, cursor: (u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id) ? 'not-allowed' : 'pointer' }}
+                        >
+                          <Icon name="trash" size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddUsuarioModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddUsuarioModal(false)}>
+          <div className="modal" style={{ animation: 'slideUpLogin 0.3s ease-out' }}>
+            <div className="modal-title">Registrar Nuevo Usuario</div>
+
+            <div className="form-group">
+              <label className="form-label">Nombre Completo *</label>
+              <input
+                className="form-control"
+                placeholder="Ej: Juan Pérez"
+                value={nuevoUsuario.nombre}
+                onChange={e => setNuevoUsuario(n => ({ ...n, nombre: e.target.value }))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Correo Electrónico *</label>
+              <input
+                className="form-control"
+                type="email"
+                placeholder="Ej: juan@gestoria.com"
+                value={nuevoUsuario.email}
+                onChange={e => setNuevoUsuario(n => ({ ...n, email: e.target.value }))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Contraseña *</label>
+              <input
+                className="form-control"
+                type="password"
+                placeholder="••••••••"
+                value={nuevoUsuario.contrasenia}
+                onChange={e => setNuevoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
+              />
+            </div>
+
+            {/* Tipo de Cuenta */}
+            <div className="form-group">
+              <label className="form-label">Tipo de Cuenta *</label>
+              <div style={{
+                background: 'var(--surface2)',
+                padding: '16px 18px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '10px 16px'
+                }}>
+                  {AVAILABLE_MODULES.map(m => {
+                    const isChecked = nuevoUsuario.modulos?.includes(m.id);
+                    return (
+                      <div
+                        key={m.id}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => {
+                          setNuevoUsuario(prev => {
+                            const currentModulos = prev.modulos || [];
+                            const exists = currentModulos.includes(m.id);
+                            const modulos = exists
+                              ? currentModulos.filter(id => id !== m.id)
+                              : [...currentModulos, m.id];
+                            return { ...prev, modulos };
+                          });
+                        }}
+                      >
+                        <div className={`checklist-checkbox ${isChecked ? 'checked' : ''}`} style={{ margin: 0 }}>
+                          {isChecked && <Icon name="check" size={10} />}
+                        </div>
+                        <span style={{ fontSize: 13, color: 'var(--text)' }}>{m.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+              <button className="btn btn-secondary" onClick={() => setShowAddUsuarioModal(false)}>Cancelar</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleAddUsuario}
+                disabled={!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia}
+                style={{ opacity: (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) ? 0.5 : 1 }}
+              >
+                <Icon name="check" size={14} /> Registrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUsuarioModal && editandoUsuario && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowEditUsuarioModal(false)}>
+          <div className="modal" style={{ animation: 'slideUpLogin 0.3s ease-out' }}>
+            <div className="modal-title">Editar Usuario: {editandoUsuario.nombre}</div>
+
+            <div className="form-group">
+              <label className="form-label">Nombre Completo *</label>
+              <input
+                className="form-control"
+                placeholder="Ej: Juan Pérez"
+                value={editandoUsuario.nombre}
+                onChange={e => setEditandoUsuario(n => ({ ...n, nombre: e.target.value }))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Correo Electrónico *</label>
+              <input
+                className="form-control"
+                type="email"
+                placeholder="Ej: juan@gestoria.com"
+                value={editandoUsuario.email}
+                onChange={e => setEditandoUsuario(n => ({ ...n, email: e.target.value }))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Contraseña *</label>
+              <input
+                className="form-control"
+                type="password"
+                placeholder="••••••••"
+                value={editandoUsuario.contrasenia}
+                onChange={e => setEditandoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
+              />
+            </div>
+
+            {/* Tipo de Cuenta */}
+            <div className="form-group">
+              <label className="form-label">Tipo de Cuenta *</label>
+              <div style={{
+                background: 'var(--surface2)',
+                padding: '16px 18px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '10px 16px'
+                }}>
+                  {AVAILABLE_MODULES.map(m => {
+                    const isChecked = editandoUsuario.modulos?.includes(m.id);
+                    const isMainAdmin = editandoUsuario.email.toLowerCase() === 'gabrielcoc@gmail.com';
+                    const isDisabled = isMainAdmin && m.id === 'administracion';
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          userSelect: 'none',
+                          opacity: isDisabled ? 0.6 : 1
+                        }}
+                        onClick={() => {
+                          if (isDisabled) return;
+                          setEditandoUsuario(prev => {
+                            const currentModulos = prev.modulos || [];
+                            const exists = currentModulos.includes(m.id);
+                            const modulos = exists
+                              ? currentModulos.filter(id => id !== m.id)
+                              : [...currentModulos, m.id];
+                            return { ...prev, modulos };
+                          });
+                        }}
+                      >
+                        <div className={`checklist-checkbox ${isChecked ? 'checked' : ''}`} style={{ margin: 0 }}>
+                          {isChecked && <Icon name="check" size={10} />}
+                        </div>
+                        <span style={{ fontSize: 13, color: 'var(--text)' }}>{m.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditUsuarioModal(false); setEditandoUsuario(null); }}>Cancelar</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveEditUsuario}
+                disabled={!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia}
+                style={{ opacity: (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) ? 0.5 : 1 }}
+              >
+                <Icon name="check" size={14} /> Guardar Cambios
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2236,8 +2971,305 @@ function Home() {
   )
 }
 
+// ─── LOGIN PORTAL ─────────────────────────────────────────────────────────────
+function Login({ onLogin, usuarios, setUsuarios }) {
+  const [isSignup, setIsSignup] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Autocomplete / Suggestions states
+  const [savedEmails, setSavedEmails] = useState(() => {
+    const saved = localStorage.getItem('giu_saved_emails')
+    if (saved) {
+      return JSON.parse(saved)
+    } else {
+      const defaults = ['Gabrielcoc@gmail.com', 'laura@gestoria.com', 'pnoriega@gmail.com']
+      localStorage.setItem('giu_saved_emails', JSON.stringify(defaults))
+      return defaults
+    }
+  })
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Signup specific states
+  const [signupNombre, setSignupNombre] = useState('')
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
+  const [signupConfirm, setSignupConfirm] = useState('')
+  const [error, setError] = useState('')
+
+  const handleLogin = (e) => {
+    e.preventDefault()
+    if (!username || !password) {
+      setError('Por favor ingresa usuario y contraseña.')
+      return
+    }
+
+    const emailClean = username.trim().toLowerCase()
+    const pClean = password.trim()
+
+    const user = (usuarios || []).find(u => u.email.trim().toLowerCase() === emailClean)
+    if (user && user.contrasenia === pClean) {
+      const cleanEmail = user.email.trim()
+      setSavedEmails(prev => {
+        const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase())
+        if (!exists) {
+          const next = [cleanEmail, ...prev]
+          localStorage.setItem('giu_saved_emails', JSON.stringify(next))
+          return next
+        }
+        return prev
+      })
+      onLogin(user)
+    } else {
+      setError('Credenciales inválidas. Revisa el correo y contraseña.')
+    }
+  }
+
+  const handleSignup = (e) => {
+    e.preventDefault()
+    if (!signupNombre || !signupEmail || !signupPassword || !signupConfirm) {
+      setError('Por favor completa todos los campos de registro.')
+      return
+    }
+
+    if (signupPassword !== signupConfirm) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
+
+    const emailClean = signupEmail.trim().toLowerCase()
+
+    const exists = (usuarios || []).some(u => u.email.trim().toLowerCase() === emailClean)
+    if (exists) {
+      setError('El correo electrónico ya está registrado.')
+      return
+    }
+
+    const words = signupNombre.trim().split(' ')
+    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U'
+    const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085']
+    const color = colors[Math.floor(Math.random() * colors.length)]
+
+    const newUser = {
+      id: `usr-${Date.now()}`,
+      nombre: signupNombre.trim(),
+      email: emailClean,
+      contrasenia: signupPassword,
+      rol: 'cliente',
+      avatar,
+      color
+    }
+
+    setUsuarios(prev => [...prev, newUser])
+    setSavedEmails(prev => {
+      const cleanEmail = newUser.email.trim()
+      const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase())
+      if (!exists) {
+        const next = [cleanEmail, ...prev]
+        localStorage.setItem('giu_saved_emails', JSON.stringify(next))
+        return next
+      }
+      return prev
+    })
+    onLogin(newUser)
+  }
+
+  const filteredSuggestions = savedEmails.filter(email =>
+    email.toLowerCase().includes(username.toLowerCase())
+  )
+
+  return (
+    <div className="login-screen-bg">
+      <div className="login-card" style={{ maxWidth: isSignup ? '480px' : '440px' }}>
+        <div className="login-logo-section" style={{ marginBottom: 16 }}>
+          <img src={logoImg} alt="GIU Gestión Integral Urbana" style={{ maxWidth: '280px', width: '100%', height: 'auto', borderRadius: 8, display: 'block', margin: '0 auto' }} />
+        </div>
+        <div className="login-subtitle" style={{ marginBottom: 20 }}>
+          {isSignup ? 'Crear Cuenta de Cliente' : 'Plataforma de Control de Trámites y Presupuestos'}
+        </div>
+
+        {error && (
+          <div className="alert alert-red" style={{ marginBottom: 16, background: 'var(--red-light)', color: 'var(--red-text)', border: '1px solid rgba(192,57,43,0.2)' }}>
+            <Icon name="alert" size={14} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {!isSignup ? (
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="form-group">
+              <label className="form-label">Correo Electrónico</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ej: Gabrielcoc@gmail.com"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(25, 27, 25, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: 'var(--radius-sm)',
+                    marginTop: 4,
+                    maxHeight: 150,
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
+                    textAlign: 'left'
+                  }}>
+                    {filteredSuggestions.map(email => (
+                      <div
+                        key={email}
+                        style={{
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: 'rgba(255, 255, 255, 0.8)',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          transition: 'background 0.15s'
+                        }}
+                        onMouseEnter={e => e.target.style.background = 'rgba(76, 166, 106, 0.2)'}
+                        onMouseLeave={e => e.target.style.background = ''}
+                        onMouseDown={() => {
+                          setUsername(email);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        {email}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Contraseña</label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-control"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <Icon name={showPassword ? 'eyeoff' : 'eye'} size={14} />
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}>
+              <Icon name="unlock" size={14} style={{ marginRight: 6 }} /> Iniciar Sesión Seguro
+            </button>
+
+            <div style={{ marginTop: 16, fontSize: 12.5, color: 'rgba(255,255,255,0.6)' }}>
+              ¿No tienes cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => { setIsSignup(true); setError(''); }}
+                style={{ background: 'none', border: 'none', color: '#4CA66A', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Regístrate aquí
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSignup} className="login-form">
+            <div className="form-group">
+              <label className="form-label">Nombre Completo</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ej: Gabriel Ochoa"
+                value={signupNombre}
+                onChange={e => setSignupNombre(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Correo Electrónico</label>
+              <input
+                type="email"
+                className="form-control"
+                placeholder="Ej: cliente@correo.com"
+                value={signupEmail}
+                onChange={e => setSignupEmail(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="form-group">
+                <label className="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="••••••••"
+                  value={signupPassword}
+                  onChange={e => setSignupPassword(e.target.value)}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirmar</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="••••••••"
+                  value={signupConfirm}
+                  onChange={e => setSignupConfirm(e.target.value)}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}>
+              <Icon name="user" size={14} style={{ marginRight: 6 }} /> Registrarse y Acceder
+            </button>
+
+            <div style={{ marginTop: 16, fontSize: 12.5, color: 'rgba(255,255,255,0.6)' }}>
+              ¿Ya tienes una cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => { setIsSignup(false); setError(''); }}
+                style={{ background: 'none', border: 'none', color: '#4CA66A', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Inicia sesión
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const [session, setSession] = useState(() => {
+    const saved = sessionStorage.getItem('giu_session')
+    return saved ? JSON.parse(saved) : null
+  })
   const [active, setActive] = useState('home')
   const [clientes, setClientes] = useState(() => {
     const saved = localStorage.getItem('giu_clientes')
@@ -2251,6 +3283,53 @@ export default function App() {
     const saved = localStorage.getItem('giu_conceptos')
     return saved ? JSON.parse(saved) : CATALOGO_CONCEPTOS
   })
+
+  // User database state
+  const [usuarios, setUsuarios] = useState(() => {
+    const saved = localStorage.getItem('giu_usuarios')
+    if (saved) {
+      return JSON.parse(saved)
+    } else {
+      const defaultUsers = [
+        {
+          id: 'usr-admin-1',
+          nombre: 'Gabriel (Admin)',
+          email: 'Gabrielcoc@gmail.com',
+          contrasenia: '123456789',
+          rol: 'admin',
+          modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones'],
+          avatar: 'G',
+          color: '#2A5F3F'
+        },
+        {
+          id: 'usr-emp-1',
+          nombre: 'Laura M.',
+          email: 'laura@gestoria.com',
+          contrasenia: 'empleado123',
+          rol: 'empleado',
+          modulos: ['presupuestos', 'tareas', 'catalogo', 'cotizaciones'],
+          avatar: 'LM',
+          color: '#1A5276'
+        },
+        {
+          id: 'usr-cli-1',
+          nombre: 'Patricia N.',
+          email: 'pnoriega@gmail.com',
+          contrasenia: 'cliente123',
+          rol: 'cliente',
+          modulos: ['presupuestos', 'cotizaciones'],
+          avatar: 'PN',
+          color: '#5B2C6F'
+        }
+      ]
+      localStorage.setItem('giu_usuarios', JSON.stringify(defaultUsers))
+      return defaultUsers
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('giu_usuarios', JSON.stringify(usuarios))
+  }, [usuarios])
 
   useEffect(() => {
     localStorage.setItem('giu_clientes', JSON.stringify(clientes))
@@ -2266,18 +3345,97 @@ export default function App() {
     currentConceptos = conceptos
   }, [conceptos])
 
+  // Helper to link user account to a client profile
+  const linkClientAccount = (user, currentClientesList = clientes) => {
+    if (user.rol !== 'cliente') return user
+
+    const emailClean = user.email.trim().toLowerCase()
+    let client = currentClientesList.find(c => c.email && c.email.trim().toLowerCase() === emailClean)
+
+    if (!client) {
+      const newId = Math.max(...currentClientesList.map(c => c.id), 0) + 1
+      client = {
+        id: newId,
+        nombre: user.nombre,
+        contacto: user.nombre,
+        email: user.email,
+        tel: '',
+        tipo: 'persona',
+        rfc: '',
+        ciudad: ''
+      }
+      setClientes(prev => {
+        const next = [...prev, client]
+        localStorage.setItem('giu_clientes', JSON.stringify(next))
+        currentClientes = next
+        return next
+      })
+    }
+
+    return {
+      ...user,
+      clienteId: client.id
+    }
+  }
+
+  const handleLogin = (user) => {
+    const linkedUser = linkClientAccount(user)
+    const linkedUserWithModulos = {
+      ...linkedUser,
+      modulos: linkedUser.modulos || getDefaultModulos(linkedUser.rol)
+    }
+    sessionStorage.setItem('giu_session', JSON.stringify(linkedUserWithModulos))
+    setSession(linkedUserWithModulos)
+    setActive('home')
+  }
+
+  // Route Guard / Tab permission protection
+  useEffect(() => {
+    if (session) {
+      const allowed = session.modulos || getDefaultModulos(session.rol)
+      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones']
+      if (restrictedTabs.includes(active) && !allowed.includes(active)) {
+        const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard'
+        setActive(nextActive)
+      }
+    }
+  }, [active, session])
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('giu_session')
+    setSession(null)
+    setActive('home')
+  }
+
+  if (!session) {
+    return <Login onLogin={handleLogin} usuarios={usuarios} setUsuarios={setUsuarios} />
+  }
+
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} />
+      <Sidebar active={active} setActive={setActive} session={session} onLogout={handleLogout} />
       <main className="main-content" style={{ padding: active === 'home' ? '0' : '32px 36px' }}>
         {active === 'home' && <Home setActive={setActive} />}
-        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={TAREAS_MOCK} setActive={setActive} />}
+        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={TAREAS_MOCK} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo conceptos={conceptos} setConceptos={setConceptos} />}
-        {active === 'cotizaciones' && <Cotizaciones cotizaciones={cotizaciones} setCotizaciones={setCotizaciones} clientes={clientes} />}
-        {active === 'presupuestos' && <Presupuestos clientes={clientes} />}
-        {active === 'tramites' && <HojasRuta />}
+        {active === 'cotizaciones' && <Cotizaciones cotizaciones={cotizaciones} setCotizaciones={setCotizaciones} clientes={clientes} session={session} />}
+        {active === 'presupuestos' && <Presupuestos clientes={clientes} session={session} />}
+        {active === 'tramites' && <HojasRuta session={session} />}
         {active === 'tareas' && <TareasDiarias />}
-        {active === 'administracion' && <Administracion clientes={clientes} setClientes={setClientes} conceptos={conceptos} setConceptos={setConceptos} setTab={setActive} setActive={setActive} />}
+        {active === 'administracion' && (
+          <Administracion
+            clientes={clientes}
+            setClientes={setClientes}
+            conceptos={conceptos}
+            setConceptos={setConceptos}
+            setTab={setActive}
+            setActive={setActive}
+            session={session}
+            setSession={setSession}
+            usuarios={usuarios}
+            setUsuarios={setUsuarios}
+          />
+        )}
       </main>
     </div>
   )
