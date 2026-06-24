@@ -23,15 +23,84 @@ const CATALOGO_CONCEPTOS = [
 ]
 
 const CLIENTES = [
-  { id: 1, nombre: 'Constructora Horizonte S.A. de C.V.', contacto: 'Ing. Marco Salinas', email: 'msalinas@horizonte.mx', tel: '442-310-8821', tipo: 'empresa', rfc: 'CHO850312AB3', ciudad: 'Querétaro, Qro.' },
-  { id: 2, nombre: 'Arq. Patricia Noriega Vda.', contacto: 'Arq. Patricia Noriega', email: 'pnoriega@gmail.com', tel: '442-198-4403', tipo: 'persona', rfc: 'NOPV710905KL7', ciudad: 'Juriquilla, Qro.' },
-  { id: 3, nombre: 'Inmobiliaria del Centro SA', contacto: 'Lic. Roberto Fuentes', email: 'rfuentes@inmocentro.com.mx', tel: '442-501-2290', tipo: 'empresa', rfc: 'ICS920801TT2', ciudad: 'Centro Histórico, Qro.' },
-  { id: 4, nombre: 'Desarrollos Cumbres del Valle', contacto: 'Ing. Sofía Mendoza', email: 'sofia.mendoza@cumbres.mx', tel: '442-877-3312', tipo: 'empresa', rfc: 'DCV040118PQ9', ciudad: 'El Marqués, Qro.' },
-  { id: 5, nombre: 'Proyectos Querétaro 2000', contacto: 'Arq. Diego Landa', email: 'dlanda@pq2000.mx', tel: '442-663-7745', tipo: 'empresa', rfc: 'PQD001220XY1', ciudad: 'Corregidora, Qro.' },
-  { id: 6, nombre: 'Familia Reséndiz Ochoa', contacto: 'Sr. Ernesto Reséndiz', email: 'eresendiz@hotmail.com', tel: '442-114-9930', tipo: 'persona', rfc: 'REOE780623BN4', ciudad: 'Av. Constituyentes, Qro.' },
-  { id: 7, nombre: 'Comercial El Nogal S.C.', contacto: 'Ing. Valeria Garza', email: 'vgarza@elnogal.com.mx', tel: '442-320-0017', tipo: 'empresa', rfc: 'CNO110907RV6', ciudad: 'San Juan del Río, Qro.' },
-  { id: 8, nombre: 'Lic. Fernando Bustamante Pérez', contacto: 'Lic. Fernando Bustamante', email: 'fbustamante@fbplaw.mx', tel: '442-745-8823', tipo: 'persona', rfc: 'BUPF830410GH2', ciudad: 'Lomas de Juriquilla, Qro.' },
-  { id: 9, nombre: 'Grupo Inmobiliario Pedregal SA de CV', contacto: 'Arq. Claudia Trujillo', email: 'ctrujillo@gipedregal.mx', tel: '442-289-6614', tipo: 'empresa', rfc: 'GIP150302WZ5', ciudad: 'Pedregal de Schoenstatt, Qro.' },
+  {
+    id: 1,
+    nombre: 'MexPack',
+    contacto: 'Ing. Marco Salinas',
+    email: 'joel.diaz.lopez7@gmail.com',
+    tel: '+34 611 222 333',
+    tipo: 'empresa',
+    rfc: 'CHO850312AB3',
+    ciudad: 'Querétaro, Qro.',
+    estatus: 'lead',
+    proyectos: ['Proyecto A'],
+    responsable: 'usr-emp-1'
+  },
+  {
+    id: 2,
+    nombre: 'GreenTech Solutions',
+    contacto: 'Lic. Roberto Fuentes',
+    email: 'contacto@greentech.com',
+    tel: '+34 600 123 456',
+    tipo: 'empresa',
+    rfc: 'ICS920801TT2',
+    ciudad: 'Juriquilla, Qro.',
+    estatus: 'activo',
+    proyectos: ['Proyecto B'],
+    responsable: 'usr-admin-1'
+  },
+  {
+    id: 3,
+    nombre: 'SolarWave',
+    contacto: 'Arq. Diego Landa',
+    email: 'sales@solarwave.com',
+    tel: '+34 633 555 666',
+    tipo: 'empresa',
+    rfc: 'PQD001220XY1',
+    ciudad: 'Av. Constituyentes, Qro.',
+    estatus: 'lead',
+    proyectos: [],
+    responsable: 'usr-emp-1'
+  },
+  {
+    id: 4,
+    nombre: 'Innovatech Corp',
+    contacto: 'Ing. Sofía Mendoza',
+    email: 'info@innovatech.com',
+    tel: '+34 611 222 333',
+    tipo: 'empresa',
+    rfc: 'DCV040118PQ9',
+    ciudad: 'El Marqués, Qro.',
+    estatus: 'activo',
+    proyectos: ['Proyecto A', 'Proyecto B'],
+    responsable: 'usr-admin-1'
+  },
+  {
+    id: 5,
+    nombre: 'BioFuture Inc',
+    contacto: 'Lic. Fernando Bustamante',
+    email: 'contact@biofuture.com',
+    tel: '+34 644 666 777',
+    tipo: 'persona',
+    rfc: 'BUPF830410GH2',
+    ciudad: 'San Juan del Río, Qro.',
+    estatus: 'activo',
+    proyectos: ['Proyecto C'],
+    responsable: 'usr-emp-1'
+  },
+  {
+    id: 6,
+    nombre: 'EcoDesign Ltd',
+    contacto: 'Arq. Patricia Noriega',
+    email: 'contact@ecodesign.com',
+    tel: '+34 622 444 555',
+    tipo: 'empresa',
+    rfc: 'GIP150302WZ5',
+    ciudad: 'Querétaro, Qro.',
+    estatus: 'pausado',
+    proyectos: ['Proyecto A'],
+    responsable: 'usr-emp-1'
+  }
 ]
 
 const TRAMITES_TIPOS = {
@@ -317,7 +386,7 @@ const TAREAS_MOCK = [
   { id: 't4', titulo: 'Recolectar escrituras actualizadas — cliente Noriega', tramiteId: 'TRM-002', asignadoA: 'u2', fecha: fmt(addDays(hoy, -1)), prioridad: 'alta', hecho: false },
   { id: 't5', titulo: 'Enviar presupuesto COT-004 al cliente para revisión', tramiteId: 'TRM-004', asignadoA: 'u1', fecha: fmt(hoy), prioridad: 'baja', hecho: false },
   { id: 't6', titulo: 'Verificar observaciones de Protección Civil — TRM-005', tramiteId: 'TRM-005', asignadoA: 'u2', fecha: fmt(hoy), prioridad: 'media', hecho: true },
-  { id: 't7', titulo: 'Registrar avance en expediente TRM-001', tramiteId: 'TRM-001', asignadoA: 'u1', fecha: fmt(addDays(hoy, -2)), prioridad: 'baja', hecho: true },
+  { id: 't7', titulo: ' avance en expediente TRM-001', tramiteId: 'TRM-001', asignadoA: 'u1', fecha: fmt(addDays(hoy, -2)), prioridad: 'baja', hecho: true },
   { id: 't8', titulo: 'Solicitar planos de instalaciones — TRM-005', tramiteId: 'TRM-005', asignadoA: 'u3', fecha: fmt(addDays(hoy, -3)), prioridad: 'alta', hecho: false },
 ]
 
@@ -385,7 +454,7 @@ const AVAILABLE_MODULES = [
 
 const getDefaultModulos = (rol) => {
   if (rol === 'admin') return ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones']
-  if (rol === 'empleado') return ['presupuestos', 'tareas', 'catalogo', 'cotizaciones']
+  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'tareas', 'catalogo', 'cotizaciones']
   return ['presupuestos', 'cotizaciones']
 }
 
@@ -396,7 +465,9 @@ function Sidebar({ active, setActive, session, onLogout }) {
     setActive(targetTab)
   }
 
-  const allowed = session.modulos || getDefaultModulos(session.rol)
+  const allowed = session.modulos && session.modulos.length > 0
+    ? session.modulos
+    : getDefaultModulos(session.rol)
 
   const dynamicNavItems = (session.rol === 'cliente' ? [
     { id: 'cotizaciones', label: 'Mis Cotizaciones', icon: 'receipt' },
@@ -413,10 +484,15 @@ function Sidebar({ active, setActive, session, onLogout }) {
     return allowed.includes(item.id);
   })
 
-  const getRolLabel = (rol) => {
-    if (rol === 'admin') return 'Administrador'
-    if (rol === 'empleado') return 'Empleado / Gestor'
-    return 'Cliente'
+  const getRolLabel = (rolId) => {
+    const saved = localStorage.getItem('giu_roles')
+    const rolesList = saved ? JSON.parse(saved) : []
+    const found = rolesList.find(r => r.id === rolId)
+    if (found) return found.label
+    if (rolId === 'admin') return 'Administrador'
+    if (rolId === 'empleado' || rolId === 'gestor') return 'Gestor'
+    if (rolId === 'cliente') return 'Cliente'
+    return rolId.charAt(0).toUpperCase() + rolId.slice(1)
   }
 
   return (
@@ -2080,240 +2156,7 @@ function TareasDiarias() {
   )
 }
 
-// ─── SEGURIDAD Y AUDITORÍA ───────────────────────────────────────────────────
-function SecurityDashboard() {
-  const [checklist, setChecklist] = useState({
-    ssl: true,
-    hsts: false,
-    cors: false,
-    bcrypt: true,
-    cookies: false,
-    helmet: false,
-    dbEncrypt: false,
-  })
 
-  const toggleCheck = (key) => {
-    setChecklist(prev => ({ ...prev, [key]: !prev[key] }))
-  }
-
-  const totalItems = Object.keys(checklist).length
-  const checkedItems = Object.values(checklist).filter(Boolean).length
-  const score = Math.round(40 + (checkedItems / totalItems) * 60)
-
-  return (
-    <div style={{ animation: 'slideUpLogin 0.5s ease-out' }}>
-      <div className="security-score-card">
-        <div className="security-score-circle">
-          {score}%
-        </div>
-        <div className="security-score-info">
-          <h3 style={{ color: '#fff' }}>Auditoría e Indicador de Seguridad (PoC)</h3>
-          <p>
-            Actualmente estás en <strong>Entorno de Desarrollo Local (HTTP)</strong>. En producción, la activación de certificados SSL/TLS (HTTPS) y las directivas del checklist elevarán tu score a 100% de cumplimiento.
-          </p>
-          <div style={{ marginTop: 10, fontSize: 11, background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20, display: 'inline-block' }}>
-            🔒 Conexión local: segura para pruebas no-productivas
-          </div>
-        </div>
-      </div>
-
-      <div className="two-col" style={{ alignItems: 'start' }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Icon name="shield" size={16} style={{ color: 'var(--accent)' }} /> Componentes de Seguridad en esta App
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="security-status-card">
-              <div className="security-status-icon secure">
-                <Icon name="shield" size={16} />
-              </div>
-              <div className="security-status-content">
-                <div className="security-status-header">
-                  <div className="security-status-title">Autenticación por Roles</div>
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>Activo (Mock)</span>
-                </div>
-                <div className="security-status-desc">
-                  Acceso restringido a vistas según rol (Administrador vs. Gestor) con expiración en `sessionStorage` para evitar secuestro de sesión.
-                </div>
-                <div className="security-status-tech-note">
-                  SessionStorage Token Validation
-                </div>
-              </div>
-            </div>
-
-            <div className="security-status-card">
-              <div className="security-status-icon warning">
-                <Icon name="globe" size={16} />
-              </div>
-              <div className="security-status-content">
-                <div className="security-status-header">
-                  <div className="security-status-title">Protocolo de Red (HTTP vs. HTTPS)</div>
-                  <span className="badge badge-amber" style={{ fontSize: 10 }}>Desarrollo (HTTP)</span>
-                </div>
-                <div className="security-status-desc">
-                  Vite corre localmente en `http://localhost`. En producción, el hosting (Vercel/Netlify) instala certificados SSL/TLS Let's Encrypt automáticamente para encriptar todo el tráfico.
-                </div>
-                <div className="security-status-tech-note">
-                  SSL/TLS cert (AES-256 bits)
-                </div>
-              </div>
-            </div>
-
-            <div className="security-status-card">
-              <div className="security-status-icon secure">
-                <Icon name="key" size={16} />
-              </div>
-              <div className="security-status-content">
-                <div className="security-status-header">
-                  <div className="security-status-title">Cifrado de Contraseñas (Hashing)</div>
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>Simulado</span>
-                </div>
-                <div className="security-status-desc">
-                  Las contraseñas de producción se procesan con algoritmos de hashing lento (Bcrypt con factor de costo 12). Nunca se guardan en texto plano en la base de datos.
-                </div>
-                <div className="security-status-tech-note">
-                  Bcrypt Hash + Salt (cost = 12)
-                </div>
-              </div>
-            </div>
-
-            <div className="security-status-card">
-              <div className="security-status-icon danger">
-                <Icon name="database" size={16} />
-              </div>
-              <div className="security-status-content">
-                <div className="security-status-header">
-                  <div className="security-status-title">Base de Datos y API</div>
-                  <span className="badge badge-red" style={{ fontSize: 10 }}>Local Storage</span>
-                </div>
-                <div className="security-status-desc">
-                  Los datos actuales están en la memoria persistente del navegador (`localStorage`). En producción, se requiere un backend (NodeJS, Supabase o Firebase) con reglas de fila (RLS) seguras.
-                </div>
-                <div className="security-status-tech-note">
-                  No-SQL / PostgreSQL con Row-Level Security
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ marginTop: 20 }}>
-            <div className="card-title">Diagrama: Hashing Seguro de Contraseñas (Producción)</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
-              Así viajan y se almacenan tus contraseñas para evitar hackeos a la base de datos:
-            </div>
-            <div className="password-hash-diagram">
-              <div className="diagram-node" style={{ borderColor: 'var(--border-strong)' }}>
-                <strong>Contraseña</strong><br />
-                <span className="mono" style={{ fontSize: 10, color: 'var(--red)' }}>"admin123"</span>
-              </div>
-              <div className="diagram-arrow">
-                SSL Encriptado
-              </div>
-              <div className="diagram-node" style={{ borderColor: 'var(--blue)', background: 'var(--blue-light)' }}>
-                <strong>Bcrypt Engine</strong><br />
-                <span style={{ fontSize: 9, color: 'var(--blue-text)' }}>+ Salt aleatoria</span>
-              </div>
-              <div className="diagram-arrow">
-                Hash de 60 char
-              </div>
-              <div className="diagram-node" style={{ borderColor: 'var(--accent)', background: 'var(--accent-light)' }}>
-                <strong>Base de Datos</strong><br />
-                <span className="mono" style={{ fontSize: 8, color: 'var(--accent-text)' }}>$2b$12$K8j...</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-title">Checklist de Despliegue de Seguridad (Producción)</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
-              Activa estas opciones para simular las configuraciones y ver cómo sube el score de seguridad de tu plataforma:
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.ssl ? 'checked' : ''}`} onClick={() => toggleCheck('ssl')}>
-                {checklist.ssl && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Habilitar HTTPS / Certificado SSL/TLS</div>
-                <div className="checklist-desc">Encripta la conexión para evitar que atacantes intercepten los datos en tránsito (ataques Man-in-the-Middle).</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.hsts ? 'checked' : ''}`} onClick={() => toggleCheck('hsts')}>
-                {checklist.hsts && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Directiva HSTS (Strict-Transport-Security)</div>
-                <div className="checklist-desc">Fuerza a los navegadores a interactuar con el sitio únicamente mediante HTTPS en lugar de HTTP plano.</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.cors ? 'checked' : ''}`} onClick={() => toggleCheck('cors')}>
-                {checklist.cors && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Políticas CORS Restringidas (Cross-Origin)</div>
-                <div className="checklist-desc">Restringe la API para aceptar peticiones únicamente desde el dominio oficial de tu gestoría, bloqueando sitios web externos maliciosos.</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.bcrypt ? 'checked' : ''}`} onClick={() => toggleCheck('bcrypt')}>
-                {checklist.bcrypt && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Cifrado de datos en reposo y Bcrypt</div>
-                <div className="checklist-desc">Protección criptográfica para las contraseñas y encriptación AES-256 en la base de datos PostgreSQL.</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.cookies ? 'checked' : ''}`} onClick={() => toggleCheck('cookies')}>
-                {checklist.cookies && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Cookies HttpOnly y Secure</div>
-                <div className="checklist-desc">Guarda los tokens de sesión en cookies inaccesibles para Javascript (previniendo robos de tokens a través de ataques XSS).</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.helmet ? 'checked' : ''}`} onClick={() => toggleCheck('helmet')}>
-                {checklist.helmet && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Cabeceras de Seguridad (Helmet NodeJS)</div>
-                <div className="checklist-desc">Configura CSP (Content Security Policy), X-Frame-Options para evitar clickjacking, y bloquea el rastreo de MIME-types.</div>
-              </div>
-            </div>
-
-            <div className="deployment-checklist-item">
-              <div className={`checklist-checkbox ${checklist.dbEncrypt ? 'checked' : ''}`} onClick={() => toggleCheck('dbEncrypt')}>
-                {checklist.dbEncrypt && <Icon name="check" size={12} />}
-              </div>
-              <div className="checklist-content">
-                <div className="checklist-title">Cifrado de Base de Datos en la Nube</div>
-                <div className="checklist-desc">Encripta los discos de datos (Storage) para proteger expedientes y presupuestos de los clientes ante un robo físico del servidor.</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-title">💡 Nota sobre HTTPS Local</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
-              Si deseas correr este proyecto con <strong>HTTPS local</strong> para realizar pruebas de seguridad en tu máquina local, puedes instalar la utilidad <code className="mono">mkcert</code> y configurar Vite agregando la directiva <code className="mono">https: true</code> en el archivo <code className="mono">vite.config.js</code>. Esto generará certificados locales firmados que tu computadora reconocerá como válidos.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── ADMINISTRACIÓN ───────────────────────────────────────────────────────────
 function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab, setActive, session, setSession, usuarios, setUsuarios }) {
@@ -2321,17 +2164,109 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
   const [qClientes, setQClientes] = useState('')
   const [showAddClienteModal, setShowAddClienteModal] = useState(false)
   const [nuevoCliente, setNuevoCliente] = useState({
-    nombre: '', contacto: '', email: '', tel: '', tipo: 'empresa', rfc: '', ciudad: ''
+    nombre: '', contacto: '', email: '', tel: '', tipo: 'empresa', rfc: '', ciudad: '',
+    estatus: 'activo', proyectos: [], responsable: 'usr-admin-1', proyectosText: ''
   })
+
+  // CRM Monday-style local states
+  const [collapsedGroups, setCollapsedGroups] = useState({})
+  const [selectedClients, setSelectedClients] = useState([])
+  const [editingCell, setEditingCell] = useState(null)
+  const [inlineAddName, setInlineAddName] = useState({})
+
+  // Dynamic client statuses state
+  const [statusList, setStatusList] = useState(() => {
+    const saved = localStorage.getItem('giu_client_statuses')
+    return saved ? JSON.parse(saved) : [
+      { id: 'lead', label: 'Leads', color: '#0086C0' },
+      { id: 'activo', label: 'Clientes Activos', color: '#FD9A00' },
+      { id: 'pausado', label: 'Clientes Pausados', color: '#E2445C' }
+    ]
+  })
+
+  useEffect(() => {
+    localStorage.setItem('giu_client_statuses', JSON.stringify(statusList))
+  }, [statusList])
+
+  const [openStatusPickerId, setOpenStatusPickerId] = useState(null)
+  const [pickerPlacement, setPickerPlacement] = useState('bottom')
+  const [newStatusInput, setNewStatusInput] = useState('')
+  const [showAddStatusInput, setShowAddStatusInput] = useState(false)
+  const [newStatusLabel, setNewStatusLabel] = useState('')
 
   // User management states
   const [qUsuarios, setQUsuarios] = useState('')
   const [showAddUsuarioModal, setShowAddUsuarioModal] = useState(false)
   const [showEditUsuarioModal, setShowEditUsuarioModal] = useState(false)
   const [nuevoUsuario, setNuevoUsuario] = useState({
-    nombre: '', email: '', contrasenia: '', rol: 'empleado', modulos: getDefaultModulos('empleado')
+    nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor')
   })
   const [editandoUsuario, setEditandoUsuario] = useState(null)
+
+  const [rolesList, setRolesList] = useState(() => {
+    const saved = localStorage.getItem('giu_roles')
+    return saved ? JSON.parse(saved) : [
+      { id: 'admin', label: 'Administrador' },
+      { id: 'gestor', label: 'Gestor' },
+      { id: 'cliente', label: 'Cliente' }
+    ]
+  })
+
+  useEffect(() => {
+    localStorage.setItem('giu_roles', JSON.stringify(rolesList))
+  }, [rolesList])
+
+  const [showAddRoleInput, setShowAddRoleInput] = useState(false)
+  const [newRoleLabel, setNewRoleLabel] = useState('')
+  const [showAddRoleInputEdit, setShowAddRoleInputEdit] = useState(false)
+  const [newRoleLabelEdit, setNewRoleLabelEdit] = useState('')
+
+  const handleCreateRole = () => {
+    const label = newRoleLabel.trim()
+    if (!label) return
+    const id = label.toLowerCase().replace(/\s+/g, '-')
+    if (rolesList.some(r => r.id === id)) {
+      alert(`El rol "${label}" ya existe.`)
+      return
+    }
+    const newRole = { id, label }
+    setRolesList(prev => [...prev, newRole])
+    setNuevoUsuario(prev => ({
+      ...prev,
+      rol: id,
+      modulos: prev.modulos || getDefaultModulos(id)
+    }))
+    setShowAddRoleInput(false)
+    setNewRoleLabel('')
+  }
+
+  const handleCreateRoleEdit = () => {
+    const label = newRoleLabelEdit.trim()
+    if (!label) return
+    const id = label.toLowerCase().replace(/\s+/g, '-')
+    if (rolesList.some(r => r.id === id)) {
+      alert(`El rol "${label}" ya existe.`)
+      return
+    }
+    const newRole = { id, label }
+    setRolesList(prev => [...prev, newRole])
+    setEditandoUsuario(prev => ({
+      ...prev,
+      rol: id,
+      modulos: prev.modulos || getDefaultModulos(id)
+    }))
+    setShowAddRoleInputEdit(false)
+    setNewRoleLabelEdit('')
+  }
+
+  const getRolLabel = (rolId) => {
+    const found = rolesList.find(r => r.id === rolId)
+    if (found) return found.label
+    if (rolId === 'admin') return 'Administrador'
+    if (rolId === 'empleado' || rolId === 'gestor') return 'Gestor'
+    if (rolId === 'cliente') return 'Cliente'
+    return rolId.charAt(0).toUpperCase() + rolId.slice(1)
+  }
 
   const filteredUsuarios = (usuarios || []).filter(u =>
     u.nombre.toLowerCase().includes(qUsuarios.toLowerCase()) ||
@@ -2353,7 +2288,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
     const color = colors[Math.floor(Math.random() * colors.length)]
 
     const modulos = nuevoUsuario.modulos || []
-    const rol = modulos.includes('administracion') ? 'admin' : 'empleado'
+    const rol = nuevoUsuario.rol
 
     const nuevo = {
       id: `usr-${Date.now()}`,
@@ -2368,7 +2303,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
 
     setUsuarios(prev => [...prev, nuevo])
     setShowAddUsuarioModal(false)
-    setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'empleado', modulos: getDefaultModulos('empleado') })
+    setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor') })
   }
 
   const handleEditClick = (u) => {
@@ -2392,7 +2327,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
     const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U'
 
     const modulos = editandoUsuario.modulos || []
-    const rol = modulos.includes('administracion') ? 'admin' : (editandoUsuario.clienteId ? 'cliente' : 'empleado')
+    const rol = editandoUsuario.rol
 
     const updatedUser = {
       ...editandoUsuario,
@@ -2438,24 +2373,111 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
 
   const filteredClientes = clientes.filter(c =>
     c.nombre.toLowerCase().includes(qClientes.toLowerCase()) ||
-    c.contacto.toLowerCase().includes(qClientes.toLowerCase()) ||
-    c.rfc.toLowerCase().includes(qClientes.toLowerCase())
+    (c.contacto && c.contacto.toLowerCase().includes(qClientes.toLowerCase())) ||
+    (c.rfc && c.rfc.toLowerCase().includes(qClientes.toLowerCase()))
   )
 
   const totalClientes = clientes.length
-  const empresasCount = clientes.filter(c => c.tipo === 'empresa').length
-  const personasCount = clientes.filter(c => c.tipo === 'persona').length
+
+  // CRM Monday Helper Functions
+  const handleUpdateClientField = (id, field, value) => {
+    setClientes(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, [field]: value } : c)
+      localStorage.setItem('giu_clientes', JSON.stringify(next))
+      return next
+    })
+  }
+
+  const handleDeleteClient = (id) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
+      setClientes(prev => {
+        const next = prev.filter(c => c.id !== id)
+        localStorage.setItem('giu_clientes', JSON.stringify(next))
+        return next
+      })
+      setSelectedClients(prev => prev.filter(selectedId => selectedId !== id))
+    }
+  }
+
+  const handleInlineAdd = (groupId) => {
+    const name = inlineAddName[groupId].trim()
+    if (!name) return
+    const newId = Math.max(...clientes.map(c => c.id), 0) + 1
+    const newClient = {
+      id: newId,
+      nombre: name,
+      contacto: 'S/N',
+      email: '',
+      tel: '',
+      tipo: 'empresa',
+      rfc: '',
+      ciudad: '',
+      estatus: groupId,
+      proyectos: [],
+      responsable: session.id || 'usr-admin-1'
+    }
+    setClientes(prev => {
+      const next = [...prev, newClient]
+      localStorage.setItem('giu_clientes', JSON.stringify(next))
+      return next
+    })
+    setInlineAddName(prev => ({ ...prev, [groupId]: '' }))
+  }
+
+  const handleSelectAll = (groupId, groupClients) => {
+    const groupIds = groupClients.map(c => c.id)
+    const allSelected = groupIds.length > 0 && groupIds.every(id => selectedClients.includes(id))
+    if (allSelected) {
+      setSelectedClients(prev => prev.filter(id => !groupIds.includes(id)))
+    } else {
+      setSelectedClients(prev => [...new Set([...prev, ...groupIds])])
+    }
+  }
+
+  const handleToggleSelect = (id) => {
+    setSelectedClients(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    )
+  }
+
+  const toggleGroupCollapse = (groupId) => {
+    setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
+  }
+
+  const handleCreateStatus = (label) => {
+    const text = label.trim()
+    if (!text) return null
+    const id = text.toLowerCase().replace(/\s+/g, '-')
+    if (statusList.some(s => s.id === id)) {
+      alert(`El estatus "${text}" ya existe.`)
+      return id
+    }
+    const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085', '#D35400', '#2C3E50', '#7F8C8D']
+    const color = colors[statusList.length % colors.length]
+    const newStatus = { id, label: text, color }
+    setStatusList(prev => [...prev, newStatus])
+    return id
+  }
 
   const handleAddCliente = () => {
     if (!nuevoCliente.nombre || !nuevoCliente.contacto) return
+    const proyectos = nuevoCliente.proyectosText
+      ? nuevoCliente.proyectosText.split(',').map(t => t.trim()).filter(Boolean)
+      : []
+
     const nuevo = {
       ...nuevoCliente,
-      id: Math.max(...clientes.map(c => c.id), 0) + 1
+      id: Math.max(...clientes.map(c => c.id), 0) + 1,
+      proyectos
     }
+    // Delete temporary property before saving
+    delete nuevo.proyectosText
+
     setClientes(prev => [...prev, nuevo])
     setShowAddClienteModal(false)
     setNuevoCliente({
-      nombre: '', contacto: '', email: '', tel: '', tipo: 'empresa', rfc: '', ciudad: ''
+      nombre: '', contacto: '', email: '', tel: '', tipo: 'empresa', rfc: '', ciudad: '',
+      estatus: 'activo', proyectos: [], responsable: 'usr-admin-1', proyectosText: ''
     })
   }
 
@@ -2466,9 +2488,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
           <div className="page-title">Módulo Administrativo</div>
           <div className="page-subtitle">Administración de clientes, catálogo y configuraciones generales</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddClienteModal(true)}>
-          <Icon name="plus" size={14} /> Registrar Cliente
-        </button>
+
       </div>
 
       {/* Metric summary banner */}
@@ -2479,14 +2499,14 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
           <div className="metric-sub">registrados en la plataforma</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Empresas / Constructoras</div>
-          <div className="metric-value" style={{ color: 'var(--accent)' }}>{empresasCount}</div>
-          <div className="metric-sub">personas morales</div>
+          <div className="metric-label">Clientes Activos</div>
+          <div className="metric-value" style={{ color: 'var(--accent)' }}>{clientes.filter(c => c.estatus === 'activo').length}</div>
+          <div className="metric-sub">en seguimiento activo</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Personas Físicas</div>
-          <div className="metric-value" style={{ color: 'var(--purple)' }}>{personasCount}</div>
-          <div className="metric-sub">trámites residenciales o individuales</div>
+          <div className="metric-label">Leads Registrados</div>
+          <div className="metric-value" style={{ color: 'var(--purple)' }}>{clientes.filter(c => c.estatus === 'lead').length}</div>
+          <div className="metric-sub">prospectos iniciales</div>
         </div>
       </div>
 
@@ -2504,14 +2524,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
         >
           Gestión de Conceptos
         </button>
-        {session.rol === 'admin' && (
-          <button
-            className={`tab-btn ${adminTab === 'seguridad' ? 'active' : ''}`}
-            onClick={() => setAdminTab('seguridad')}
-          >
-            Seguridad y Despliegue
-          </button>
-        )}
+
         {session.rol === 'admin' && (
           <button
             className={`tab-btn ${adminTab === 'usuarios' ? 'active' : ''}`}
@@ -2524,55 +2537,585 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
 
       {/* Subview Clientes */}
       {adminTab === 'clientes' && (
-        <div className="card">
-          <div className="search-wrap mb-4" style={{ maxWidth: 380 }}>
-            <Icon name="search" size={14} />
-            <input
-              className="form-control search-input"
-              placeholder="Buscar por cliente, contacto o RFC…"
-              value={qClientes}
-              onChange={e => setQClientes(e.target.value)}
-            />
+        <div>
+          {/* Search bar & Controls */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div className="search-wrap" style={{ maxWidth: 380, flex: 1 }}>
+              <Icon name="search" size={14} />
+              <input
+                className="form-control search-input"
+                placeholder="Buscar por cliente, contacto o RFC…"
+                value={qClientes}
+                onChange={e => setQClientes(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowAddClienteModal(true)}>
+              <Icon name="plus" size={14} />
+            </button>
           </div>
 
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Cliente / Razón Social</th>
-                  <th>Contacto</th>
-                  <th>RFC</th>
-                  <th>Contacto Directo</th>
-                  <th>Ubicación</th>
-                  <th>Tipo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClientes.map(c => (
-                  <tr key={c.id}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text)' }}>{c.nombre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>ID: CLI-{String(c.id).padStart(3, '0')}</div>
-                    </td>
-                    <td style={{ color: 'var(--text-2)' }}>{c.contacto}</td>
-                    <td>
-                      <span className="mono" style={{ background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>{c.rfc}</span>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: 12 }}>📧 {c.email}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-2)' }}>📞 {c.tel}</div>
-                    </td>
-                    <td style={{ color: 'var(--text-2)' }}>📍 {c.ciudad}</td>
-                    <td>
-                      <span className={`badge ${c.tipo === 'empresa' ? 'badge-blue' : 'badge-purple'}`}>
-                        {c.tipo === 'empresa' ? 'Empresa' : 'Persona'}
-                      </span>
-                    </td>
-                  </tr>
+          {/* CRM Groups */}
+          {statusList.map(group => {
+            const isCollapsed = collapsedGroups[group.id];
+            // Filter clients for this group that match the search query
+            const groupClients = filteredClientes.filter(c => c.estatus === group.id);
+            const isAllSelected = groupClients.length > 0 && groupClients.every(c => selectedClients.includes(c.id));
+
+            return (
+              <div key={group.id} className="crm-group" style={{ animation: 'slideUpLogin 0.4s ease-out', marginBottom: 28 }}>
+                {/* Group Header */}
+                <div className="crm-group-header" onClick={() => toggleGroupCollapse(group.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 10 }}>
+                  <span style={{
+                    transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s',
+                    display: 'inline-block',
+                    color: group.color,
+                    fontSize: '11px'
+                  }}>
+                    ▼
+                  </span>
+                  <div className="crm-group-title" style={{ color: group.color, fontSize: '15px', fontWeight: 600 }}>
+                    {group.label}
+                    <span className="crm-group-count" style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-3)', marginLeft: 8 }}>
+                      ({groupClients.length} Clientes)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Group Table */}
+                {!isCollapsed && (
+                  <div className="table-wrap" style={{ overflow: 'visible', borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+                    <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th className="crm-checkbox-col" style={{ width: '40px', padding: '10px 0', textAlign: 'center' }}>
+                            <div
+                              className={`crm-checkbox-box ${isAllSelected ? 'checked' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectAll(group.id, groupClients);
+                              }}
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                border: '1px solid var(--border-strong)',
+                                borderRadius: '3px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                background: isAllSelected ? 'var(--accent)' : 'var(--surface)',
+                                color: 'white'
+                              }}
+                            >
+                              {isAllSelected && <Icon name="check" size={10} />}
+                            </div>
+                          </th>
+                          <th style={{ width: '25%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Cliente / Razón Social</th>
+                          <th style={{ width: '140px', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'center', fontWeight: 600 }}>Estatus del Cliente</th>
+                          <th style={{ width: '20%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Correo Electrónico</th>
+                          <th style={{ width: '15%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Teléfono</th>
+                          <th style={{ width: '20%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Proyectos Relacionados</th>
+                          <th className="crm-avatar-col" style={{ width: '110px', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'center', fontWeight: 600 }}>Responsable</th>
+                          <th style={{ width: '50px', padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupClients.map(c => {
+                          const isSelected = selectedClients.includes(c.id);
+                          const assignedUser = usuarios.find(u => u.id === c.responsable) || {
+                            nombre: 'Sin Asignar',
+                            avatar: '?',
+                            color: '#9C9A94'
+                          };
+
+                          return (
+                            <tr key={c.id} className="crm-row" style={{
+                              background: isSelected ? 'rgba(76, 166, 106, 0.04)' : 'transparent',
+                              borderBottom: '1px solid var(--border)',
+                              transition: 'background 0.15s'
+                            }}>
+                              {/* Checkbox */}
+                              <td className="crm-checkbox-col" style={{ padding: '10px 0', textAlign: 'center' }}>
+                                <div
+                                  className={`crm-checkbox-box ${isSelected ? 'checked' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleSelect(c.id);
+                                  }}
+                                  style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    border: '1px solid var(--border-strong)',
+                                    borderRadius: '3px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    background: isSelected ? 'var(--accent)' : 'var(--surface)',
+                                    color: 'white'
+                                  }}
+                                >
+                                  {isSelected && <Icon name="check" size={10} />}
+                                </div>
+                              </td>
+
+                              {/* Nombre */}
+                              <td style={{ padding: '10px 12px' }}>
+                                {editingCell?.id === c.id && editingCell?.field === 'nombre' ? (
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    defaultValue={c.nombre}
+                                    onBlur={e => {
+                                      handleUpdateClientField(c.id, 'nombre', e.target.value);
+                                      setEditingCell(null);
+                                    }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        handleUpdateClientField(c.id, 'nombre', e.target.value);
+                                        setEditingCell(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
+                                  />
+                                ) : (
+                                  <div
+                                    onClick={() => setEditingCell({ id: c.id, field: 'nombre' })}
+                                    style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--text)' }}
+                                    title="Haz clic para editar"
+                                  >
+                                    {c.nombre || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Sin nombre</span>}
+                                    <div style={{ fontSize: 11, fontWeight: 'normal', color: 'var(--text-3)', marginTop: 2 }}>
+                                      Contacto: {c.contacto} {c.ciudad ? `| 📍 ${c.ciudad}` : ''}
+                                    </div>
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Estatus */}
+                              <td className="crm-status-cell" style={{ padding: '8px 12px', textAlign: 'center', position: 'relative' }}>
+                                {openStatusPickerId === c.id && (
+                                  <div
+                                    className="crm-status-picker-overlay"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenStatusPickerId(null);
+                                    }}
+                                  />
+                                )}
+                                <div style={{ position: 'relative', display: 'inline-block', width: '120px' }}>
+                                  {/* Clickable Badge */}
+                                  {(() => {
+                                    const currentStatus = statusList.find(s => s.id === c.estatus) || {
+                                      id: c.estatus,
+                                      label: c.estatus,
+                                      color: '#797E93'
+                                    };
+                                    return (
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const spaceBelow = window.innerHeight - rect.bottom;
+                                          setPickerPlacement(spaceBelow < 280 ? 'top' : 'bottom');
+                                          setOpenStatusPickerId(c.id);
+                                        }}
+                                        style={{
+                                          background: currentStatus.color,
+                                          color: 'white',
+                                          fontWeight: 'bold',
+                                          borderRadius: '4px',
+                                          padding: '6px 10px',
+                                          width: '100%',
+                                          textAlign: 'center',
+                                          cursor: 'pointer',
+                                          fontSize: '11px',
+                                          boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                                          textTransform: 'capitalize',
+                                          userSelect: 'none',
+                                          transition: 'transform 0.1s'
+                                        }}
+                                        className="crm-status-badge"
+                                      >
+                                        {currentStatus.label}
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {/* Custom status picker popup */}
+                                  {openStatusPickerId === c.id && (
+                                    <div
+                                      className={`crm-status-picker-popup placement-${pickerPlacement}`}
+                                      onClick={e => e.stopPropagation()}
+                                      style={{
+                                        position: 'absolute',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        background: 'var(--surface)',
+                                        border: '1px solid var(--border-strong)',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: 'var(--shadow-md)',
+                                        zIndex: 1001,
+                                        width: '150px',
+                                        padding: '4px',
+                                        ...(pickerPlacement === 'top' ? {
+                                          bottom: '100%',
+                                          marginBottom: '8px'
+                                        } : {
+                                          top: '100%',
+                                          marginTop: '8px'
+                                        })
+                                      }}
+                                    >
+                                      {/* Existing statuses list */}
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: '180px', overflowY: 'auto', padding: '2px' }}>
+                                        {statusList.map(statusOption => (
+                                          <div
+                                            key={statusOption.id}
+                                            onClick={() => {
+                                              handleUpdateClientField(c.id, 'estatus', statusOption.id);
+                                              setOpenStatusPickerId(null);
+                                            }}
+                                            style={{
+                                              background: statusOption.color,
+                                              color: 'white',
+                                              fontWeight: 'bold',
+                                              padding: '6px 8px',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer',
+                                              fontSize: '10.5px',
+                                              textAlign: 'center',
+                                              textTransform: 'capitalize',
+                                              transition: 'opacity 0.15s'
+                                            }}
+                                            className="crm-status-picker-item"
+                                          >
+                                            {statusOption.label}
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Divider */}
+                                      <div style={{ height: '1px', background: 'var(--border)', margin: '6px 4px' }} />
+
+                                      {/* New Status Input */}
+                                      <div style={{ padding: '2px 4px' }}>
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          placeholder="Nuevo estado..."
+                                          value={newStatusInput}
+                                          onChange={e => setNewStatusInput(e.target.value)}
+                                          onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              const text = newStatusInput.trim();
+                                              if (text) {
+                                                const newId = handleCreateStatus(text);
+                                                if (newId) {
+                                                  handleUpdateClientField(c.id, 'estatus', newId);
+                                                }
+                                                setNewStatusInput('');
+                                                setOpenStatusPickerId(null);
+                                              }
+                                            }
+                                          }}
+                                          onClick={e => e.stopPropagation()}
+                                          style={{ fontSize: '11px', padding: '4px 6px', width: '100%', outline: 'none', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)' }}
+                                        />
+                                        <div style={{ fontSize: '9px', color: 'var(--text-3)', marginTop: 4, textAlign: 'center' }}>
+                                          Presiona Enter
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Correo */}
+                              <td style={{ padding: '10px 12px' }}>
+                                {editingCell?.id === c.id && editingCell?.field === 'email' ? (
+                                  <input
+                                    type="email"
+                                    className="form-control form-control-sm"
+                                    defaultValue={c.email}
+                                    onBlur={e => {
+                                      handleUpdateClientField(c.id, 'email', e.target.value);
+                                      setEditingCell(null);
+                                    }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        handleUpdateClientField(c.id, 'email', e.target.value);
+                                        setEditingCell(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
+                                  />
+                                ) : (
+                                  <div
+                                    onClick={() => setEditingCell({ id: c.id, field: 'email' })}
+                                    style={{ cursor: 'pointer', color: c.email ? 'var(--blue)' : 'var(--text-3)', fontFamily: 'DM Mono', fontSize: '12.5px' }}
+                                    title="Haz clic para editar"
+                                  >
+                                    {c.email ? (
+                                      <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                        📧 {c.email}
+                                      </a>
+                                    ) : (
+                                      <span style={{ fontStyle: 'italic' }}>+ Agregar correo</span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Teléfono */}
+                              <td style={{ padding: '10px 12px' }}>
+                                {editingCell?.id === c.id && editingCell?.field === 'tel' ? (
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    defaultValue={c.tel}
+                                    onBlur={e => {
+                                      handleUpdateClientField(c.id, 'tel', e.target.value);
+                                      setEditingCell(null);
+                                    }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        handleUpdateClientField(c.id, 'tel', e.target.value);
+                                        setEditingCell(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
+                                  />
+                                ) : (
+                                  <div
+                                    onClick={() => setEditingCell({ id: c.id, field: 'tel' })}
+                                    style={{ cursor: 'pointer', color: c.tel ? 'var(--text)' : 'var(--text-3)' }}
+                                    title="Haz clic para editar"
+                                  >
+                                    {c.tel ? (
+                                      <a href={`tel:${c.tel}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                        📞 {c.tel}
+                                      </a>
+                                    ) : (
+                                      <span style={{ fontStyle: 'italic' }}>+ Agregar tel</span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Proyectos */}
+                              <td style={{ padding: '10px 12px' }}>
+                                {editingCell?.id === c.id && editingCell?.field === 'proyectos' ? (
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    defaultValue={c.proyectos ? c.proyectos.join(', ') : ''}
+                                    onBlur={e => {
+                                      const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                                      handleUpdateClientField(c.id, 'proyectos', tags);
+                                      setEditingCell(null);
+                                    }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                                        handleUpdateClientField(c.id, 'proyectos', tags);
+                                        setEditingCell(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    placeholder="Proyecto A, Proyecto B..."
+                                    style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
+                                  />
+                                ) : (
+                                  <div
+                                    onClick={() => setEditingCell({ id: c.id, field: 'proyectos' })}
+                                    style={{ minHeight: 24, cursor: 'pointer', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}
+                                    title="Haz clic para editar proyectos"
+                                  >
+                                    {c.proyectos && c.proyectos.length > 0 ? (
+                                      c.proyectos.map((p, idx) => (
+                                        <span key={idx} className="crm-badge-project" style={{
+                                          display: 'inline-block',
+                                          padding: '2px 8px',
+                                          borderRadius: '12px',
+                                          fontSize: '11px',
+                                          background: 'var(--surface2)',
+                                          color: 'var(--text-2)',
+                                          border: '1px solid var(--border)'
+                                        }}>
+                                          {p}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span style={{ color: 'var(--text-3)', fontSize: 11, fontStyle: 'italic' }}>+ Vincular proyecto</span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Responsable */}
+                              <td className="crm-avatar-col" style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                <div className="crm-avatar-container" style={{
+                                  display: 'inline-flex',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '50%',
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                  fontSize: '11px',
+                                  position: 'relative',
+                                  background: assignedUser.color,
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
+                                }} title={`Responsable: ${assignedUser.nombre}`}>
+                                  {assignedUser.avatar}
+                                  <select
+                                    value={c.responsable || ''}
+                                    onChange={e => handleUpdateClientField(c.id, 'responsable', e.target.value)}
+                                    className="crm-avatar-select"
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      opacity: 0,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <option value="" style={{ color: 'black' }}>Sin asignar</option>
+                                    {usuarios.map(u => (
+                                      <option key={u.id} value={u.id} style={{ color: 'black' }}>{u.nombre}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </td>
+
+                              {/* Acciones */}
+                              <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => handleDeleteClient(c.id)}
+                                  style={{ padding: '4px 6px', color: 'var(--red)', display: 'inline-flex', alignItems: 'center' }}
+                                  title="Eliminar Cliente"
+                                >
+                                  <Icon name="trash" size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {/* Inline Add Row */}
+                        <tr className="crm-inline-add-row" style={{ borderLeft: `6px solid ${group.color}`, borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+                          <td className="crm-checkbox-col" style={{ padding: '10px 0', textAlign: 'center' }}></td>
+                          <td colSpan={7} style={{ padding: '6px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="crm-add-input"
+                                placeholder={`+ Añadir cliente a "${group.label}"...`}
+                                value={inlineAddName[group.id] || ''}
+                                onChange={e => setInlineAddName(prev => ({ ...prev, [group.id]: e.target.value }))}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    handleInlineAdd(group.id);
+                                  }
+                                }}
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  padding: '4px 8px',
+                                  fontSize: '13px',
+                                  width: '100%',
+                                  outline: 'none',
+                                  color: 'var(--text)'
+                                }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Floating Bulk Actions Bar */}
+          {selectedClients.length > 0 && (
+            <div style={{
+              position: 'fixed',
+              bottom: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'var(--text)',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: 'var(--radius-lg)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+              zIndex: 9999,
+              border: '1px solid rgba(255,255,255,0.1)',
+              animation: 'slideUpLogin 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <span style={{ fontSize: 13.5, fontWeight: 600, borderRight: '1px solid rgba(255,255,255,0.15)', paddingRight: 16 }}>
+                {selectedClients.length} Seleccionados
+              </span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', maxWidth: '600px' }}>
+                {statusList.map(statusOption => (
+                  <button
+                    key={statusOption.id}
+                    className="btn btn-sm"
+                    style={{ background: statusOption.color, color: 'white', border: 'none', padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}
+                    onClick={() => {
+                      setClientes(prev => {
+                        const next = prev.map(c => selectedClients.includes(c.id) ? { ...c, estatus: statusOption.id } : c);
+                        localStorage.setItem('giu_clientes', JSON.stringify(next));
+                        return next;
+                      });
+                      setSelectedClients([]);
+                    }}
+                  >
+                    Mover a {statusOption.label}
+                  </button>
                 ))}
-              </tbody>
-            </table>
-          </div>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  style={{ color: '#ff6b6b', padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}
+                  onClick={() => {
+                    if (confirm(`¿Estás seguro de que deseas eliminar los ${selectedClients.length} clientes seleccionados?`)) {
+                      setClientes(prev => {
+                        const next = prev.filter(c => !selectedClients.includes(c.id));
+                        localStorage.setItem('giu_clientes', JSON.stringify(next));
+                        return next;
+                      });
+                      setSelectedClients([]);
+                    }
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'rgba(255,255,255,0.6)', marginLeft: 8, padding: '4px', cursor: 'pointer' }}
+                onClick={() => setSelectedClients([])}
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -2591,10 +3134,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
         </div>
       )}
 
-      {/* Subview Seguridad */}
-      {adminTab === 'seguridad' && session.rol === 'admin' && (
-        <SecurityDashboard />
-      )}
+
 
       {/* Subview Usuarios */}
       {adminTab === 'usuarios' && session.rol === 'admin' && (
@@ -2622,7 +3162,6 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
                   <th>Correo Electrónico</th>
                   <th>Rol</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
-
                 </tr>
               </thead>
               <tbody>
@@ -2638,8 +3177,8 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
                     </td>
                     <td style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>{u.email}</td>
                     <td>
-                      <span className={`badge ${u.rol === 'admin' ? 'badge-green' : u.rol === 'empleado' ? 'badge-blue' : 'badge-purple'}`}>
-                        {u.rol === 'admin' ? 'Administrador' : u.rol === 'empleado' ? 'Empleado' : 'Cliente'}
+                      <span className={`badge ${u.rol === 'admin' ? 'badge-green' : (u.rol === 'empleado' || u.rol === 'gestor') ? 'badge-blue' : u.rol === 'cliente' ? 'badge-purple' : 'badge-gray'}`}>
+                        {getRolLabel(u.rol)}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -2704,9 +3243,73 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
               />
             </div>
 
-            {/* Tipo de Cuenta */}
+            {/* Asignar Rol */}
             <div className="form-group">
-              <label className="form-label">Tipo de Cuenta *</label>
+              <label className="form-label">Asignar Rol *</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <select
+                  className="form-control"
+                  value={nuevoUsuario.rol}
+                  onChange={e => {
+                    const selectedRol = e.target.value;
+                    setNuevoUsuario(n => ({
+                      ...n,
+                      rol: selectedRol,
+                      modulos: getDefaultModulos(selectedRol)
+                    }))
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  {rolesList.map(r => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowAddRoleInput(!showAddRoleInput)}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  + Nuevo Rol
+                </button>
+              </div>
+
+              {showAddRoleInput && (
+                <div style={{ background: 'var(--surface2)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 6, fontWeight: 600 }}>Agregar Nuevo Rol</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-control"
+                      placeholder="Ej: Auditor"
+                      value={newRoleLabel}
+                      onChange={e => setNewRoleLabel(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleCreateRole}
+                    >
+                      Guardar Rol
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setShowAddRoleInput(false)
+                        setNewRoleLabel('')
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tipo de Cuenta (Módulos) */}
+            <div className="form-group">
+              <label className="form-label">Módulos habilitados</label>
               <div style={{
                 background: 'var(--surface2)',
                 padding: '16px 18px',
@@ -2747,7 +3350,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-              <button className="btn btn-secondary" onClick={() => setShowAddUsuarioModal(false)}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setShowAddUsuarioModal(false); setShowAddRoleInput(false); setNewRoleLabel(''); }}>Cancelar</button>
               <button
                 className="btn btn-primary"
                 onClick={handleAddUsuario}
@@ -2799,9 +3402,73 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
               />
             </div>
 
-            {/* Tipo de Cuenta */}
+            {/* Asignar Rol */}
             <div className="form-group">
-              <label className="form-label">Tipo de Cuenta *</label>
+              <label className="form-label">Rol *</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <select
+                  className="form-control"
+                  value={editandoUsuario.rol}
+                  onChange={e => {
+                    const selectedRol = e.target.value;
+                    setEditandoUsuario(n => ({
+                      ...n,
+                      rol: selectedRol,
+                      modulos: n.modulos || getDefaultModulos(selectedRol)
+                    }))
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  {rolesList.map(r => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowAddRoleInputEdit(!showAddRoleInputEdit)}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  + Nuevo Rol
+                </button>
+              </div>
+
+              {showAddRoleInputEdit && (
+                <div style={{ background: 'var(--surface2)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 6, fontWeight: 600 }}>Agregar Nuevo Rol</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-control"
+                      placeholder="Ej: Auditor"
+                      value={newRoleLabelEdit}
+                      onChange={e => setNewRoleLabelEdit(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleCreateRoleEdit}
+                    >
+                      Guardar Rol
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setShowAddRoleInputEdit(false)
+                        setNewRoleLabelEdit('')
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tipo de Cuenta (Módulos) */}
+            <div className="form-group">
+              <label className="form-label">Módulos habilitados</label>
               <div style={{
                 background: 'var(--surface2)',
                 padding: '16px 18px',
@@ -2852,7 +3519,7 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-              <button className="btn btn-secondary" onClick={() => { setShowEditUsuarioModal(false); setEditandoUsuario(null); }}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setShowEditUsuarioModal(false); setEditandoUsuario(null); setShowAddRoleInputEdit(false); setNewRoleLabelEdit(''); }}>Cancelar</button>
               <button
                 className="btn btn-primary"
                 onClick={handleSaveEditUsuario}
@@ -2893,33 +3560,16 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Tipo de Contribuyente</label>
+                <label className="form-label">Responsable</label>
                 <select
                   className="form-control"
-                  value={nuevoCliente.tipo}
-                  onChange={e => setNuevoCliente(n => ({ ...n, tipo: e.target.value }))}
+                  value={nuevoCliente.responsable || 'usr-admin-1'}
+                  onChange={e => setNuevoCliente(n => ({ ...n, responsable: e.target.value }))}
                 >
-                  <option value="empresa">Empresa (Persona Moral)</option>
-                  <option value="persona">Persona Física</option>
+                  {usuarios.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                  ))}
                 </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">RFC</label>
-                <input
-                  className="form-control"
-                  placeholder="Ej: IMD180215AB1"
-                  value={nuevoCliente.rfc}
-                  onChange={e => setNuevoCliente(n => ({ ...n, rfc: e.target.value }))}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Ciudad / Ubicación</label>
-                <input
-                  className="form-control"
-                  placeholder="Ej: Querétaro, Qro."
-                  value={nuevoCliente.ciudad}
-                  onChange={e => setNuevoCliente(n => ({ ...n, ciudad: e.target.value }))}
-                />
               </div>
               <div className="form-group">
                 <label className="form-label">Correo Electrónico</label>
@@ -2942,8 +3592,84 @@ function Administracion({ clientes, setClientes, conceptos, setConceptos, setTab
               </div>
             </div>
 
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">Estatus del Cliente</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <select
+                  className="form-control"
+                  value={nuevoCliente.estatus || 'activo'}
+                  onChange={e => setNuevoCliente(n => ({ ...n, estatus: e.target.value }))}
+                  style={{ flex: 1 }}
+                >
+                  {statusList.map(s => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowAddStatusInput(!showAddStatusInput)}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  + Nuevo Estatus
+                </button>
+              </div>
+
+              {showAddStatusInput && (
+                <div style={{ background: 'var(--surface2)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 6, fontWeight: 600 }}>Agregar Nuevo Estatus</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-control"
+                      placeholder="Ej: Archivado"
+                      value={newStatusLabel}
+                      onChange={e => setNewStatusLabel(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        const val = newStatusLabel.trim();
+                        if (val) {
+                          const newId = handleCreateStatus(val);
+                          if (newId) {
+                            setNuevoCliente(n => ({ ...n, estatus: newId }));
+                          }
+                          setNewStatusLabel('');
+                          setShowAddStatusInput(false);
+                        }
+                      }}
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setShowAddStatusInput(false)
+                        setNewStatusLabel('')
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">Proyectos Relacionados (Separados por comas)</label>
+              <input
+                className="form-control"
+                placeholder="Ej: Proyecto A, Proyecto B"
+                value={nuevoCliente.proyectosText || ''}
+                onChange={e => setNuevoCliente(n => ({ ...n, proyectosText: e.target.value }))}
+              />
+            </div>
+
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-              <button className="btn btn-secondary" onClick={() => setShowAddClienteModal(false)}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setShowAddClienteModal(false); setShowAddStatusInput(false); setNewStatusLabel(''); }}>Cancelar</button>
               <button
                 className="btn btn-primary"
                 onClick={handleAddCliente}
@@ -3273,7 +3999,29 @@ export default function App() {
   const [active, setActive] = useState('home')
   const [clientes, setClientes] = useState(() => {
     const saved = localStorage.getItem('giu_clientes')
-    return saved ? JSON.parse(saved) : CLIENTES
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          // If the list is the old list (contains old client names), reset to the new CLIENTES dataset
+          const hasOldNames = parsed.some(c => c.nombre && (c.nombre.includes('Constructora Horizonte') || c.nombre.includes('Patricia Noriega Vda.')));
+          if (hasOldNames) {
+            localStorage.setItem('giu_clientes', JSON.stringify(CLIENTES))
+            return CLIENTES
+          }
+          return parsed.map(c => ({
+            ...c,
+            estatus: c.estatus || 'activo',
+            proyectos: c.proyectos || [],
+            responsable: c.responsable || 'usr-admin-1'
+          }))
+        }
+      } catch (e) {
+        console.error('Error parsing clients:', e)
+      }
+    }
+    localStorage.setItem('giu_clientes', JSON.stringify(CLIENTES))
+    return CLIENTES
   })
   const [cotizaciones, setCotizaciones] = useState(() => {
     const saved = localStorage.getItem('giu_cotizaciones')
@@ -3288,7 +4036,15 @@ export default function App() {
   const [usuarios, setUsuarios] = useState(() => {
     const saved = localStorage.getItem('giu_usuarios')
     if (saved) {
-      return JSON.parse(saved)
+      const parsed = JSON.parse(saved)
+      return parsed.map(u => {
+        const mappedRol = u.rol === 'empleado' ? 'gestor' : u.rol;
+        return {
+          ...u,
+          rol: mappedRol,
+          modulos: u.modulos && u.modulos.length > 0 ? u.modulos : getDefaultModulos(mappedRol)
+        };
+      })
     } else {
       const defaultUsers = [
         {
@@ -3306,7 +4062,7 @@ export default function App() {
           nombre: 'Laura M.',
           email: 'laura@gestoria.com',
           contrasenia: 'empleado123',
-          rol: 'empleado',
+          rol: 'gestor',
           modulos: ['presupuestos', 'tareas', 'catalogo', 'cotizaciones'],
           avatar: 'LM',
           color: '#1A5276'
@@ -3382,17 +4138,23 @@ export default function App() {
     const linkedUser = linkClientAccount(user)
     const linkedUserWithModulos = {
       ...linkedUser,
-      modulos: linkedUser.modulos || getDefaultModulos(linkedUser.rol)
+      modulos: linkedUser.modulos && linkedUser.modulos.length > 0
+        ? linkedUser.modulos
+        : getDefaultModulos(linkedUser.rol)
     }
     sessionStorage.setItem('giu_session', JSON.stringify(linkedUserWithModulos))
     setSession(linkedUserWithModulos)
-    setActive('home')
+    const allowed = linkedUserWithModulos.modulos
+    const defaultTab = allowed && allowed.length > 0 ? allowed[0] : 'home'
+    setActive(defaultTab)
   }
 
   // Route Guard / Tab permission protection
   useEffect(() => {
     if (session) {
-      const allowed = session.modulos || getDefaultModulos(session.rol)
+      const allowed = session.modulos && session.modulos.length > 0
+        ? session.modulos
+        : getDefaultModulos(session.rol)
       const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones']
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard'
