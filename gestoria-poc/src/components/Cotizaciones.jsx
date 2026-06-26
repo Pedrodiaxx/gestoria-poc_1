@@ -8,7 +8,7 @@ const fmt = (d) => d.toISOString().split('T')[0];
 
 export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session }) {
   const context = useAppContext();
-  
+
   const listCotizaciones = cotizaciones || context.cotizaciones;
   const listClientes = clientes || context.clientes;
   const currentSession = session || context.session;

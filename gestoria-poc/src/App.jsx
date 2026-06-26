@@ -15,7 +15,7 @@ import {
 } from './components';
 import { TAREAS_MOCK, getDefaultModulos } from './data/mockData';
 
-export default function App({ budgetRepository }) {
+export default function App() {
   const {
     active,
     setActive,
@@ -54,7 +54,7 @@ export default function App({ budgetRepository }) {
         {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={TAREAS_MOCK} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
         {active === 'cotizaciones' && <Cotizaciones />}
-        {active === 'presupuestos' && <Presupuestos budgetRepository={budgetRepository} />}
+        {active === 'presupuestos' && <Presupuestos />}
         {active === 'tramites' && <HojasRuta session={session} />}
         {active === 'proyectos' && <Proyectos />}
         {active === 'tareas' && <TareasDiarias />}

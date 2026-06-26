@@ -6,7 +6,7 @@ import { money } from '../data/mockData';
 export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConceptos }) {
   const context = useAppContext();
   const list = propsConceptos || context.conceptos;
-  
+
   const [q, setQ] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [nuevaClave, setNuevaClave] = useState('');

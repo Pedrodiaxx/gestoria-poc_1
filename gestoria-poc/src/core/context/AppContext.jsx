@@ -23,9 +23,12 @@ export const AppContextProvider = ({
   conceptRepository,
   quoteRepository,
   rolesRepository,
+  projectRepository,
+  budgetRepository,
   initialActiveTab = 'home'
 }) => {
   const [active, setActive] = useState(initialActiveTab);
+  const [preselectedProjectId, setPreselectedProjectId] = useState(null);
   const [session, setSession] = useState(() => {
     const saved = sessionStorage.getItem('giu_session');
     return saved ? JSON.parse(saved) : null;
@@ -55,6 +58,8 @@ export const AppContextProvider = ({
   });
 
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
+  const [proyectos, setProyectos] = useState(() => projectRepository.getAll());
+  const [presupuestos, setPresupuestos] = useState(() => budgetRepository.getAll());
 
   // Sync to database repositories on changes
   useEffect(() => {
@@ -77,6 +82,14 @@ export const AppContextProvider = ({
     rolesRepository.save(rolesList);
   }, [rolesList, rolesRepository]);
 
+  useEffect(() => {
+    projectRepository.save(proyectos);
+  }, [proyectos, projectRepository]);
+
+  useEffect(() => {
+    budgetRepository.save(presupuestos);
+  }, [presupuestos, budgetRepository]);
+
   // Command wrappers
   const addClient = (nuevo) => addClientCommand(setClientes, nuevo, clientRepository);
   const deleteClient = (id) => deleteClientCommand(setClientes, id, clientRepository);
@@ -88,6 +101,13 @@ export const AppContextProvider = ({
 
   const addQuote = (nueva) => addQuoteCommand(setCotizaciones, nueva, quoteRepository);
   const addConcept = (nuevo) => addConceptCommand(setConceptos, nuevo, conceptRepository);
+  
+  const addProyecto = (nuevo) => {
+    setProyectos(prev => [nuevo, ...prev]);
+  };
+  const updateProyecto = (updated) => {
+    setProyectos(prev => prev.map(p => p.id === updated.id ? updated : p));
+  };
 
   const linkClientAccount = (user, currentClientesList = clientes) => {
     if (user.rol !== 'cliente') return user;
@@ -152,6 +172,12 @@ export const AppContextProvider = ({
       setUsuarios,
       rolesList,
       setRolesList,
+      proyectos,
+      setProyectos,
+      presupuestos,
+      setPresupuestos,
+      preselectedProjectId,
+      setPreselectedProjectId,
       
       // Commands
       addClient,
@@ -162,6 +188,8 @@ export const AppContextProvider = ({
       deleteUser,
       addQuote,
       addConcept,
+      addProyecto,
+      updateProyecto,
       handleLogin,
       handleLogout
     }}>
