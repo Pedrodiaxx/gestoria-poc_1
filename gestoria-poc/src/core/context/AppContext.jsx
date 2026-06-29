@@ -31,7 +31,28 @@ export const AppContextProvider = ({
   const [preselectedProjectId, setPreselectedProjectId] = useState(null);
   const [session, setSession] = useState(() => {
     const saved = sessionStorage.getItem('giu_session');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Auto-migrate: Ensure 'proyectos' and 'clientes' modules are enabled for admin / gestor session
+      let changed = false;
+      if (parsed.rol === 'admin' || parsed.rol === 'gestor') {
+        if (parsed.modulos) {
+          if (!parsed.modulos.includes('proyectos')) {
+            parsed.modulos = [...parsed.modulos, 'proyectos'];
+            changed = true;
+          }
+          if (!parsed.modulos.includes('clientes')) {
+            parsed.modulos = [...parsed.modulos, 'clientes'];
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        sessionStorage.setItem('giu_session', JSON.stringify(parsed));
+      }
+      return parsed;
+    }
+    return null;
   });
 
   useEffect(() => {
@@ -49,10 +70,23 @@ export const AppContextProvider = ({
     const rawUsers = userRepository.getAll();
     return rawUsers.map(u => {
       const mappedRol = u.rol === 'empleado' ? 'gestor' : u.rol;
+      let currentModulos = u.modulos || [];
+      if (currentModulos.length === 0) {
+        currentModulos = getDefaultModulos(mappedRol);
+      }
+      // Auto-migrate: Ensure 'proyectos' and 'clientes' modules are enabled for admin / gestor in DB
+      if (mappedRol === 'admin' || mappedRol === 'gestor') {
+        if (!currentModulos.includes('proyectos')) {
+          currentModulos = [...currentModulos, 'proyectos'];
+        }
+        if (!currentModulos.includes('clientes')) {
+          currentModulos = [...currentModulos, 'clientes'];
+        }
+      }
       return {
         ...u,
         rol: mappedRol,
-        modulos: u.modulos && u.modulos.length > 0 ? u.modulos : getDefaultModulos(mappedRol)
+        modulos: currentModulos
       };
     });
   });

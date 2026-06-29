@@ -9,6 +9,7 @@ import {
   Presupuestos,
   HojasRuta,
   Proyectos,
+  Clientes,
   TareasDiarias,
   Administracion,
   Login
@@ -34,7 +35,7 @@ export default function App() {
       const allowed = session.modulos && session.modulos.length > 0
         ? session.modulos
         : getDefaultModulos(session.rol);
-      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos'];
+      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'];
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard';
         setActive(nextActive);
@@ -53,10 +54,10 @@ export default function App() {
         {active === 'home' && <Home setActive={setActive} />}
         {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={TAREAS_MOCK} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
-        {active === 'cotizaciones' && <Cotizaciones />}
         {active === 'presupuestos' && <Presupuestos />}
         {active === 'tramites' && <HojasRuta session={session} />}
         {active === 'proyectos' && <Proyectos />}
+        {active === 'clientes' && <Clientes />}
         {active === 'tareas' && <TareasDiarias />}
         {active === 'administracion' && <Administracion />}
       </main>

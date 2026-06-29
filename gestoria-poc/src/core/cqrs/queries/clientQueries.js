@@ -7,12 +7,17 @@ export const filterClientsQuery = (clientes, qClientes, usuarios, cotizaciones, 
   return clientes.filter(c => {
     // 1. Cliente basic fields
     const matchesClient =
-      c.nombre.toLowerCase().includes(query) ||
+      ((c.nombre || '').toLowerCase().includes(query)) ||
+      (c.nombreComercial && c.nombreComercial.toLowerCase().includes(query)) ||
       (c.contacto && c.contacto.toLowerCase().includes(query)) ||
       (c.rfc && c.rfc.toLowerCase().includes(query)) ||
+      (c.rfcFiscal && c.rfcFiscal.toLowerCase().includes(query)) ||
       (c.email && c.email.toLowerCase().includes(query)) ||
       (c.tel && c.tel.toLowerCase().includes(query)) ||
       (c.ciudad && c.ciudad.toLowerCase().includes(query)) ||
+      (c.direccionFiscal && c.direccionFiscal.toLowerCase().includes(query)) ||
+      (c.apoderado && c.apoderado.toLowerCase().includes(query)) ||
+      (c.personaTipo && c.personaTipo.toLowerCase().includes(query)) ||
       (c.estatus && c.estatus.toLowerCase().includes(query));
 
     if (matchesClient) return true;

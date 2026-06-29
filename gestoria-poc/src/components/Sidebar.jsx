@@ -23,11 +23,12 @@ export function Sidebar() {
     { id: 'tramites', label: 'Mis Trámites', icon: 'map' },
   ] : [
     { id: 'presupuestos', label: 'Presupuestos', icon: 'dollar' },
-    { id: 'administracion', label: 'Administración', icon: 'user' },
-    { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
-    { id: 'catalogo', label: 'Catálogo', icon: 'file' },
+    { id: 'administracion', label: 'Administración', icon: 'shield' },
+    { id: 'clientes', label: 'Clientes', icon: 'user' },
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'receipt' },
+    { id: 'catalogo', label: 'Catálogo', icon: 'file' },
     { id: 'proyectos', label: 'Proyectos', icon: 'map' },
+    { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
   ]).filter(item => {
     if (session.rol === 'cliente' && item.id === 'tramites') return true;
     return allowed.includes(item.id);
@@ -71,8 +72,8 @@ export function Sidebar() {
                     </div>
                   </div>
                 )}
-                {allowed.includes('administracion') && (
-                  <div className="hover-section" onClick={(e) => handleSectionClick(e, 'administracion')}>
+                {allowed.includes('clientes') && (
+                  <div className="hover-section" onClick={(e) => handleSectionClick(e, 'clientes')}>
                     <div className="hover-section-icon" style={{ color: 'var(--blue)' }}>
                       <Icon name="user" size={13} />
                     </div>
@@ -109,9 +110,6 @@ export function Sidebar() {
         <button className="sidebar-logout-btn" onClick={handleLogout} title="Cerrar Sesión">
           <Icon name="lock" size={14} />
         </button>
-      </div>
-      <div className="sidebar-footer" style={{ borderTop: 'none' }}>
-        PoC v1.0 · Merida, MX
       </div>
     </aside>
   );

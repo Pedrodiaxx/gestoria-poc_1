@@ -20,12 +20,17 @@ export const CLIENTES = [
   {
     id: 1,
     nombre: 'MexPack',
+    nombreComercial: 'MexPack S.A. de C.V.',
     contacto: 'Ing. Marco Salinas',
     email: 'joel.diaz.lopez7@gmail.com',
     tel: '+34 611 222 333',
     tipo: 'empresa',
+    personaTipo: 'moral',
+    apoderado: 'Ing. Marco Salinas Torres',
     rfc: 'CHO850312AB3',
+    rfcFiscal: 'MXP850312AB3',
     ciudad: 'Querétaro, Qro.',
+    direccionFiscal: 'Av. 5 de Febrero 100, Col. Centro, Querétaro, Qro.',
     estatus: 'lead',
     proyectos: ['Proyecto A'],
     responsable: 'usr-emp-1'
@@ -33,25 +38,36 @@ export const CLIENTES = [
   {
     id: 2,
     nombre: 'GreenTech Solutions',
+    nombreComercial: 'GreenTech Solutions S.A.',
     contacto: 'Lic. Roberto Fuentes',
     email: 'contacto@greentech.com',
     tel: '+34 600 123 456',
     tipo: 'empresa',
+    personaTipo: 'moral',
+    apoderado: 'Lic. Roberto Fuentes Herrera',
     rfc: 'ICS920801TT2',
+    rfcFiscal: 'GTS920801TT2',
     ciudad: 'Juriquilla, Qro.',
+    direccionFiscal: 'Blvd. Juriquilla 800, Juriquilla, Querétaro, Qro.',
     estatus: 'activo',
     proyectos: ['Proyecto B'],
     responsable: 'usr-admin-1'
+
   },
   {
     id: 3,
     nombre: 'SolarWave',
+    nombreComercial: 'SolarWave Technologies',
     contacto: 'Arq. Diego Landa',
     email: 'sales@solarwave.com',
     tel: '+34 633 555 666',
     tipo: 'empresa',
+    personaTipo: 'moral',
+    apoderado: '',
     rfc: 'PQD001220XY1',
+    rfcFiscal: 'SWT001220XY1',
     ciudad: 'Av. Constituyentes, Qro.',
+    direccionFiscal: 'Av. Constituyentes 500, Qro.',
     estatus: 'lead',
     proyectos: [],
     responsable: 'usr-emp-1'
@@ -59,12 +75,17 @@ export const CLIENTES = [
   {
     id: 4,
     nombre: 'Innovatech Corp',
+    nombreComercial: 'Innovatech Corporativo',
     contacto: 'Ing. Sofía Mendoza',
     email: 'info@innovatech.com',
     tel: '+34 611 222 333',
     tipo: 'empresa',
+    personaTipo: 'moral',
+    apoderado: 'Ing. Sofía Mendoza Ruiz',
     rfc: 'DCV040118PQ9',
+    rfcFiscal: 'ITC040118PQ9',
     ciudad: 'El Marqués, Qro.',
+    direccionFiscal: 'Parque Industrial El Marqués, Lote 12, Qro.',
     estatus: 'activo',
     proyectos: ['Proyecto A', 'Proyecto B'],
     responsable: 'usr-admin-1'
@@ -72,12 +93,17 @@ export const CLIENTES = [
   {
     id: 5,
     nombre: 'BioFuture Inc',
+    nombreComercial: 'BioFuture',
     contacto: 'Lic. Fernando Bustamante',
     email: 'contact@biofuture.com',
     tel: '+34 644 666 777',
     tipo: 'persona',
+    personaTipo: 'fisica',
+    apoderado: '',
     rfc: 'BUPF830410GH2',
+    rfcFiscal: 'BUPF830410GH2',
     ciudad: 'San Juan del Río, Qro.',
+    direccionFiscal: 'Calle Hidalgo 45, Col. Centro, San Juan del Río, Qro.',
     estatus: 'activo',
     proyectos: ['Proyecto C'],
     responsable: 'usr-emp-1'
@@ -85,12 +111,17 @@ export const CLIENTES = [
   {
     id: 6,
     nombre: 'EcoDesign Ltd',
+    nombreComercial: 'EcoDesign',
     contacto: 'Arq. Patricia Noriega',
     email: 'contact@ecodesign.com',
     tel: '+34 622 444 555',
     tipo: 'empresa',
+    personaTipo: 'moral',
+    apoderado: 'Arq. Patricia Noriega Aguirre',
     rfc: 'GIP150302WZ5',
+    rfcFiscal: 'ECO150302WZ5',
     ciudad: 'Querétaro, Qro.',
+    direccionFiscal: 'Circuito Juárez 200, Fracc. San Pablo, Querétaro, Qro.',
     estatus: 'pausado',
     proyectos: ['Proyecto A'],
     responsable: 'usr-emp-1'
@@ -545,12 +576,13 @@ export const AVAILABLE_MODULES = [
   { id: 'tareas', label: 'Tareas Diarias' },
   { id: 'catalogo', label: 'Catálogo' },
   { id: 'cotizaciones', label: 'Cotizaciones' },
-  { id: 'proyectos', label: 'Proyectos' }
+  { id: 'proyectos', label: 'Proyectos' },
+  { id: 'clientes', label: 'Clientes' }
 ]
 
 export const getDefaultModulos = (rol) => {
-  if (rol === 'admin') return ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos']
-  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'tareas', 'catalogo', 'cotizaciones', 'proyectos']
+  if (rol === 'admin') return ['presupuestos', 'administracion', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tareas']
+  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tareas']
   return ['presupuestos', 'cotizaciones']
 }
 
