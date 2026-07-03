@@ -126,7 +126,7 @@ export function Proyectos() {
       </div>
 
       {/* Metric Cards */}
-      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 24 }}>
+      <div className="metric-grid metric-grid-4">
         <div className="metric-card">
           <div className="metric-label">Total Proyectos</div>
           <div className="metric-value" style={{ color: 'var(--blue)' }}>{total}</div>
@@ -290,7 +290,6 @@ export function Proyectos() {
 
       {filtered.length === 0 && vista === 'grid' && (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-3)', fontSize: 14 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🗂️</div>
           No se encontraron proyectos con ese criterio de búsqueda.
         </div>
       )}
@@ -378,7 +377,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
               padding: '2px 8px',
               borderRadius: 10
             }}>
-              👤 {cli.nombre}
+              {cli.nombre}
             </span>
           )}
         </div>
@@ -576,7 +575,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
         {isEditing ? (
           /* Formulario de Edición */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Estatus del Trámite</label>
                 <select className="form-control" value={editEstatus} onChange={e => setEditEstatus(e.target.value)}>
@@ -605,13 +604,13 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
             </div>
 
             <div className="form-group">
-              <label className="form-label">📍 Dirección Principal (Ubicación)</label>
+              <label className="form-label">Dirección Principal (Ubicación)</label>
               <input className="form-control" value={editUbicacion} onChange={e => setEditUbicacion(e.target.value)} />
             </div>
 
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ margin: 0 }}>📍 Direcciones Complementarias (Máx 3)</label>
+                <label className="form-label" style={{ margin: 0 }}>Direcciones Complementarias (Máx 3)</label>
                 {editDireccionesComp.length < 3 && (
                   <button
                     type="button"
@@ -649,7 +648,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Uso Principal</label>
                 <input className="form-control" value={editUsoPrincipal} onChange={e => setEditUsoPrincipal(e.target.value)} placeholder="Ej: Habitacional" />
@@ -692,10 +691,10 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
           /* Vista de Detalle Estándar */
           <>
             {/* Info Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div className="form-grid-2" style={{ marginBottom: 24 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Cliente</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>👤 {cli?.nombre || 'Sin cliente'}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{cli?.nombre || 'Sin cliente'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Responsable</div>
@@ -727,7 +726,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
               {/* Ubicación */}
               <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Dirección Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>📍 {p.ubicacion || 'No especificada'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.ubicacion || 'No especificada'}</div>
               </div>
 
               {p.direccionesComplementarias && p.direccionesComplementarias.length > 0 && (
@@ -736,41 +735,38 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {p.direccionesComplementarias.map((dir, idx) => (
                       <div key={idx} style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--surface2)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                        📍 <span style={{ fontWeight: 600, color: 'var(--text)' }}>Comp. {idx + 1}:</span> {dir}
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Comp. {idx + 1}:</span> {dir}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Usos */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Uso Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>🏢 {p.usoPrincipal || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.usoPrincipal || 'No especificado'}</div>
               </div>
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Uso Complementario</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>🏢 {p.usoComplementario || 'Ninguno'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.usoComplementario || 'Ninguno'}</div>
               </div>
 
-              {/* Impactos */}
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Impacto Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>⚠️ {p.impactoPrincipal || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.impactoPrincipal || 'No especificado'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Impacto Complementario</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>⚠️ {p.impactoComplementario || 'Ninguno'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.impactoComplementario || 'Ninguno'}</div>
               </div>
 
-              {/* Vialidades */}
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Vialidad Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>🛣️ {p.vialidadPrincipal || 'No especificada'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.vialidadPrincipal || 'No especificada'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Vialidad Complementaria</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>🛣️ {p.vialidadComplementaria || 'Ninguna'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.vialidadComplementaria || 'Ninguna'}</div>
               </div>
 
               <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
@@ -803,7 +799,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                   fontSize: 10, background: baseline ? 'var(--accent-light)' : 'rgba(184,122,10,0.1)',
                   color: baseline ? 'var(--accent-text)' : '#B87A0A', padding: '2px 8px', borderRadius: 10, fontWeight: 600
                 }}>
-                  {baseline ? '✓ Establecido' : '⚠️ Pendiente de Aprobación'}
+                  {baseline ? 'Establecido' : 'Pendiente de Aprobación'}
                 </span>
               </div>
               {baseline ? (
@@ -1013,7 +1009,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="form-grid-2" style={{ marginBottom: 16 }}>
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
             <label className="form-label">Nombre del Proyecto *</label>
             <input className="form-control" placeholder="Ej: Condominio Los Encinos - Fase II" value={nombre} onChange={e => setNombre(e.target.value)} />
@@ -1069,13 +1065,13 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
 
           {/* Ubicación e Info Territorial */}
           <div className="form-group" style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 6 }}>
-            <label className="form-label">📍 Dirección Principal (Ubicación) *</label>
+            <label className="form-label">Dirección Principal (Ubicación) *</label>
             <input className="form-control" placeholder="Ej: Av. Juárez #204, Col. Centro" value={ubicacion} onChange={e => setUbicacion(e.target.value)} />
           </div>
 
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label className="form-label" style={{ margin: 0 }}>📍 Direcciones Complementarias (Máx 3)</label>
+              <label className="form-label" style={{ margin: 0 }}>Direcciones Complementarias (Máx 3)</label>
               {direccionesComplementarias.length < 3 && (
                 <button
                   type="button"

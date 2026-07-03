@@ -113,8 +113,9 @@ export const CLIENTES = [
     nombre: 'EcoDesign Ltd',
     nombreComercial: 'EcoDesign',
     contacto: 'Arq. Patricia Noriega',
-    email: 'contact@ecodesign.com',
+    email: 'pnoriega@gmail.com',
     tel: '+34 622 444 555',
+
     tipo: 'empresa',
     personaTipo: 'moral',
     apoderado: 'Arq. Patricia Noriega Aguirre',

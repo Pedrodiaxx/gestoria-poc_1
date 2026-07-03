@@ -460,11 +460,7 @@ export default function Administracion() {
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border)'
               }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px 16px'
-                }}>
+                <div className="form-grid-2" style={{ gap: '10px 16px' }}>
                   {getDefaultModulos(nuevoUsuario.rol).map(mid => {
                     const label = mid.charAt(0).toUpperCase() + mid.slice(1);
                     return (
@@ -638,11 +634,7 @@ export default function Administracion() {
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border)'
               }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px 16px'
-                }}>
+                <div className="form-grid-2" style={{ gap: '10px 16px' }}>
                   {getDefaultModulos(editandoUsuario.rol).map(mid => {
                     const isChecked = editandoUsuario.modulos?.includes(mid);
                     const isMainAdmin = editandoUsuario.email.toLowerCase() === 'gabrielcoc@gmail.com';

@@ -149,6 +149,16 @@ export const AppContextProvider = ({
     const emailClean = user.email.trim().toLowerCase();
     let client = currentClientesList.find(c => c.email && c.email.trim().toLowerCase() === emailClean);
 
+    // Fallback: If it's Patricia N. and she wasn't matched, find by contact name "Patricia Noriega" or ID 6
+    if (!client && emailClean === 'pnoriega@gmail.com') {
+      client = currentClientesList.find(c => c.id === 6 || (c.contacto && c.contacto.toLowerCase().includes('patricia noriega')));
+      if (client) {
+        // Update client email so they are linked directly next time
+        client.email = 'pnoriega@gmail.com';
+        updateClientField(client.id, 'email', 'pnoriega@gmail.com');
+      }
+    }
+
     if (!client) {
       const newId = Math.max(...currentClientesList.map(c => c.id), 0) + 1;
       client = {

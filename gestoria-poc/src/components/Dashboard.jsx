@@ -46,7 +46,7 @@ export function Dashboard() {
         <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el estatus de tus trámites y pagos' : 'Vista ejecutiva'} · {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
       </div>
 
-      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+      <div className="metric-grid metric-grid-4">
         <div className="metric-card">
           <div className="metric-label">Total Cotizado</div>
           <div className="metric-value" style={{ color: 'var(--text)' }}>{money(totalCotizado)}</div>

@@ -101,7 +101,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20, alignItems: 'start' }}>
+        <div className="cotizacion-form-layout">
           {/* Columna izquierda: formulario */}
           <div>
             <div className="card" style={{ marginBottom: 16 }}>
@@ -204,7 +204,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
           </div>
 
           {/* Columna derecha: resumen y guardar */}
-          <div style={{ position: 'sticky', top: 20 }}>
+          <div style={{ position: 'sticky', top: 20 }} className="cotizacion-summary-sticky">
             <div className="card">
               <div className="card-title">Resumen de Cotización</div>
 
@@ -261,8 +261,8 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
   const filteredCotizaciones = listCotizaciones.filter(c => {
     if (currentSession.rol === 'cliente' && c.clienteId !== currentSession.clienteId) return false;
     const cli = getCliente(c.clienteId);
-    const clientName = cli ? cli.nombre.toLowerCase() : '';
-    const contactName = cli ? cli.contacto.toLowerCase() : '';
+    const clientName = cli && cli.nombre ? cli.nombre.toLowerCase() : '';
+    const contactName = cli && cli.contacto ? cli.contacto.toLowerCase() : '';
     return c.id.toLowerCase().includes(qList.toLowerCase()) ||
       clientName.includes(qList.toLowerCase()) ||
       contactName.includes(qList.toLowerCase());
@@ -283,6 +283,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="table-wrap">
         <div className="search-wrap" style={{ maxWidth: 380, margin: '16px 20px 0' }}>
           <Icon name="search" size={14} />
           <input className="form-control search-input" placeholder="Buscar por folio o cliente…" value={qList} onChange={e => setQList(e.target.value)} />
@@ -364,6 +365,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

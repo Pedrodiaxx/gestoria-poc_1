@@ -59,7 +59,7 @@ export function HojasRuta() {
         <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el avance de tus gestiones de construcción' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
+      <div className="cotizacion-form-layout">
         <div>
           {clientTramitesList.map(t => {
             const tp = TRAMITES_TIPOS[t.tipo];

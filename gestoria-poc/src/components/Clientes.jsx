@@ -349,7 +349,7 @@ export function Clientes() {
       </div>
 
       {/* Metric summary banner */}
-      <div className="metric-grid mb-6" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="metric-grid mb-6">
         <div className="metric-card">
           <div className="metric-label">Total Clientes</div>
           <div className="metric-value" style={{ color: 'var(--blue)' }}>{totalClientes}</div>
@@ -514,7 +514,7 @@ export function Clientes() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
-                  <span style={{ fontSize: 16 }}>🗑️</span> Administrar Estatus
+                  <Icon name="trash" size={14} /> Administrar Estatus
                 </div>
               </div>
             </>
@@ -551,7 +551,7 @@ export function Clientes() {
 
             {/* Group Table */}
             {!isCollapsed && (
-              <div className="table-wrap" style={{ overflow: 'visible', borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+              <div className="crm-table-wrap" style={{ borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
                 <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -662,7 +662,7 @@ export function Clientes() {
                                   </div>
                                 )}
                                 <div style={{ fontSize: 10.5, fontWeight: 'normal', color: 'var(--text-3)', marginTop: 2 }}>
-                                  {c.contacto ? `👤 ${c.contacto}` : ''}{c.apoderado ? ` | Rep: ${c.apoderado}` : ''}{c.ciudad ? ` | 📍 ${c.ciudad}` : ''}
+                                  {c.contacto ? `Contacto: ${c.contacto}` : ''}{c.apoderado ? ` | Rep: ${c.apoderado}` : ''}{c.ciudad ? ` | Ciudad: ${c.ciudad}` : ''}
                                 </div>
                               </div>
                             )}
@@ -1169,7 +1169,7 @@ export function Clientes() {
               </div>
             </div>
             {!isCollapsed && (
-              <div className="table-wrap" style={{ overflow: 'visible', borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+              <div className="crm-table-wrap" style={{ borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
                 <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -1376,7 +1376,7 @@ export function Clientes() {
             <div className="modal-title">Registrar Nuevo Cliente</div>
 
             {/* Row 1: Nombre + Nombre Comercial */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Nombre o Razón Social *</label>
                 <input
@@ -1398,7 +1398,7 @@ export function Clientes() {
             </div>
 
             {/* Row 2: Tipo persona + Responsable */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Persona Física / Moral</label>
                 <select
@@ -1425,7 +1425,7 @@ export function Clientes() {
             </div>
 
             {/* Row 3: Contacto + Apoderado */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Nombre del Contacto</label>
                 <input
@@ -1447,7 +1447,7 @@ export function Clientes() {
             </div>
 
             {/* Row 4: RFC + RFC Fiscal */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">RFC</label>
                 <input
@@ -1471,7 +1471,7 @@ export function Clientes() {
             </div>
 
             {/* Row 5: Email + Tel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Correo Electrónico</label>
                 <input
@@ -1494,7 +1494,7 @@ export function Clientes() {
             </div>
 
             {/* Row 6: Ciudad + Dirección Fiscal */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Ciudad</label>
                 <input
@@ -1740,7 +1740,7 @@ export function Clientes() {
 
                 {importError && (
                   <div style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'var(--red)' }}>
-                    ⚠️ {importError}
+                    {importError}
                   </div>
                 )}
 

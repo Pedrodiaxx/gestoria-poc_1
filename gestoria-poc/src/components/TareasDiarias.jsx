@@ -131,7 +131,7 @@ export default function TareasDiarias() {
               <label className="form-label">Descripción de la tarea</label>
               <input className="form-control" placeholder="Ej: Entregar expediente al Ayuntamiento" value={nueva.titulo} onChange={e => setNueva(n => ({ ...n, titulo: e.target.value }))} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Trámite relacionado</label>
                 <select className="form-control" value={nueva.tramiteId} onChange={e => setNueva(n => ({ ...n, tramiteId: e.target.value }))}>

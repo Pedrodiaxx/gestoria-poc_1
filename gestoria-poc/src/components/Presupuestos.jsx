@@ -17,11 +17,11 @@ const COLOR_MAP = { blue: '#1A5276', amber: '#B87A0A', purple: '#5B2C6F', green:
 const BG_MAP = { blue: '#EAF2F8', amber: '#FEF3DC', purple: '#F5EEF8', green: '#EBF3EE', red: '#FDEDEB' };
 
 const TRAMITES_TIPOS = {
-  'uso-suelo': { nombre: 'Licencia de Uso de Suelo', color: 'blue', icono: '🗺️' },
-  'licencia-const': { nombre: 'Licencia de Construcción', color: 'green', icono: '🏗️' },
-  'division': { nombre: 'Subdivisión y Fusión', color: 'purple', icono: '📐' },
-  'ampliacion': { nombre: 'Ampliación de Obra', color: 'amber', icono: '🏠' },
-  'proteccion-civil': { nombre: 'Visto Bueno PC', color: 'red', icono: '🚨' }
+  'uso-suelo': { nombre: 'Licencia de Uso de Suelo', color: 'blue', icono: '' },
+  'licencia-const': { nombre: 'Licencia de Construcción', color: 'green', icono: '' },
+  'division': { nombre: 'Subdivisión y Fusión', color: 'purple', icono: '' },
+  'ampliacion': { nombre: 'Ampliación de Obra', color: 'amber', icono: '' },
+  'proteccion-civil': { nombre: 'Visto Bueno PC', color: 'red', icono: '' }
 };
 
 // Helper to auto-increment minor version (e.g. V1.0 -> V1.1)
@@ -110,7 +110,6 @@ function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 10, borderBottom: '2px solid var(--border)' }}>
-        <span style={{ fontSize: 18 }}>⚖️</span>
         <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.2px' }}>Comparativa de Proveedores (Mín. 3)</span>
       </div>
 
@@ -175,11 +174,9 @@ function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{row.prov1.nombre || 'Proveedor A'}</div>
                         <div style={{ fontWeight: 700, color: checkBestPrice(row.prov1.precio) ? 'var(--accent)' : 'var(--text)', fontFamily: 'DM Mono', fontSize: 13, marginTop: 2 }}>
                           {row.prov1.precio ? money(parseFloat(row.prov1.precio)) : '—'}
-                          {checkBestPrice(row.prov1.precio) && <span style={{ fontSize: 9, marginLeft: 2 }}>🏷️</span>}
                         </div>
                         <div style={{ fontSize: 10, color: checkBestDays(row.prov1.dias) ? 'var(--blue)' : 'var(--text-3)', marginTop: 2 }}>
-                          ⏱️ {row.prov1.dias ? `${row.prov1.dias} días` : '—'}
-                          {checkBestDays(row.prov1.dias) && <span style={{ fontSize: 9, marginLeft: 2 }}>⚡</span>}
+                          {row.prov1.dias ? `${row.prov1.dias} días` : '—'}
                         </div>
                       </div>
                     )}
@@ -197,11 +194,9 @@ function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{row.prov2.nombre || 'Proveedor B'}</div>
                         <div style={{ fontWeight: 700, color: checkBestPrice(row.prov2.precio) ? 'var(--accent)' : 'var(--text)', fontFamily: 'DM Mono', fontSize: 13, marginTop: 2 }}>
                           {row.prov2.precio ? money(parseFloat(row.prov2.precio)) : '—'}
-                          {checkBestPrice(row.prov2.precio) && <span style={{ fontSize: 9, marginLeft: 2 }}>🏷️</span>}
                         </div>
                         <div style={{ fontSize: 10, color: checkBestDays(row.prov2.dias) ? 'var(--blue)' : 'var(--text-3)', marginTop: 2 }}>
-                          ⏱️ {row.prov2.dias ? `${row.prov2.dias} días` : '—'}
-                          {checkBestDays(row.prov2.dias) && <span style={{ fontSize: 9, marginLeft: 2 }}>⚡</span>}
+                          {row.prov2.dias ? `${row.prov2.dias} días` : '—'}
                         </div>
                       </div>
                     )}
@@ -219,11 +214,9 @@ function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{row.prov3.nombre || 'Proveedor C'}</div>
                         <div style={{ fontWeight: 700, color: checkBestPrice(row.prov3.precio) ? 'var(--accent)' : 'var(--text)', fontFamily: 'DM Mono', fontSize: 13, marginTop: 2 }}>
                           {row.prov3.precio ? money(parseFloat(row.prov3.precio)) : '—'}
-                          {checkBestPrice(row.prov3.precio) && <span style={{ fontSize: 9, marginLeft: 2 }}>🏷️</span>}
                         </div>
                         <div style={{ fontSize: 10, color: checkBestDays(row.prov3.dias) ? 'var(--blue)' : 'var(--text-3)', marginTop: 2 }}>
-                          ⏱️ {row.prov3.dias ? `${row.prov3.dias} días` : '—'}
-                          {checkBestDays(row.prov3.dias) && <span style={{ fontSize: 9, marginLeft: 2 }}>⚡</span>}
+                          {row.prov3.dias ? `${row.prov3.dias} días` : '—'}
                         </div>
                       </div>
                     )}
@@ -362,7 +355,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
   const sectionTitle = (emoji, txt) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 10, borderBottom: '2px solid var(--border)' }}>
-      <span style={{ fontSize: 18 }}>{emoji}</span>
       <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.2px' }}>{txt}</span>
     </div>
   );
@@ -380,12 +372,12 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
         <button className="btn btn-secondary" onClick={onCancelar}>← Volver</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+      <div className="cotizacion-form-layout">
         <div>
           {/* General Information */}
           <div className="card" style={{ marginBottom: 16 }}>
             {sectionTitle('📋', 'Datos Generales')}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px', gap: 12 }}>
+            <div className="form-grid-3">
               <div className="form-group">
                 <label className="form-label">Proyecto Vinculado *</label>
                 <select className="form-control" value={proyectoId} onChange={e => setProyectoId(e.target.value)}>
@@ -404,7 +396,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
               {cliente && (
                 <div style={{ gridColumn: '1/-1', background: 'var(--surface2)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: 13, display: 'flex', gap: 12 }}>
                   <span style={{ color: 'var(--text-3)' }}>Cliente Asociado:</span>
-                  <strong style={{ color: 'var(--text)' }}>👤 {cliente.nombre}</strong>
+                  <strong style={{ color: 'var(--text)' }}>{cliente.nombre}</strong>
                   <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>Estatus del proyecto:</span>
                   <span className="mono" style={{ color: 'var(--accent)', fontWeight: 600 }}>{selProyecto?.estatus}</span>
                 </div>
@@ -415,21 +407,21 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           {/* Costos Directos */}
           <div className="card" style={{ marginBottom: 16 }}>
             {sectionTitle('🧱', 'Costos Directos')}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="form-grid-2">
               <div>
-                <label style={labelStyle}>🧱 Materiales</label>
+                <label style={labelStyle}>Materiales</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.materiales} onChange={e => setCostosDirectos({...costosDirectos, materiales: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>👥 Mano de Obra</label>
+                <label style={labelStyle}>Mano de Obra</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.manoDeObra} onChange={e => setCostosDirectos({...costosDirectos, manoDeObra: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>🚜 Equipos y Herramientas</label>
+                <label style={labelStyle}>Equipos y Herramientas</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.equipos} onChange={e => setCostosDirectos({...costosDirectos, equipos: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>🤝 Subcontratistas</label>
+                <label style={labelStyle}>Subcontratistas</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.subcontratistas} onChange={e => setCostosDirectos({...costosDirectos, subcontratistas: e.target.value})} />
               </div>
             </div>
@@ -442,21 +434,21 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           {/* Costos Indirectos */}
           <div className="card" style={{ marginBottom: 16 }}>
             {sectionTitle('🏢', 'Costos Indirectos')}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="form-grid-2">
               <div>
-                <label style={labelStyle}>🏢 Oficina y Gastos Centrales</label>
+                <label style={labelStyle}>Oficina y Gastos Centrales</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.oficina} onChange={e => setCostosIndirectos({...costosIndirectos, oficina: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>🛡️ Seguros y Fianzas</label>
+                <label style={labelStyle}>Seguros y Fianzas</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.seguros} onChange={e => setCostosIndirectos({...costosIndirectos, seguros: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>🏛️ Permisos, Licencias y Derechos</label>
+                <label style={labelStyle}>Permisos, Licencias y Derechos</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.permisos} onChange={e => setCostosIndirectos({...costosIndirectos, permisos: e.target.value})} />
               </div>
               <div>
-                <label style={labelStyle}>💼 Personal Administrativo</label>
+                <label style={labelStyle}>Personal Administrativo</label>
                 <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.administracion} onChange={e => setCostosIndirectos({...costosIndirectos, administracion: e.target.value})} />
               </div>
             </div>
@@ -469,7 +461,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           {/* Contingency Fund */}
           <div className="card" style={{ marginBottom: 16 }}>
             {sectionTitle('🚨', 'Fondo de Contingencia')}
-            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, alignItems: 'center' }}>
+            <div className="form-grid-2" style={{ alignItems: 'center' }}>
               <div>
                 <label style={labelStyle}>Porcentaje %</label>
                 <input style={{...inputStyle, textAlign: 'center'}} type="number" min="0" max="100" value={contingenciaPorcentaje} onChange={e => setContingenciaPorcentaje(parseFloat(e.target.value) || 0)} />
@@ -490,7 +482,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           {/* Tramite Checklist templates */}
           <div className="card" style={{ marginBottom: 16 }}>
             {sectionTitle('📁', 'Requisitos y Trámite')}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Documentación requerida (un ítem por línea)</label>
                 <textarea className="form-control" rows={4} placeholder="Escrituras del predio&#10;Identificación oficial&#10;Planos arquitectónicos" value={documentacion} onChange={e => setDocumentacion(e.target.value)} style={{ fontFamily: 'DM Mono', fontSize: 12 }} />
@@ -514,11 +506,11 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: 'var(--text-3)' }}>🧱 Costos Directos:</span>
+                <span style={{ color: 'var(--text-3)' }}>Costos Directos:</span>
                 <span style={{ fontFamily: 'DM Mono', fontWeight: 600 }}>{money(sumDirectos)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: 'var(--text-3)' }}>🏢 Costos Indirectos:</span>
+                <span style={{ color: 'var(--text-3)' }}>Costos Indirectos:</span>
                 <span style={{ fontFamily: 'DM Mono', fontWeight: 600 }}>{money(sumIndirectos)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid var(--border)', paddingTop: 6 }}>
@@ -526,7 +518,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
                 <span style={{ fontFamily: 'DM Mono', fontWeight: 700 }}>{money(subtotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#B87A0A' }}>
-                <span>🚨 Contingencia ({contingenciaPorcentaje}%):</span>
+                <span>Contingencia ({contingenciaPorcentaje}%):</span>
                 <span style={{ fontFamily: 'DM Mono', fontWeight: 700 }}>{money(contingenciaMonto)}</span>
               </div>
             </div>
@@ -611,8 +603,8 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontFamily: 'DM Mono', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{p.version}</span>
             <span className="badge badge-gray">{p.id}</span>
-            {proj && <span className="badge badge-blue">🗂️ {proj.nombre}</span>}
-            {cliente && <span className="badge badge-gray">👤 {cliente.nombre}</span>}
+            {proj && <span className="badge badge-blue">{proj.nombre}</span>}
+            {cliente && <span className="badge badge-gray">{cliente.nombre}</span>}
             <span style={{
               fontSize: 11,
               background: p.estado === 'Aprobado' ? 'var(--accent-light)' : p.estado === 'Enviado' ? 'var(--blue-light)' : p.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
@@ -631,7 +623,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         
         {p.estado === 'Borrador' && (
           <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
-            📨 Enviar al Cliente
+            Enviar al Cliente
           </button>
         )}
         
@@ -660,7 +652,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ marginBottom: 20 }}>
         {/* Proceso */}
         {p.proceso && (
           <div className="card" style={{ gridColumn: '1/-1' }}>
@@ -702,7 +694,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       )}
 
       {/* Tabla de costos desglosados */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 300px', gap: 16 }}>
+      <div className="form-grid-3">
         <div className="card">
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>🧱 Costos Directos</div>
           <CostRow label="Materiales" value={cd.materiales} />
@@ -892,10 +884,10 @@ export function Presupuestos() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className={`btn ${tab === 'agrupado' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('agrupado')}>
-            🗂️ Presupuestos
+            Presupuestos
           </button>
           <button className={`btn ${tab === 'catalogo' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('catalogo')}>
-            📖 Catálogo Conceptos
+            Catálogo Conceptos
           </button>
           {session.rol !== 'cliente' && (
             <button className="btn btn-primary" onClick={() => setTab('nuevo')}>
@@ -939,7 +931,7 @@ export function Presupuestos() {
                       <span className={`badge badge-gray`} style={{ fontSize: 10 }}>{associatedBudgets.length} versiones</span>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                      👤 Cliente: {clientes.find(c => c.id === proj.clienteId)?.nombre || '—'} · 📍 {proj.ubicacion || 'No especificada'}
+                      Cliente: {clientes.find(c => c.id === proj.clienteId)?.nombre || '—'} · Ubicación: {proj.ubicacion || 'No especificada'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

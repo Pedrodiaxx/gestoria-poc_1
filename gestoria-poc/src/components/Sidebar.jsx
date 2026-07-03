@@ -3,12 +3,18 @@ import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { getDefaultModulos } from '../data/mockData';
 
-export function Sidebar() {
+export function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const { active, setActive, session, handleLogout } = useAppContext();
 
   const handleSectionClick = (e, targetTab) => {
     e.stopPropagation();
     setActive(targetTab);
+    if (setSidebarOpen) setSidebarOpen(false);
+  };
+
+  const handleNavClick = (id) => {
+    setActive(id);
+    if (setSidebarOpen) setSidebarOpen(false);
   };
 
   if (!session) return null;
@@ -46,14 +52,14 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo" onClick={() => setActive('home')} style={{ cursor: 'pointer' }}>
+    <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <div className="sidebar-logo" onClick={() => { setActive('home'); if (setSidebarOpen) setSidebarOpen(false); }} style={{ cursor: 'pointer' }}>
         <div className="wordmark">GIU</div>
         <div className="tagline">Gestoría de Construcción</div>
       </div>
       <div className="sidebar-section-label">Módulos</div>
       {dynamicNavItems.map(n => (
-        <div key={n.id} className={`nav-item ${active === n.id ? 'active' : ''}`} onClick={() => setActive(n.id)}>
+        <div key={n.id} className={`nav-item ${active === n.id ? 'active' : ''}`} onClick={() => handleNavClick(n.id)}>
           <Icon name={n.icon} size={15} />
           <span>{n.label}</span>
 
