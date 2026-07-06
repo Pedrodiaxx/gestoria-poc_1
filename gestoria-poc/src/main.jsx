@@ -9,7 +9,8 @@ import {
   CATALOGO_CONCEPTOS,
   initialCotizaciones,
   initialPresupuestosDB,
-  PROYECTOS_MOCK
+  PROYECTOS_MOCK,
+  TAREAS_MOCK
 } from './data/mockData';
 
 // Default users for userRepository
@@ -61,6 +62,7 @@ const quoteRepository = new LocalStorageRepository('giu_cotizaciones', initialCo
 const rolesRepository = new LocalStorageRepository('giu_roles', DEFAULT_ROLES);
 const budgetRepository = new LocalStorageRepository('giu_presupuestos', initialPresupuestosDB);
 const projectRepository = new LocalStorageRepository('giu_proyectos', PROYECTOS_MOCK);
+const taskRepository = new LocalStorageRepository('giu_tareas', TAREAS_MOCK);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -72,6 +74,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       rolesRepository={rolesRepository}
       projectRepository={projectRepository}
       budgetRepository={budgetRepository}
+      taskRepository={taskRepository}
     >
       <App />
     </AppContextProvider>

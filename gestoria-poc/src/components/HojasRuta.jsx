@@ -170,7 +170,7 @@ export function HojasRuta() {
                 ← Paso anterior
               </button>
               <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= tipo.pasos.length} style={{ opacity: pasoActual >= tipo.pasos.length ? 0.4 : 1 }}>
-                {pasoActual >= tipo.pasos.length ? '✓ Trámite completado' : 'Siguiente paso →'}
+                {pasoActual >= tipo.pasos.length ? 'Trámite completado' : 'Siguiente paso →'}
               </button>
             </div>
           ) : (

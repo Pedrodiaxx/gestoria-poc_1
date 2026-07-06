@@ -53,13 +53,24 @@ const calcBudgetTotal = (b) => {
     return hTotal + dTotal;
   }
 
-  const cd = b.costosDirectos || {};
-  const ci = b.costosIndirectos || {};
+  let directos = 0;
+  if (b.conceptos && b.conceptos.length > 0) {
+    directos = b.conceptos.reduce((acc, c) => {
+      const mat = (parseFloat(c.costoMateriales) || 0);
+      const mo = (parseFloat(c.costoManoObra) || 0);
+      const eq = (parseFloat(c.costoEquipo) || 0);
+      const cant = (parseFloat(c.cantidad) || 0);
+      return acc + (cant * (mat + mo + eq));
+    }, 0);
+  } else if (b.costosDirectos) {
+    const cd = b.costosDirectos || {};
+    directos = (parseFloat(cd.materiales) || 0) +
+               (parseFloat(cd.manoDeObra) || 0) +
+               (parseFloat(cd.equipos) || 0) +
+               (parseFloat(cd.subcontratistas) || 0);
+  }
 
-  const directos = (parseFloat(cd.materiales) || 0) +
-                   (parseFloat(cd.manoDeObra) || 0) +
-                   (parseFloat(cd.equipos) || 0) +
-                   (parseFloat(cd.subcontratistas) || 0);
+  const ci = b.costosIndirectos || {};
 
   const indirectos = (parseFloat(ci.oficina) || 0) +
                      (parseFloat(ci.seguros) || 0) +
@@ -70,6 +81,252 @@ const calcBudgetTotal = (b) => {
   const contingencia = subtotal * ((parseFloat(b.contingenciaPorcentaje) || 0) / 100);
   return subtotal + contingencia;
 };
+
+// ─── APU AND CONCEPT LIST COMPONENT ──────────────────────────────────────────
+function TablaConceptos({ conceptos = [], onChange, editable = false, catalog = [] }) {
+  const [nuevaClave, setNuevaClave] = useState('');
+  const [nuevaDesc, setNuevaDesc] = useState('');
+  const [nuevaUnidad, setNuevaUnidad] = useState('M2');
+  const [nuevaCant, setNuevaCant] = useState('');
+  const [nuevaMo, setNuevaMo] = useState('');
+  const [nuevaMat, setNuevaMat] = useState('');
+  const [nuevaEq, setNuevaEq] = useState('');
+  const [nuevoAsignado, setNuevoAsignado] = useState('');
+
+  const handleCatalogSelect = (clave) => {
+    const matched = catalog.find(c => c.clave === clave);
+    if (matched) {
+      setNuevaClave(matched.clave);
+      setNuevaDesc(matched.descripcion);
+      setNuevaUnidad('PZA');
+      setNuevaCant('1');
+      setNuevaMat('0');
+      setNuevaMo(matched.precio ? matched.precio.toString() : '0');
+      setNuevaEq('0');
+    }
+  };
+
+  const addConcept = () => {
+    if (!nuevaClave || !nuevaDesc) return;
+    const nuevo = {
+      id: `conc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      clave: nuevaClave,
+      descripcion: nuevaDesc,
+      unidadMedida: nuevaUnidad,
+      cantidad: parseFloat(nuevaCant) || 1,
+      costoMateriales: parseFloat(nuevaMat) || 0,
+      costoManoObra: parseFloat(nuevaMo) || 0,
+      costoEquipo: parseFloat(nuevaEq) || 0,
+      empleadoAsignadoId: nuevoAsignado || null
+    };
+    onChange([...conceptos, nuevo]);
+    setNuevaClave('');
+    setNuevaDesc('');
+    setNuevaUnidad('M2');
+    setNuevaCant('');
+    setNuevaMat('');
+    setNuevaMo('');
+    setNuevaEq('');
+    setNuevoAsignado('');
+  };
+
+  const removeConcept = (id) => {
+    onChange(conceptos.filter(c => c.id !== id));
+  };
+
+  const updateConcept = (id, field, val) => {
+    onChange(conceptos.map(c => c.id === id ? { ...c, [field]: val } : c));
+  };
+
+  const sumMateriales = conceptos.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoMateriales) || 0), 0);
+  const sumManoObra = conceptos.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoManoObra) || 0), 0);
+  const sumEquipo = conceptos.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoEquipo) || 0), 0);
+  const totalDirectos = sumMateriales + sumManoObra + sumEquipo;
+
+  return (
+    <div className="card" style={{ marginBottom: 16, padding: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 10, borderBottom: '2px solid var(--border)' }}>
+        <span style={{ fontSize: 15, fontWeight: 700 }}>Conceptos de Obra y Análisis de Precios Unitarios (APU)</span>
+      </div>
+
+      <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
+              <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600 }}>Clave</th>
+              <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600, width: '25%' }}>Descripción</th>
+              <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>U.M.</th>
+              <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>Cantidad</th>
+              <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>Mat. Unit ($)</th>
+              <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>M.O. Unit ($)</th>
+              <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>Eq. Unit ($)</th>
+              <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>Costo Unit ($)</th>
+              <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>Importe ($)</th>
+              <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600 }}>Asignado A</th>
+              {editable && <th style={{ width: 40 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {conceptos.map((c) => {
+              const unitCost = (parseFloat(c.costoMateriales) || 0) + (parseFloat(c.costoManoObra) || 0) + (parseFloat(c.costoEquipo) || 0);
+              const totalCost = (parseFloat(c.cantidad) || 0) * unitCost;
+
+              if (editable) {
+                return (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input className="form-control" style={{ padding: '4px', fontFamily: 'DM Mono', fontSize: 11, minWidth: 70 }} value={c.clave} onChange={e => updateConcept(c.id, 'clave', e.target.value)} />
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <textarea className="form-control" rows={1} style={{ padding: '4px', fontSize: 11, resize: 'vertical', width: '100%', minWidth: 150 }} value={c.descripcion} onChange={e => updateConcept(c.id, 'descripcion', e.target.value)} />
+                    </td>
+                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                      <select className="form-control" style={{ padding: '4px', fontSize: 11, minWidth: 65 }} value={c.unidadMedida} onChange={e => updateConcept(c.id, 'unidadMedida', e.target.value)}>
+                        <option value="M3">M3</option>
+                        <option value="M2">M2</option>
+                        <option value="ML">ML</option>
+                        <option value="KG">KG</option>
+                        <option value="TON">TON</option>
+                        <option value="PZA">PZA</option>
+                        <option value="LOTE">LOTE</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input type="number" className="form-control" style={{ padding: '4px', fontSize: 11, textAlign: 'center', fontFamily: 'DM Mono', minWidth: 55 }} value={c.cantidad} onChange={e => updateConcept(c.id, 'cantidad', parseFloat(e.target.value) || 0)} />
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input type="number" className="form-control" style={{ padding: '4px', fontSize: 11, textAlign: 'right', fontFamily: 'DM Mono', minWidth: 65 }} value={c.costoMateriales} onChange={e => updateConcept(c.id, 'costoMateriales', parseFloat(e.target.value) || 0)} />
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input type="number" className="form-control" style={{ padding: '4px', fontSize: 11, textAlign: 'right', fontFamily: 'DM Mono', minWidth: 65 }} value={c.costoManoObra} onChange={e => updateConcept(c.id, 'costoManoObra', parseFloat(e.target.value) || 0)} />
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <input type="number" className="form-control" style={{ padding: '4px', fontSize: 11, textAlign: 'right', fontFamily: 'DM Mono', minWidth: 65 }} value={c.costoEquipo} onChange={e => updateConcept(c.id, 'costoEquipo', parseFloat(e.target.value) || 0)} />
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>
+                      {money(unitCost)}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--accent)' }}>
+                      {money(totalCost)}
+                    </td>
+                    <td style={{ padding: '6px 4px' }}>
+                      <select className="form-control" style={{ padding: '4px', fontSize: 11, minWidth: 100 }} value={c.empleadoAsignadoId || ''} onChange={e => updateConcept(c.id, 'empleadoAsignadoId', e.target.value || null)}>
+                        <option value="">— Sin Asignar —</option>
+                        {EQUIPO.map(eq => <option key={eq.id} value={eq.id}>{eq.nombre}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                      <button className="btn btn-ghost" onClick={() => removeConcept(c.id)} style={{ padding: 4, minWidth: 'auto', color: '#C0392B' }}>
+                        <Icon name="trash" size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              } else {
+                const assignedEmployee = EQUIPO.find(eq => eq.id === c.empleadoAsignadoId);
+                return (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '10px 8px', fontFamily: 'DM Mono', fontWeight: 600, color: 'var(--accent)' }}>{c.clave}</td>
+                    <td style={{ padding: '10px 8px' }}>{c.descripcion}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center' }}><span className="badge badge-gray">{c.unidadMedida}</span></td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'DM Mono' }}>{c.cantidad}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontFamily: 'DM Mono' }}>{money(c.costoMateriales || 0)}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontFamily: 'DM Mono' }}>{money(c.costoManoObra || 0)}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontFamily: 'DM Mono' }}>{money(c.costoEquipo || 0)}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>{money(unitCost)}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--accent)' }}>{money(totalCost)}</td>
+                    <td style={{ padding: '10px 8px' }}>
+                      {assignedEmployee ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 18, height: 18, borderRadius: '50%', background: assignedEmployee.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700 }}>{assignedEmployee.avatar}</span>
+                          <span style={{ fontSize: 12 }}>{assignedEmployee.nombre}</span>
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontSize: 11, fontStyle: 'italic' }}>— Sin Asignar —</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              }
+            })}
+          </tbody>
+        </table>
+        {conceptos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-3)', fontStyle: 'italic', fontSize: 13 }}>
+            No hay conceptos en este presupuesto. Agrega uno abajo.
+          </div>
+        )}
+      </div>
+
+      {editable && (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, background: 'var(--surface2)', padding: 12, borderRadius: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-2)' }}>Agregar Concepto de Obra</div>
+          
+          {catalog && catalog.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Importar del catálogo:</span>
+              <select className="form-control" style={{ width: 'auto', padding: '3px 8px', fontSize: 12 }} value="" onChange={e => { if (e.target.value) handleCatalogSelect(e.target.value); e.target.value = ""; }}>
+                <option value="">— Seleccionar concepto de referencia —</option>
+                {catalog.map(cat => <option key={cat.clave} value={cat.clave}>[{cat.clave}] {cat.descripcion.slice(0, 45)}...</option>)}
+              </select>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr 1fr 1fr 1fr 1.5fr', gap: 8, alignItems: 'end' }}>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Clave</label>
+              <input className="form-control" placeholder="Ej: MCO-010" style={{ fontSize: 11, padding: '5px' }} value={nuevaClave} onChange={e => setNuevaClave(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Descripción</label>
+              <input className="form-control" placeholder="Ej: Excavación manual..." style={{ fontSize: 11, padding: '5px' }} value={nuevaDesc} onChange={e => setNuevaDesc(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>U.M.</label>
+              <select className="form-control" style={{ fontSize: 11, padding: '5px' }} value={nuevaUnidad} onChange={e => setNuevaUnidad(e.target.value)}>
+                <option value="M3">M3</option>
+                <option value="M2">M2</option>
+                <option value="ML">ML</option>
+                <option value="KG">KG</option>
+                <option value="TON">TON</option>
+                <option value="PZA">PZA</option>
+                <option value="LOTE">LOTE</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Cant.</label>
+              <input type="number" className="form-control" placeholder="1" style={{ fontSize: 11, padding: '5px' }} value={nuevaCant} onChange={e => setNuevaCant(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Mat ($)</label>
+              <input type="number" className="form-control" placeholder="0" style={{ fontSize: 11, padding: '5px' }} value={nuevaMat} onChange={e => setNuevaMat(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>M.O. ($)</label>
+              <input type="number" className="form-control" placeholder="0" style={{ fontSize: 11, padding: '5px' }} value={nuevaMo} onChange={e => setNuevaMo(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Eq ($)</label>
+              <input type="number" className="form-control" placeholder="0" style={{ fontSize: 11, padding: '5px' }} value={nuevaEq} onChange={e => setNuevaEq(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, display: 'block' }}>Personal</label>
+              <select className="form-control" style={{ fontSize: 11, padding: '5px' }} value={nuevoAsignado} onChange={e => setNuevoAsignado(e.target.value)}>
+                <option value="">— Asignar... —</option>
+                {EQUIPO.map(eq => <option key={eq.id} value={eq.id}>{eq.nombre}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+            <button className="btn btn-secondary btn-sm" onClick={addConcept} disabled={!nuevaClave || !nuevaDesc}>
+              + Añadir Concepto
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── SUPPLIER COMPARISON TABLE COMPONENT ──────────────────────────────────────
 function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
@@ -259,6 +516,7 @@ function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
 
 // ─── FORM NUEVO PRESUPUESTO COMPONENT ─────────────────────────────────────────
 function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId }) {
+  const { conceptos: catalog } = useAppContext();
   const [proyectoId, setProyectoId] = useState(preselectedProjectId || '');
   const [titulo, setTitulo] = useState('');
   const [version, setVersion] = useState('V1.0');
@@ -266,13 +524,8 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
   const [requisitos, setRequisitos] = useState('');
   const [proceso, setProceso] = useState('');
 
-  // Cost breakdowns
-  const [costosDirectos, setCostosDirectos] = useState({
-    materiales: '',
-    manoDeObra: '',
-    equipos: '',
-    subcontratistas: ''
-  });
+  // Cost lists and state
+  const [conceptosList, setConceptosList] = useState([]);
   const [costosIndirectos, setCostosIndirectos] = useState({
     oficina: '',
     seguros: '',
@@ -298,10 +551,13 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
   // Calculators
   const calcDirectos = () => {
-    return (parseFloat(costosDirectos.materiales) || 0) +
-           (parseFloat(costosDirectos.manoDeObra) || 0) +
-           (parseFloat(costosDirectos.equipos) || 0) +
-           (parseFloat(costosDirectos.subcontratistas) || 0);
+    return conceptosList.reduce((acc, c) => {
+      const mat = (parseFloat(c.costoMateriales) || 0);
+      const mo = (parseFloat(c.costoManoObra) || 0);
+      const eq = (parseFloat(c.costoEquipo) || 0);
+      const cant = (parseFloat(c.cantidad) || 0);
+      return acc + (cant * (mat + mo + eq));
+    }, 0);
   };
 
   const calcIndirectos = () => {
@@ -321,6 +577,10 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
   const handleGuardar = () => {
     if (!canSave) return;
+    const directMat = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoMateriales) || 0), 0);
+    const directMo = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoManoObra) || 0), 0);
+    const directEq = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoEquipo) || 0), 0);
+
     const nuevo = {
       id: `PRES-${String(Date.now()).slice(-4)}`,
       proyectoId,
@@ -332,10 +592,10 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       requisitos,
       proceso,
       costosDirectos: {
-        materiales: parseFloat(costosDirectos.materiales) || 0,
-        manoDeObra: parseFloat(costosDirectos.manoDeObra) || 0,
-        equipos: parseFloat(costosDirectos.equipos) || 0,
-        subcontratistas: parseFloat(costosDirectos.subcontratistas) || 0
+        materiales: directMat,
+        manoDeObra: directMo,
+        equipos: directEq,
+        subcontratistas: 0
       },
       costosIndirectos: {
         oficina: parseFloat(costosIndirectos.oficina) || 0,
@@ -346,7 +606,8 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       contingenciaPorcentaje: parseFloat(contingenciaPorcentaje) || 0,
       fecha: fmt(hoy),
       clienteId: cliente ? cliente.id : null,
-      comparacionProveedores
+      comparacionProveedores,
+      conceptos: conceptosList
     };
     onGuardar(nuevo);
     setGuardado(true);
@@ -367,7 +628,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Nuevo Presupuesto</div>
-          <div className="page-subtitle">Define los costos del proyecto. El desglose se calculará automáticamente.</div>
+          <div className="page-subtitle">Define los conceptos y costos del proyecto. El desglose APU se calculará automáticamente.</div>
         </div>
         <button className="btn btn-secondary" onClick={onCancelar}>← Volver</button>
       </div>
@@ -404,32 +665,8 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
             </div>
           </div>
 
-          {/* Costos Directos */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            {sectionTitle('🧱', 'Costos Directos')}
-            <div className="form-grid-2">
-              <div>
-                <label style={labelStyle}>Materiales</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.materiales} onChange={e => setCostosDirectos({...costosDirectos, materiales: e.target.value})} />
-              </div>
-              <div>
-                <label style={labelStyle}>Mano de Obra</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.manoDeObra} onChange={e => setCostosDirectos({...costosDirectos, manoDeObra: e.target.value})} />
-              </div>
-              <div>
-                <label style={labelStyle}>Equipos y Herramientas</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.equipos} onChange={e => setCostosDirectos({...costosDirectos, equipos: e.target.value})} />
-              </div>
-              <div>
-                <label style={labelStyle}>Subcontratistas</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosDirectos.subcontratistas} onChange={e => setCostosDirectos({...costosDirectos, subcontratistas: e.target.value})} />
-              </div>
-            </div>
-            <div style={{ background: 'var(--surface2)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>Subtotal Costos Directos</span>
-              <strong style={{ fontFamily: 'DM Mono', fontSize: 16 }}>{money(sumDirectos)}</strong>
-            </div>
-          </div>
+          {/* Concepts and APU Table */}
+          <TablaConceptos conceptos={conceptosList} onChange={setConceptosList} editable={true} catalog={catalog} />
 
           {/* Costos Indirectos */}
           <div className="card" style={{ marginBottom: 16 }}>
@@ -537,12 +774,13 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           {guardado ? (
             <div className="alert alert-green"><Icon name="check" size={14} /> Presupuesto guardado correctamente</div>
           ) : (
-            <button className="btn btn-primary w-full" onClick={handleGuardar} disabled={!canSave} style={{ opacity: !canSave ? 0.45 : 1, justifyContent: 'center', padding: '11px', fontSize: 14 }}>
+            <button className="btn btn-primary w-full" onClick={handleGuardar} disabled={!canSave || conceptosList.length === 0} style={{ opacity: (!canSave || conceptosList.length === 0) ? 0.45 : 1, justifyContent: 'center', padding: '11px', fontSize: 14 }}>
               <Icon name="check" size={15} /> Guardar Presupuesto
             </button>
           )}
           {!proyectoId && <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 8 }}>Selecciona un proyecto para poder guardar</div>}
           {proyectoId && !titulo && <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 8 }}>Ingresa un título para poder guardar</div>}
+          {proyectoId && titulo && conceptosList.length === 0 && <div style={{ fontSize: 11, color: 'var(--red)', textAlign: 'center', marginTop: 8 }}>Debes agregar al menos un concepto</div>}
         </div>
       </div>
     </div>
@@ -550,7 +788,8 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 }
 
 // ─── VISTA DETALLADA DEL PRESUPUESTO COMPONENT ────────────────────────────────
-function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambiarEstatus, onMarcarBaseline }) {
+function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambiarEstatus, onMarcarBaseline, onGuardarCambios }) {
+  const { conceptos: catalog } = useAppContext();
   const [checkDoc, setCheckDoc] = useState({});
   const [checkReq, setCheckReq] = useState({});
 
@@ -562,21 +801,66 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   const docDone = docItems.filter((_, i) => checkDoc[i]).length;
   const reqDone = reqItems.filter((_, i) => checkReq[i]).length;
 
-  const cd = p.costosDirectos || {};
-  const ci = p.costosIndirectos || {};
+  const [conceptosList, setConceptosList] = useState(p.conceptos || []);
+  const [costosIndirectos, setCostosIndirectos] = useState(p.costosIndirectos || { oficina: 0, seguros: 0, permisos: 0, administracion: 0 });
+  const [contingenciaPct, setContingenciaPct] = useState(p.contingenciaPorcentaje || 5);
+  const [isEdited, setIsEdited] = useState(false);
 
-  const directosVal = (parseFloat(cd.materiales) || 0) +
-                      (parseFloat(cd.manoDeObra) || 0) +
-                      (parseFloat(cd.equipos) || 0) +
-                      (parseFloat(cd.subcontratistas) || 0);
+  useEffect(() => {
+    setConceptosList(p.conceptos || []);
+    setCostosIndirectos(p.costosIndirectos || { oficina: 0, seguros: 0, permisos: 0, administracion: 0 });
+    setContingenciaPct(p.contingenciaPorcentaje || 5);
+    setIsEdited(false);
+  }, [p]);
 
-  const indirectosVal = (parseFloat(ci.oficina) || 0) +
-                        (parseFloat(ci.seguros) || 0) +
-                        (parseFloat(ci.permisos) || 0) +
-                        (parseFloat(ci.administracion) || 0);
+  const handleConceptosChange = (newList) => {
+    setConceptosList(newList);
+    setIsEdited(true);
+  };
+
+  const handleIndirectChange = (field, val) => {
+    setCostosIndirectos(prev => ({ ...prev, [field]: val }));
+    setIsEdited(true);
+  };
+
+  const saveEdits = () => {
+    const directMat = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoMateriales) || 0), 0);
+    const directMo = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoManoObra) || 0), 0);
+    const directEq = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoEquipo) || 0), 0);
+
+    const updated = {
+      ...p,
+      conceptos: conceptosList,
+      costosDirectos: {
+        materiales: directMat,
+        manoDeObra: directMo,
+        equipos: directEq,
+        subcontratistas: 0
+      },
+      costosIndirectos: {
+        oficina: parseFloat(costosIndirectos.oficina) || 0,
+        seguros: parseFloat(costosIndirectos.seguros) || 0,
+        permisos: parseFloat(costosIndirectos.permisos) || 0,
+        administracion: parseFloat(costosIndirectos.administracion) || 0
+      },
+      contingenciaPorcentaje: parseFloat(contingenciaPct) || 0
+    };
+    onGuardarCambios(updated);
+    setIsEdited(false);
+  };
+
+  const directMat = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoMateriales) || 0), 0);
+  const directMo = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoManoObra) || 0), 0);
+  const directEq = conceptosList.reduce((acc, c) => acc + (parseFloat(c.cantidad) || 0) * (parseFloat(c.costoEquipo) || 0), 0);
+  const directosVal = directMat + directMo + directEq;
+
+  const indirectosVal = (parseFloat(costosIndirectos.oficina) || 0) +
+                        (parseFloat(costosIndirectos.seguros) || 0) +
+                        (parseFloat(costosIndirectos.permisos) || 0) +
+                        (parseFloat(costosIndirectos.administracion) || 0);
 
   const subtotal = directosVal + indirectosVal;
-  const contingenciaVal = subtotal * ((p.contingenciaPorcentaje || 0) / 100);
+  const contingenciaVal = subtotal * ((parseFloat(contingenciaPct) || 0) / 100);
   const total = subtotal + contingenciaVal;
 
   const CheckItem = ({ label, idx, state, setState }) => (
@@ -594,6 +878,8 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       <span style={{ fontFamily: 'DM Mono', fontWeight: 600 }}>{money(value)}</span>
     </div>
   );
+
+  const isBorrador = p.estado === 'Borrador';
 
   return (
     <div>
@@ -630,33 +916,42 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         {p.estado === 'Enviado' && (
           <>
             <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
-              ✓ Aprobar Presupuesto
+              Aprobar Presupuesto
             </button>
             <button className="btn btn-sm btn-ghost" onClick={() => onCambiarEstatus(p.id, 'Rechazado')} style={{ color: '#C0392B' }}>
-              ✕ Rechazar
+              Rechazar
             </button>
           </>
         )}
 
         {p.estado === 'Aprobado' && !p.isBaseline && (
           <button className="btn btn-sm btn-primary" onClick={() => onMarcarBaseline(p.id)} style={{ background: 'var(--accent)', color: '#fff' }}>
-            🔒 Establecer como Línea Base
+            Establecer como Línea Base
           </button>
         )}
 
         {/* Change management clone */}
         {(p.estado === 'Aprobado' || p.estado === 'Enviado' || p.estado === 'Rechazado') && (
           <button className="btn btn-sm btn-secondary" onClick={() => onAjustar(p)}>
-            🔄 Ajustar Presupuesto (Nueva Versión)
+            Ajustar Presupuesto — Nueva Versión
+          </button>
+        )}
+
+        {isEdited && (
+          <button className="btn btn-sm btn-primary" onClick={saveEdits} style={{ background: '#B87A0A', color: '#fff', marginLeft: 'auto' }}>
+            Guardar Cambios
           </button>
         )}
       </div>
+
+      {/* Conceptos de Obra desglosados (APU) */}
+      <TablaConceptos conceptos={conceptosList} onChange={handleConceptosChange} editable={isBorrador} catalog={catalog} />
 
       <div className="form-grid-2" style={{ marginBottom: 20 }}>
         {/* Proceso */}
         {p.proceso && (
           <div className="card" style={{ gridColumn: '1/-1' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>🔄 Proceso del Trámite</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Proceso del Trámite</div>
             <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{p.proceso}</p>
           </div>
         )}
@@ -664,7 +959,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         {/* Checklist Documentación */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>📁 Documentación Necesaria</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Documentación Necesaria</div>
             <span className="badge badge-green">{docDone}/{docItems.length}</span>
           </div>
           <div className="progress-bar" style={{ marginBottom: 12 }}>
@@ -677,7 +972,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         {/* Checklist Requisitos */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>✅ Requisitos Previos</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Requisitos Previos</div>
             <span className="badge badge-blue">{reqDone}/{reqItems.length}</span>
           </div>
           <div className="progress-bar" style={{ marginBottom: 12 }}>
@@ -696,22 +991,44 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       {/* Tabla de costos desglosados */}
       <div className="form-grid-3">
         <div className="card">
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>🧱 Costos Directos</div>
-          <CostRow label="Materiales" value={cd.materiales} />
-          <CostRow label="Mano de Obra" value={cd.manoDeObra} />
-          <CostRow label="Equipos y Herramientas" value={cd.equipos} />
-          <CostRow label="Subcontratistas" value={cd.subcontratistas} />
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>Costos Directos</div>
+          <CostRow label="Materiales" value={directMat} />
+          <CostRow label="Mano de Obra" value={directMo} />
+          <CostRow label="Equipos y Herramientas" value={directEq} />
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>
             <span>Subtotal Directos</span><span style={{ fontFamily: 'DM Mono' }}>{money(directosVal)}</span>
           </div>
         </div>
 
         <div className="card">
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>🏢 Costos Indirectos</div>
-          <CostRow label="Oficina Central" value={ci.oficina} />
-          <CostRow label="Seguros y Fianzas" value={ci.seguros} />
-          <CostRow label="Permisos y Derechos" value={ci.permisos} />
-          <CostRow label="Personal Administrativo" value={ci.administracion} />
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>Costos Indirectos</div>
+          {isBorrador ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12 }}>Oficina Central:</span>
+                <input type="number" className="form-control" style={{ width: 100, padding: 3, fontSize: 12, textAlign: 'right' }} value={costosIndirectos.oficina} onChange={e => handleIndirectChange('oficina', parseFloat(e.target.value) || 0)} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12 }}>Seguros y Fianzas:</span>
+                <input type="number" className="form-control" style={{ width: 100, padding: 3, fontSize: 12, textAlign: 'right' }} value={costosIndirectos.seguros} onChange={e => handleIndirectChange('seguros', parseFloat(e.target.value) || 0)} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12 }}>Permisos y Derechos:</span>
+                <input type="number" className="form-control" style={{ width: 100, padding: 3, fontSize: 12, textAlign: 'right' }} value={costosIndirectos.permisos} onChange={e => handleIndirectChange('permisos', parseFloat(e.target.value) || 0)} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12 }}>Personal Admin:</span>
+                <input type="number" className="form-control" style={{ width: 100, padding: 3, fontSize: 12, textAlign: 'right' }} value={costosIndirectos.administracion} onChange={e => handleIndirectChange('administracion', parseFloat(e.target.value) || 0)} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <CostRow label="Oficina Central" value={costosIndirectos.oficina} />
+              <CostRow label="Seguros y Fianzas" value={costosIndirectos.seguros} />
+              <CostRow label="Permisos y Derechos" value={costosIndirectos.permisos} />
+              <CostRow label="Personal Administrativo" value={costosIndirectos.administracion} />
+            </>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', fontWeight: 700, fontSize: 14, color: 'var(--blue)' }}>
             <span>Subtotal Indirectos</span><span style={{ fontFamily: 'DM Mono' }}>{money(indirectosVal)}</span>
           </div>
@@ -721,7 +1038,12 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Subtotal Costos</div>
           <div style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 16, color: '#fff', margin: '4px 0 10px' }}>{money(subtotal)}</div>
           
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Contingencia ({p.contingenciaPorcentaje}%)</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Contingencia ({contingenciaPct}%)</span>
+            {isBorrador && (
+              <input type="number" className="form-control" style={{ width: 60, padding: '2px 4px', fontSize: 12, color: '#000', textAlign: 'center' }} value={contingenciaPct} onChange={e => { setContingenciaPct(parseFloat(e.target.value) || 0); setIsEdited(true); }} />
+            )}
+          </div>
           <div style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 16, color: '#B87A0A', margin: '4px 0 14px' }}>{money(contingenciaVal)}</div>
           
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12 }}>
@@ -745,7 +1067,9 @@ export function Presupuestos() {
     presupuestos,
     setPresupuestos,
     preselectedProjectId,
-    setPreselectedProjectId
+    setPreselectedProjectId,
+    tareas,
+    setTareas
   } = useAppContext();
 
   const [tab, setTab] = useState('agrupado'); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
@@ -777,7 +1101,7 @@ export function Presupuestos() {
     'Rechazado': 'badge-red'
   };
 
-  // Change management clone function
+  // Change management clone function (Immutable versioning)
   const handleAjustar = (budget) => {
     const nextVer = incrementVersion(budget.version);
     const clon = {
@@ -786,7 +1110,11 @@ export function Presupuestos() {
       version: nextVer,
       estado: 'Borrador',
       isBaseline: false,
-      fecha: fmt(hoy)
+      fecha: fmt(hoy),
+      conceptos: budget.conceptos ? budget.conceptos.map(c => ({
+        ...c,
+        id: `conc-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      })) : []
     };
     
     // Add clone to state
@@ -795,10 +1123,44 @@ export function Presupuestos() {
     setTab('ver');
   };
 
-  // Update budget status
+  // Save changes to draft budgets
+  const handleGuardarCambios = (updated) => {
+    setPresupuestos(prev => prev.map(b => b.id === updated.id ? updated : b));
+  };
+
+  // Update budget status and trigger automatic task generation on approval
   const handleCambiarEstatus = (id, nuevoEstatus) => {
     setPresupuestos(prev => prev.map(b => {
       if (b.id === id) {
+        if (nuevoEstatus === 'Aprobado') {
+          const newTasks = [];
+          if (b.conceptos && b.conceptos.length > 0) {
+            b.conceptos.forEach(c => {
+              if (c.empleadoAsignadoId) {
+                const alreadyExists = tareas.some(t => t.conceptoOrigenId === c.id);
+                if (!alreadyExists) {
+                  newTasks.push({
+                    id: `task-${Date.now()}-${c.clave}`,
+                    titulo: `[${c.clave}] ${c.descripcion}`,
+                    proyectoId: b.proyectoId,
+                    conceptoOrigenId: c.id,
+                    asignadoA: c.empleadoAsignadoId,
+                    fecha: b.fecha || fmt(new Date()),
+                    prioridad: 'media',
+                    hecho: false,
+                    estado: 'Por hacer',
+                    cantidad: c.cantidad,
+                    unidadMedida: c.unidadMedida
+                  });
+                }
+              }
+            });
+          }
+          if (newTasks.length > 0) {
+            setTareas(prevTareas => [...prevTareas, ...newTasks]);
+            alert(`Se han creado y asignado ${newTasks.length} tareas de obra basadas en el presupuesto aprobado.`);
+          }
+        }
         return { ...b, estado: nuevoEstatus };
       }
       return b;
@@ -853,6 +1215,7 @@ export function Presupuestos() {
         onAjustar={handleAjustar}
         onCambiarEstatus={handleCambiarEstatus}
         onMarcarBaseline={handleMarcarBaseline}
+        onGuardarCambios={handleGuardarCambios}
       />
     );
   }
@@ -992,7 +1355,7 @@ export function Presupuestos() {
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
                                     {b.isBaseline ? (
-                                      <span className="badge badge-green" style={{ fontSize: 10 }}>✓ Sí</span>
+                                      <span className="badge badge-green" style={{ fontSize: 10 }}>Línea Base</span>
                                     ) : (
                                       <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
                                     )}

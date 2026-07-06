@@ -320,7 +320,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 14 }}>{money(cotTotal(c))}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span className={`badge ${saldo <= 0 ? 'badge-green' : saldo < cotTotal(c) ? 'badge-amber' : 'badge-red'}`}>
-                        {saldo <= 0 ? '✓ Liquidada' : saldo < cotTotal(c) ? '◑ Parcial' : '○ Sin abono'}
+                        {saldo <= 0 ? 'Liquidada' : saldo < cotTotal(c) ? 'Parcial' : 'Sin abono'}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-3)' }}>

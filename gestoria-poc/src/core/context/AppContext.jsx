@@ -25,6 +25,7 @@ export const AppContextProvider = ({
   rolesRepository,
   projectRepository,
   budgetRepository,
+  taskRepository,
   initialActiveTab = 'home'
 }) => {
   const [active, setActive] = useState(initialActiveTab);
@@ -94,6 +95,7 @@ export const AppContextProvider = ({
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
   const [proyectos, setProyectos] = useState(() => projectRepository.getAll());
   const [presupuestos, setPresupuestos] = useState(() => budgetRepository.getAll());
+  const [tareas, setTareas] = useState(() => taskRepository.getAll());
 
   // Sync to database repositories on changes
   useEffect(() => {
@@ -123,6 +125,10 @@ export const AppContextProvider = ({
   useEffect(() => {
     budgetRepository.save(presupuestos);
   }, [presupuestos, budgetRepository]);
+
+  useEffect(() => {
+    taskRepository.save(tareas);
+  }, [tareas, taskRepository]);
 
   // Command wrappers
   const addClient = (nuevo) => addClientCommand(setClientes, nuevo, clientRepository);
@@ -220,6 +226,8 @@ export const AppContextProvider = ({
       setProyectos,
       presupuestos,
       setPresupuestos,
+      tareas,
+      setTareas,
       preselectedProjectId,
       setPreselectedProjectId,
       

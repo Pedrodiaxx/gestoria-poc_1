@@ -192,7 +192,7 @@ export function Proyectos() {
             title="Vista en cuadrícula"
             style={{ padding: '4px 10px' }}
           >
-            ⊞
+            <Icon name="grid" size={13} />
           </button>
           <button
             className={`btn btn-sm ${vista === 'lista' ? 'btn-primary' : 'btn-ghost'}`}
@@ -200,7 +200,7 @@ export function Proyectos() {
             title="Vista en lista"
             style={{ padding: '4px 10px' }}
           >
-            ☰
+            <Icon name="list" size={13} />
           </button>
         </div>
       </div>

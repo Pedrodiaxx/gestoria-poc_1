@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from './common/Icon';
-import { EQUIPO, TRAMITES_MOCK, TRAMITES_TIPOS, TAREAS_MOCK } from '../data/mockData';
+import { EQUIPO, TRAMITES_MOCK, TRAMITES_TIPOS } from '../data/mockData';
+import { useAppContext } from '../core/context';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 
 export default function TareasDiarias() {
-  const [tareas, setTareas] = useState(() => {
-    const saved = localStorage.getItem('giu_tareas');
-    return saved ? JSON.parse(saved) : TAREAS_MOCK;
-  });
+  const { tareas, setTareas } = useAppContext();
   const [filtroUser, setFiltroUser] = useState('todos');
   const [showNueva, setShowNueva] = useState(false);
   const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
-
-  useEffect(() => {
-    localStorage.setItem('giu_tareas', JSON.stringify(tareas));
-  }, [tareas]);
 
   const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, hecho: !t.hecho } : t));
 
@@ -25,7 +19,7 @@ export default function TareasDiarias() {
   const todayStr = fmt(hoy);
   const col1 = filtered.filter(t => !t.hecho && t.fecha === todayStr);
   const col2 = filtered.filter(t => t.hecho);
-  const col3 = filtered.filter(t => !t.hecho && t.fecha < todayStr);
+  const col3 = filtered.filter(t => !t.hecho && (t.fecha < todayStr || !t.fecha));
 
   const guardarNueva = () => {
     if (!nueva.titulo) return;
@@ -50,16 +44,25 @@ export default function TareasDiarias() {
           </div>
           <div style={{ flex: 1 }}>
             <div className="task-card-title" style={{ textDecoration: t.hecho ? 'line-through' : 'none' }}>{t.titulo}</div>
-            <div className="task-card-meta">
-              <span className={`badge ${PrioColors[t.prioridad]}`} style={{ fontSize: 10 }}>{t.prioridad}</span>
-              <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)' }}>{t.tramiteId}</span>
+            <div className="task-card-meta" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <span className={`badge ${PrioColors[t.prioridad] || 'badge-gray'}`} style={{ fontSize: 10 }}>{t.prioridad}</span>
+              <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)' }}>{t.tramiteId || t.proyectoId}</span>
               {eq && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={{ width: 16, height: 16, borderRadius: '50%', background: eq.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{eq.avatar}</span>
                   <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{eq.nombre}</span>
                 </span>
               )}
-              {t.fecha !== todayStr && !t.hecho && <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 500 }}>vence: {t.fecha}</span>}
+              {t.cantidad !== undefined && t.unidadMedida && (
+                <span className="badge badge-gray" style={{ fontSize: 10, background: 'var(--surface2)', color: 'var(--text-2)', border: '1px solid var(--border)' }}>
+                  {t.cantidad} {t.unidadMedida}
+                </span>
+              )}
+              {t.fecha && t.fecha !== todayStr && !t.hecho && (
+                <span style={{ fontSize: 11, color: t.fecha < todayStr ? 'var(--red)' : 'var(--text-3)', fontWeight: 500 }}>
+                  vence: {t.fecha}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -94,7 +97,7 @@ export default function TareasDiarias() {
             </div>
             <span className="task-col-count" style={{ background: 'var(--blue-light)', color: 'var(--blue-text)' }}>{col1.length}</span>
           </div>
-          {col1.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '20px 0' }}>¡Todo al día! ✓</div>}
+          {col1.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '20px 0' }}>Todo al día</div>}
           {col1.map(t => <TCard key={t.id} t={t} />)}
         </div>
 
