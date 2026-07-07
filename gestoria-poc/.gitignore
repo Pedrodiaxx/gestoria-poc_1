@@ -1,0 +1,12 @@
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# .NET / C#
+backend/bin/
+backend/obj/
+backend/.vs/
+
+# Variables de entorno (Secretos)
+.env
+*.env.local
