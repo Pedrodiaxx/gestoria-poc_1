@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
-import { AppContextProvider } from './core/context';
-import { LocalStorageRepository } from './core/repository';
+import { AppContextProvider } from './core/context/index.js';
+import { LocalStorageRepository } from './core/repository/index.js';
 import {
   CLIENTES,
   CATALOGO_CONCEPTOS,
@@ -11,7 +11,7 @@ import {
   initialPresupuestosDB,
   PROYECTOS_MOCK,
   TAREAS_MOCK
-} from './data/mockData';
+} from './data/mockData.js';
 
 // Default users for userRepository
 const DEFAULT_USERS = [
