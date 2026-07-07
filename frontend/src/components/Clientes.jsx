@@ -89,7 +89,7 @@ export function Clientes() {
           return merged;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
     return DEFAULT_STATUSES;
   });
 
@@ -286,6 +286,7 @@ export function Clientes() {
         const baseId = Math.max(...clientes.map(c => c.id), 0);
         const newClients = rows.map((row, idx) => {
           const mapped = {};
+
           Object.entries(row).forEach(([key, val]) => {
             const normalKey = key.toLowerCase().trim().replace(/_/g, ' ');
             const field = FIELD_MAP[normalKey];
