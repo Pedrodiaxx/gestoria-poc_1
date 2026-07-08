@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money } from '../data/mockData';
@@ -6,6 +6,26 @@ import { money } from '../data/mockData';
 export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConceptos }) {
   const context = useAppContext();
   const list = propsConceptos || context.conceptos;
+
+  const API_URL = 'https://gestoria-backend.onrender.com';
+
+  // EFECTO PARA TRAER CONCEPTOS DE RENDER / BACKEND
+  useEffect(() => {
+    const cargarConceptos = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/conceptos`);
+        if (!response.ok) throw new Error('Error al conectar con la API de conceptos');
+        const datosApi = await response.json();
+
+        if (propsSetConceptos) {
+          propsSetConceptos(datosApi);
+        }
+      } catch (error) {
+        console.error("No se pudieron sincronizar los conceptos de Render:", error);
+      }
+    };
+    cargarConceptos();
+  }, [propsSetConceptos]);
 
   const [q, setQ] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -19,7 +39,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
     c.descripcion.toLowerCase().includes(q.toLowerCase())
   );
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!nuevaClave || !nuevaDesc || !nuevoPrecio) {
       setErrorMsg('Por favor completa todos los campos.');
       return;
@@ -36,6 +56,16 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
       descripcion: nuevaDesc.trim(),
       precio: parseFloat(nuevoPrecio) || 0
     };
+
+    try {
+      await fetch(`${API_URL}/api/conceptos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevo)
+      });
+    } catch (error) {
+      console.error("Error al guardar el concepto en el servidor:", error);
+    }
 
     if (propsSetConceptos) {
       propsSetConceptos(prev => [...prev, nuevo]);

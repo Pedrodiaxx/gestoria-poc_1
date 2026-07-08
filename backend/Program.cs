@@ -351,6 +351,29 @@ app.MapPost("/api/tareas", async (TareaDiaria nuevaTarea, ApplicationDbContext d
     return Results.Created($"/api/tareas/{nuevaTarea.Id}", nuevaTarea);
 });
 
+// -- ENDPOINTS PARA CONCEPTOS (CATÁLOGO) --
+app.MapGet("/api/conceptos", async (ApplicationDbContext db) =>
+{
+    var conceptos = await db.Conceptos.ToListAsync();
+
+    var resultado = conceptos.Select(c => new ConceptoDTO
+    {
+        Id = c.Id,
+        Clave = c.Clave ?? "",
+        Descripcion = c.Descripcion ?? "",
+        Precio = c.Precio
+    }).ToList();
+
+    return Results.Ok(resultado);
+});
+
+app.MapPost("/api/conceptos", async (Concepto nuevoConcepto, ApplicationDbContext db) =>
+{
+    db.Conceptos.Add(nuevoConcepto);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/conceptos/{nuevoConcepto.Id}", nuevoConcepto);
+});
+
 // Ruta por defecto para verificar salud de la API
 app.MapGet("/weatherforecast", () =>
 {
