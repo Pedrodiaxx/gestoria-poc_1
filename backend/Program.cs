@@ -1,39 +1,46 @@
+using Microsoft.EntityFrameworkCore;
+using Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// 1. CONEXIÓN A POSTGRESQL EN RENDER
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Habilitar CORS para que tu React de Frontend pueda leer la API sin bloqueos
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-}
-
 app.UseHttpsRedirection();
+app.UseCors(); // Activar la política de CORS
 
-var summaries = new[]
+// 2. ENDPOINT PARA CONSULTAR TODAS LAS COTIZACIONES (GET /api/cotizaciones)
+app.MapGet("/api/cotizaciones", async (ApplicationDbContext db) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var cotizaciones = await db.Cotizaciones.ToListAsync();
+    return Results.Ok(cotizaciones);
+});
 
+// 3. ENDPOINT PARA CREAR UNA NUEVA COTIZACIÓN (POST /api/cotizaciones)
+app.MapPost("/api/cotizaciones", async (Cotizacion nuevaCotizacion, ApplicationDbContext db) =>
+{
+    db.Cotizaciones.Add(nuevaCotizacion);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/cotizaciones/{nuevaCotizacion.Id}", nuevaCotizacion);
+});
+
+// Ruta por defecto para verificar salud de la API
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    return new[] { "Conexión Exitosa con Minimal APIs y Postgres" };
+});
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
