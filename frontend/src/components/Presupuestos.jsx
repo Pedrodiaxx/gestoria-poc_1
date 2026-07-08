@@ -1077,6 +1077,30 @@ export function Presupuestos() {
   const [q, setQ] = useState('');
   const [expandedProyecto, setExpandedProyecto] = useState(null);
 
+  const API_URL = 'https://gestoria-backend.onrender.com';
+
+  useEffect(() => {
+    const cargarPresupuestos = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (currentSession?.clienteId) queryParams.append('clienteId', currentSession.clienteId);
+        if (currentSession?.rol) queryParams.append('rol', currentSession.rol);
+
+        const response = await fetch(`${API_URL}/api/presupuestos?${queryParams.toString()}`);
+        if (!response.ok) throw new Error('Error al conectar con la API');
+        const datosApi = await response.json();
+
+        // Los datos ya vienen masticados desde el DTO del servidor
+        if (setPresupuestos) {
+          setPresupuestos(datosApi);
+        }
+      } catch (error) {
+        console.error("No se pudieron sincronizar los presupuestos de Render:", error);
+      }
+    };
+    cargarPresupuestos();
+  }, [setPresupuestos, currentSession]);
+
   // Automatically open creation tab if preselectedProjectId is active
   useEffect(() => {
     if (preselectedProjectId) {

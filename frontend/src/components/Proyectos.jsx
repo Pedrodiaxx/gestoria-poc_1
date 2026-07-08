@@ -24,13 +24,38 @@ export function Proyectos() {
     proyectos,
     addProyecto,
     presupuestos,
-    setPreselectedProjectId
+    setPreselectedProjectId,
+    setProyectos
   } = useAppContext();
 
   const [q, setQ] = useState('');
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [vista, setVista] = useState('grid'); // 'grid' | 'lista'
+
+  const API_URL = 'https://gestoria-backend.onrender.com';
+
+  useEffect(() => {
+    const cargarProyectos = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (currentSession?.clienteId) queryParams.append('clienteId', currentSession.clienteId);
+        if (currentSession?.rol) queryParams.append('rol', currentSession.rol);
+
+        const response = await fetch(`${API_URL}/api/proyectos?${queryParams.toString()}`);
+        if (!response.ok) throw new Error('Error al conectar con la API');
+        const datosApi = await response.json();
+
+        // Los datos ya vienen masticados y procesados desde el backend en C#
+        if (setProyectos) {
+          setProyectos(datosApi);
+        }
+      } catch (error) {
+        console.error("No se pudieron sincronizar los proyectos de Render:", error);
+      }
+    };
+    cargarProyectos();
+  }, [setProyectos, currentSession]);
 
   // Modal / Drawer state
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
@@ -50,52 +75,11 @@ export function Proyectos() {
     return matchQ && matchEstatus && matchTipo;
   });
 
-  // Calculate budget total (handles both old and new schema)
-  const getBudgetTotal = (b) => {
-    if (!b) return 0;
-    if (b.honorarios && b.derechos) {
-      const planos = (parseFloat(b.honorarios.planos?.cantidad) || 0) * (parseFloat(b.honorarios.planos?.precioUnitario) || 0);
-      const hrs = (parseFloat(b.honorarios.hrsHombre?.horas) || 0) * (parseFloat(b.honorarios.hrsHombre?.precioPorHora) || 0);
-      const ofi = (parseFloat(b.honorarios.oficina?.horas) || 0) * (parseFloat(b.honorarios.oficina?.precioPorHora) || 0);
-      const hTotal = planos + hrs + ofi;
-
-      const d1 = parseFloat(b.derechos.derecho1?.costo) || 0;
-      const d2 = parseFloat(b.derechos.derecho2?.costo) || 0;
-      const d3 = parseFloat(b.derechos.derecho3?.costo) || 0;
-      const dTotal = d1 + d2 + d3;
-      return hTotal + dTotal;
-    }
-
-    const directos = (parseFloat(b.costosDirectos?.materiales) || 0) +
-      (parseFloat(b.costosDirectos?.manoDeObra) || 0) +
-      (parseFloat(b.costosDirectos?.equipos) || 0) +
-      (parseFloat(b.costosDirectos?.subcontratistas) || 0);
-
-    const indirectos = (parseFloat(b.costosIndirectos?.oficina) || 0) +
-      (parseFloat(b.costosIndirectos?.seguros) || 0) +
-      (parseFloat(b.costosIndirectos?.permisos) || 0) +
-      (parseFloat(b.costosIndirectos?.administracion) || 0);
-
-    const subtotal = directos + indirectos;
-    const contingencia = subtotal * ((parseFloat(b.contingenciaPorcentaje) || 0) / 100);
-    return subtotal + contingencia;
-  };
-
-  // Get project cost from its baseline budget, otherwise fallback to project.monto
-  const getProyectoMontoReal = (p) => {
-    const associated = presupuestos.filter(b => b.proyectoId === p.id);
-    const baseline = associated.find(b => b.isBaseline);
-    if (baseline) {
-      return getBudgetTotal(baseline);
-    }
-    return p.monto || 0;
-  };
-
-  // Stats
+  // Stats (monto ya procesado en el servidor)
   const total = proyectos.length;
   const enProceso = proyectos.filter(p => p.estatus === 'en-proceso').length;
   const completados = proyectos.filter(p => p.estatus === 'completado').length;
-  const montoTotal = proyectos.reduce((s, p) => s + getProyectoMontoReal(p), 0);
+  const montoTotal = proyectos.reduce((s, p) => s + (p.monto || 0), 0);
 
   const tiposUnicos = [...new Set(proyectos.map(p => p.tipo))];
 
@@ -214,16 +198,16 @@ export function Proyectos() {
       {/* Grid / Lista */}
       {vista === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-          {filtered.map(p => (
-            <ProyectoCard
-              key={p.id}
-              proyecto={p}
-              clientes={clientes}
-              setActive={setActive}
-              onClick={() => setProyectoDetalle(p)}
-              montoReal={getProyectoMontoReal(p)}
-            />
-          ))}
+            {filtered.map(p => (
+              <ProyectoCard
+                key={p.id}
+                proyecto={p}
+                clientes={clientes}
+                setActive={setActive}
+                onClick={() => setProyectoDetalle(p)}
+                montoReal={p.monto || 0}
+              />
+            ))}
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -244,7 +228,7 @@ export function Proyectos() {
                 const tipo = TRAMITES_TIPOS[p.tipo];
                 const col = COLOR_MAP[tipo?.color] || '#777';
                 const est = ESTATUS_CONFIG[p.estatus] || { label: p.estatus, badge: 'badge-gray' };
-                const monto = getProyectoMontoReal(p);
+                const monto = p.monto || 0;
                 return (
                   <tr
                     key={p.id}

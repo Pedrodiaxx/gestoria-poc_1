@@ -25,26 +25,23 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
   const [guardado, setGuardado] = useState(false);
   const [qList, setQList] = useState('');
 
-  // 2. EFECTO PARA TRAER LOS DATOS REALES DE RENDER AL CARGAR LA COMPONENTE
+  // 2. EFECTO PARA TRAER LOS DATOS DEL DTO CALCULADO DESDE RENDER
   useEffect(() => {
     const cargarCotizaciones = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/cotizaciones`);
+        // Parametrizar el fetch con seguridad por rol (el backend filtra)
+        const params = new URLSearchParams();
+        if (currentSession?.clienteId) params.append('clienteId', currentSession.clienteId);
+        if (currentSession?.rol) params.append('rol', currentSession.rol);
+        const url = `${API_URL}/api/cotizaciones?${params.toString()}`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Error al conectar con la API');
         const datosApi = await response.json();
-        
-        // Mapeamos lo que viene de la base de datos de Render al formato complejo de tu UI
-        const formateadas = datosApi.map(c => ({
-          id: `COT-${String(c.id).padStart(3, '0')}`,
-          clienteId: listClientes.find(cli => cli.nombre === c.cliente)?.id || 1,
-          fecha: c.fecha.split('T')[0],
-          conceptos: [{ clave: "LIC-RES-01", cantidad: 1 }], // Mock temporal para que dibuje la fila expandida
-          abonos: [],
-          estatus: 'pendiente'
-        }));
 
+        // Los datos ya vienen "masticados" del DTO del servidor
         if (setCotizaciones) {
-          setCotizaciones(formateadas);
+          setCotizaciones(datosApi);
         }
       } catch (error) {
         console.error("No se pudieron sincronizar las cotizaciones de Render:", error);
@@ -52,18 +49,10 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
     };
 
     cargarCotizaciones();
-  }, [setCotizaciones, listClientes]);
+  }, [setCotizaciones, currentSession]);
 
   const getConcepto = (clave) => context.conceptos.find(c => c.clave === clave);
   const getCliente = (id) => listClientes.find(c => c.id === id);
-
-  const cotTotal = (cot) => cot.conceptos.reduce((s, c) => {
-    const con = getConcepto(c.clave);
-    return s + (con ? con.precio * c.quantity || con.precio * c.cantidad : 0);
-  }, 0);
-
-  const cotAbonado = (cot) => cot.abonos.reduce((s, a) => s + a, 0);
-  const cotSaldo = (cot) => cotTotal(cot) - cotAbonado(cot);
 
   const buscarConcepto = (q) => {
     setBusqueda(q);
@@ -120,14 +109,34 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
       
       const resultadoApi = await response.json();
 
-      // Creamos el objeto con la estructura compleja para tu UI usando el ID real que arrojó la DB
+      // Creamos el objeto con la estructura del DTO usando el ID real que arrojó la DB
+      const cli = getCliente(parseInt(clienteId));
+      const conceptosMapeados = lineItems.map(li => {
+        const con = getConcepto(li.clave);
+        return {
+          clave: li.clave,
+          descripcion: con?.descripcion || '',
+          unidad: '',
+          cantidad: li.cantidad,
+          precioUnitario: con?.precio || 0,
+          subtotal: (con?.precio || 0) * li.cantidad
+        };
+      });
+
       const nueva = {
         id: `COT-${String(resultadoApi.id).padStart(3, '0')}`,
+        idNumerico: resultadoApi.id,
         clienteId: parseInt(clienteId),
+        clienteNombre: cli?.nombre || "Cliente General",
+        clienteContacto: cli?.contacto || "",
         fecha: fmt(hoy),
-        conceptos: lineItems,
-        abonos: [],
+        total: parseFloat(totalNuevo),
+        abonado: 0,
+        saldo: parseFloat(totalNuevo),
         estatus: 'pendiente',
+        estatusBadge: 'badge-red',
+        estatusLabel: 'Sin abono',
+        conceptos: conceptosMapeados
       };
 
       if (setCotizaciones) {
@@ -316,11 +325,11 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
     );
   }
 
+  // El filtro de seguridad por rol ahora se aplica en el servidor.
+  // Aquí solo queda el filtro de búsqueda visual por folio o nombre de cliente.
   const filteredCotizaciones = listCotizaciones.filter(c => {
-    if (currentSession.rol === 'cliente' && c.clienteId !== currentSession.clienteId) return false;
-    const cli = getCliente(c.clienteId);
-    const clientName = cli && cli.nombre ? cli.nombre.toLowerCase() : '';
-    const contactName = cli && cli.contacto ? cli.contacto.toLowerCase() : '';
+    const clientName = (c.clienteNombre || '').toLowerCase();
+    const contactName = (c.clienteContacto || '').toLowerCase();
     return c.id.toLowerCase().includes(qList.toLowerCase()) ||
       clientName.includes(qList.toLowerCase()) ||
       contactName.includes(qList.toLowerCase());
@@ -359,8 +368,6 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
             </thead>
             <tbody>
               {filteredCotizaciones.map(c => {
-                const cli = getCliente(c.clienteId);
-                const saldo = cotSaldo(c);
                 const isExpanded = expandedId === c.id;
                 return (
                   <Fragment key={c.id}>
@@ -371,14 +378,14 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                       onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = '' }}>
                       <td style={{ padding: '12px 16px' }}><span className="mono fw-600" style={{ color: 'var(--accent)' }}>{c.id}</span></td>
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontWeight: 500 }}>{cli?.nombre}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{cli?.contacto}</div>
+                        <div style={{ fontWeight: 500 }}>{c.clienteNombre}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.clienteContacto}</div>
                       </td>
                       <td style={{ padding: '12px 16px', color: 'var(--text-2)', fontSize: 12 }}>{c.fecha}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 14 }}>{money(cotTotal(c))}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 14 }}>{money(c.total)}</td>
                       <td style={{ padding: '12px 16px' }}>
-                        <span className={`badge ${saldo <= 0 ? 'badge-green' : saldo < cotTotal(c) ? 'badge-amber' : 'badge-red'}`}>
-                          {saldo <= 0 ? 'Liquidada' : saldo < cotTotal(c) ? 'Parcial' : 'Sin abono'}
+                        <span className={`badge ${c.estatusBadge}`}>
+                          {c.estatusLabel}
                         </span>
                       </td>
                       <td style={{ padding: '12px 16px', color: 'var(--text-3)' }}>
@@ -398,19 +405,16 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                                 </tr>
                               </thead>
                               <tbody>
-                                {c.conceptos.map((li, i) => {
-                                  const con = getConcepto(li.clave);
-                                  return (
-                                    <tr key={li.clave} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+                                {(c.conceptos || []).map((li, i) => (
+                                    <tr key={li.clave || i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
                                       <td style={{ padding: '8px 12px' }}><span className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
-                                      <td style={{ padding: '8px 12px', color: 'var(--text-2)' }}>{con?.descripcion}</td>
-                                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>{money(con?.precio || 0)}</td>
+                                      <td style={{ padding: '8px 12px', color: 'var(--text-2)' }}>{li.descripcion}</td>
+                                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>{money(li.precioUnitario || 0)}</td>
                                     </tr>
-                                  );
-                                })}
+                                ))}
                                 <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface2)' }}>
                                   <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 700 }}>Total</td>
-                                  <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 15, color: 'var(--accent)' }}>{money(cotTotal(c))}</td>
+                                  <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 15, color: 'var(--accent)' }}>{money(c.total)}</td>
                                 </tr>
                               </tbody>
                             </table>

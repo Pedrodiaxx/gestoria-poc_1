@@ -12,14 +12,34 @@ export default function TareasDiarias() {
   const [showNueva, setShowNueva] = useState(false);
   const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
 
-  const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, hecho: !t.hecho } : t));
+  const API_URL = 'https://gestoria-backend.onrender.com';
+
+  useEffect(() => {
+    const cargarTareas = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/tareas`);
+        if (!response.ok) throw new Error('Error al conectar con la API');
+        const datosApi = await response.json();
+
+        // Los datos vienen procesados y pre-clasificados desde TareaDiariaDTO
+        if (setTareas) {
+          setTareas(datosApi);
+        }
+      } catch (error) {
+        console.error("No se pudieron sincronizar las tareas de Render:", error);
+      }
+    };
+    cargarTareas();
+  }, [setTareas]);
+
+  const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
 
   const filtered = tareas.filter(t => filtroUser === 'todos' || t.asignadoA === filtroUser);
 
-  const todayStr = fmt(hoy);
-  const col1 = filtered.filter(t => !t.hecho && t.fecha === todayStr);
-  const col2 = filtered.filter(t => t.hecho);
-  const col3 = filtered.filter(t => !t.hecho && (t.fecha < todayStr || !t.fecha));
+  // Clasificación de columnas controlada 100% por el servidor (propiedad Columna)
+  const col1 = filtered.filter(t => t.columna === 'hoy');
+  const col2 = filtered.filter(t => t.columna === 'completada' || t.completada || t.hecho);
+  const col3 = filtered.filter(t => t.columna === 'atrasada' && !t.completada && !t.hecho);
 
   const guardarNueva = async () => {
     if (!nueva.titulo) return;
