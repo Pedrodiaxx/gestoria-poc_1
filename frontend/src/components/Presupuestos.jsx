@@ -1086,11 +1086,40 @@ export function Presupuestos() {
 
   const verPres = presupuestos.find(p => p.id === viendoId);
 
-  const guardarNuevo = (p) => {
-    setPresupuestos(prev => [p, ...prev]);
-    // Clear preselected project
-    if (preselectedProjectId) {
-      setPreselectedProjectId(null);
+  const guardarNuevo = async (p) => {
+    try {
+      const datosParaBackend = {
+        proyectoId: p.proyectoId,
+        titulo: p.titulo,
+        estado: p.estado,
+        version: p.version,
+        totalDirecto: (p.costosDirectos?.materiales || 0) + (p.costosDirectos?.manoDeObra || 0) + (p.costosDirectos?.equipos || 0) + (p.costosDirectos?.subcontratistas || 0),
+        totalIndirecto: (p.costosIndirectos?.oficina || 0) + (p.costosIndirectos?.seguros || 0) + (p.costosIndirectos?.permisos || 0) + (p.costosIndirectos?.administracion || 0),
+        fecha: p.fecha ? new Date(p.fecha).toISOString() : new Date().toISOString(),
+        conceptosJson: JSON.stringify(p.conceptos || [])
+      };
+
+      const response = await fetch('https://gestoria-backend.onrender.com/api/presupuestos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaBackend)
+      });
+
+      if (!response.ok) throw new Error('Error al guardar presupuesto en el servidor');
+      const presCreado = await response.json();
+      
+      const nuevoLocal = {
+        ...p,
+        id: `PRES-${String(presCreado.id || Date.now()).slice(-4)}`
+      };
+
+      setPresupuestos(prev => [nuevoLocal, ...prev]);
+      if (preselectedProjectId) {
+        setPreselectedProjectId(null);
+      }
+    } catch (error) {
+      console.error("Hubo un problema al conectar con el Backend:", error);
+      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
     }
   };
 

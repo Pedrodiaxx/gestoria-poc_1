@@ -234,21 +234,46 @@ export function Clientes() {
     setShowAddClientDropdown(false);
   };
 
-  const handleAddCliente = () => {
+  const handleAddCliente = async () => {
     if (!nuevoCliente.nombre) return;
-    const nuevo = {
-      ...nuevoCliente,
-      id: Math.max(...clientes.map(c => c.id), 0) + 1,
+
+    const datosParaBackend = {
+      nombre: nuevoCliente.nombre,
+      contacto: nuevoCliente.contacto || '',
+      email: nuevoCliente.email || '',
+      telefono: nuevoCliente.tel || '',
+      estatus: nuevoCliente.estatus || 'activo',
+      tipo: nuevoCliente.tipo || 'empresa'
     };
-    addClient(nuevo);
-    setShowAddClienteModal(false);
-    setNuevoCliente({
-      nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
-      tipo: 'empresa', personaTipo: 'moral', apoderado: '',
-      rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
-      estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
-    });
-    setProyectoSearch('');
+
+    try {
+      const response = await fetch('https://gestoria-backend.onrender.com/api/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaBackend)
+      });
+
+      if (!response.ok) throw new Error('Error al guardar cliente en el servidor');
+      const clienteCreado = await response.json();
+
+      const nuevo = {
+        ...nuevoCliente,
+        id: clienteCreado.id || Math.max(...clientes.map(c => c.id), 0) + 1,
+      };
+
+      addClient(nuevo);
+      setShowAddClienteModal(false);
+      setNuevoCliente({
+        nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
+        tipo: 'empresa', personaTipo: 'moral', apoderado: '',
+        rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
+        estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
+      });
+      setProyectoSearch('');
+    } catch (error) {
+      console.error("Hubo un problema al conectar con el Backend:", error);
+      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+    }
   };
 
   // ─── Excel / CSV Import ───────────────────────────────────────────────────

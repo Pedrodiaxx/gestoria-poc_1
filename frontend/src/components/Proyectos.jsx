@@ -959,31 +959,55 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
     setDireccionesComplementarias(direccionesComplementarias.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!nombre) return;
-    const nuevo = {
-      id: `PRY-${String(Date.now()).slice(-3)}`,
+
+    const datosParaBackend = {
       nombre,
-      tipo,
-      clienteId: clienteId ? parseInt(clienteId) : null,
+      clienteId: clienteId ? parseInt(clienteId) : 0,
       estatus,
       prioridad,
       avance: parseInt(avance) || 0,
-      descripcion,
-      fechaInicio: new Date().toISOString().split('T')[0],
-      responsable,
-      monto: 0, // Will be updated by baseline budget
-      ubicacion,
-      alcance,
-      usoPrincipal,
-      usoComplementario,
-      impactoPrincipal,
-      impactoComplementario,
-      vialidadPrincipal,
-      vialidadComplementaria,
-      direccionesComplementarias: direccionesComplementarias.filter(d => d.trim() !== '')
+      fechaInicio: new Date().toISOString()
     };
-    onGuardar(nuevo);
+
+    try {
+      const response = await fetch('https://gestoria-backend.onrender.com/api/proyectos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaBackend)
+      });
+
+      if (!response.ok) throw new Error('Error al guardar proyecto en el servidor');
+      const proyectoCreado = await response.json();
+
+      const nuevo = {
+        id: `PRY-${String(proyectoCreado.id || Date.now()).slice(-3)}`,
+        nombre,
+        tipo,
+        clienteId: clienteId ? parseInt(clienteId) : null,
+        estatus,
+        prioridad,
+        avance: parseInt(avance) || 0,
+        descripcion,
+        fechaInicio: new Date().toISOString().split('T')[0],
+        responsable,
+        monto: 0,
+        ubicacion,
+        alcance,
+        usoPrincipal,
+        usoComplementario,
+        impactoPrincipal,
+        impactoComplementario,
+        vialidadPrincipal,
+        vialidadComplementaria,
+        direccionesComplementarias: direccionesComplementarias.filter(d => d.trim() !== '')
+      };
+      onGuardar(nuevo);
+    } catch (error) {
+      console.error("Hubo un problema al conectar con el Backend:", error);
+      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+    }
   };
 
   return (

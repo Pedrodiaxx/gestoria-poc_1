@@ -21,11 +21,40 @@ export default function TareasDiarias() {
   const col2 = filtered.filter(t => t.hecho);
   const col3 = filtered.filter(t => !t.hecho && (t.fecha < todayStr || !t.fecha));
 
-  const guardarNueva = () => {
+  const guardarNueva = async () => {
     if (!nueva.titulo) return;
-    setTareas(prev => [...prev, { ...nueva, id: `t${Date.now()}`, hecho: false }]);
-    setShowNueva(false);
-    setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
+
+    const datosParaBackend = {
+      titulo: nueva.titulo,
+      prioridad: nueva.prioridad || 'media',
+      hecho: false,
+      fecha: nueva.fecha ? new Date(nueva.fecha).toISOString() : new Date().toISOString(),
+      asignadoA: nueva.asignadoA || 'u1'
+    };
+
+    try {
+      const response = await fetch('https://gestoria-backend.onrender.com/api/tareas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaBackend)
+      });
+
+      if (!response.ok) throw new Error('Error al guardar tarea en el servidor');
+      const tareaCreada = await response.json();
+
+      const nuevoLocal = {
+        ...nueva,
+        id: `t${tareaCreada.id || Date.now()}`,
+        hecho: false
+      };
+
+      setTareas(prev => [...prev, nuevoLocal]);
+      setShowNueva(false);
+      setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
+    } catch (error) {
+      console.error("Hubo un problema al conectar con el Backend:", error);
+      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+    }
   };
 
   const PrioColors = { alta: 'badge-red', media: 'badge-amber', baja: 'badge-gray' };
