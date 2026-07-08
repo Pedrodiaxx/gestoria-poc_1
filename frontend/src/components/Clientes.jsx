@@ -14,7 +14,8 @@ export function Clientes() {
     session,
     addClient,
     deleteClient,
-    updateClientField
+    updateClientField,
+    setClientes
   } = useAppContext();
 
   const [qClientes, setQClientes] = useState('');
@@ -28,6 +29,27 @@ export function Clientes() {
     rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
     estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
   });
+
+  const API_URL = 'https://gestoria-backend.onrender.com';
+
+  // EFECTO PARA TRAER DTOs LIMPIOS DE RENDER
+  useEffect(() => {
+    const cargarClientes = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/clientes`);
+        if (!response.ok) throw new Error('Error al conectar con la API');
+        const datosApi = await response.json();
+
+        // Los datos ya vienen procesados del DTO del servidor
+        if (setClientes) {
+          setClientes(datosApi);
+        }
+      } catch (error) {
+        console.error("No se pudieron sincronizar los clientes de Render:", error);
+      }
+    };
+    cargarClientes();
+  }, [setClientes]);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedRows, setImportedRows] = useState(0);
