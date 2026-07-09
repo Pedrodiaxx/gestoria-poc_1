@@ -60,15 +60,11 @@ export default function TareasDiarias() {
       });
 
       if (!response.ok) throw new Error('Error al guardar tarea en el servidor');
-      const tareaCreada = await response.json();
+      
+      // Obtenemos el TareaDiariaDTO calculado desde el backend
+      const tareaMasticadaPorElBackend = await response.json();
 
-      const nuevoLocal = {
-        ...nueva,
-        id: `t${tareaCreada.id || Date.now()}`,
-        hecho: false
-      };
-
-      setTareas(prev => [...prev, nuevoLocal]);
+      setTareas(prev => [...prev, tareaMasticadaPorElBackend]);
       setShowNueva(false);
       setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
     } catch (error) {

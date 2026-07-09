@@ -70,6 +70,18 @@ app.MapGet("/api/cotizaciones", async (ApplicationDbContext db, int? clienteId, 
             estatus = "pendiente"; badge = "badge-red"; label = "Sin abono";
         }
 
+        var conceptos = new List<Data.DTOs.ConceptoLineaDTO>();
+        if (!string.IsNullOrEmpty(c.ConceptosJson))
+        {
+            try
+            {
+                var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                conceptos = JsonSerializer.Deserialize<List<Data.DTOs.ConceptoLineaDTO>>(c.ConceptosJson, jsonOpts)
+                    ?? new List<Data.DTOs.ConceptoLineaDTO>();
+            }
+            catch { /* JSON inválido */ }
+        }
+
         return new Data.DTOs.CotizacionDTO
         {
             Id = $"COT-{c.Id.ToString().PadLeft(3, '0')}",
@@ -84,7 +96,7 @@ app.MapGet("/api/cotizaciones", async (ApplicationDbContext db, int? clienteId, 
             Estatus = estatus,
             EstatusBadge = badge,
             EstatusLabel = label,
-            Conceptos = new List<Data.DTOs.ConceptoLineaDTO>()
+            Conceptos = conceptos
         };
     }).ToList();
 
@@ -96,7 +108,59 @@ app.MapPost("/api/cotizaciones", async (Cotizacion nuevaCotizacion, ApplicationD
 {
     db.Cotizaciones.Add(nuevaCotizacion);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/cotizaciones/{nuevaCotizacion.Id}", nuevaCotizacion);
+
+    // Resolver cliente para el DTO
+    var cli = await db.Clientes.FirstOrDefaultAsync(cl =>
+        cl.Nombre.Equals(nuevaCotizacion.Cliente, StringComparison.OrdinalIgnoreCase));
+
+    double total = nuevaCotizacion.Total;
+    double abonado = 0;
+    double saldo = total - abonado;
+
+    string estatus, badge, label;
+    if (saldo <= 0)
+    {
+        estatus = "liquidada"; badge = "badge-green"; label = "Liquidada";
+    }
+    else if (abonado > 0)
+    {
+        estatus = "parcial"; badge = "badge-amber"; label = "Parcial";
+    }
+    else
+    {
+        estatus = "pendiente"; badge = "badge-red"; label = "Sin abono";
+    }
+
+    var conceptos = new List<Data.DTOs.ConceptoLineaDTO>();
+    if (!string.IsNullOrEmpty(nuevaCotizacion.ConceptosJson))
+    {
+        try
+        {
+            var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            conceptos = JsonSerializer.Deserialize<List<Data.DTOs.ConceptoLineaDTO>>(nuevaCotizacion.ConceptosJson, jsonOpts)
+                ?? new List<Data.DTOs.ConceptoLineaDTO>();
+        }
+        catch { /* JSON inválido */ }
+    }
+
+    var dto = new Data.DTOs.CotizacionDTO
+    {
+        Id = $"COT-{nuevaCotizacion.Id.ToString().PadLeft(3, '0')}",
+        IdNumerico = nuevaCotizacion.Id,
+        ClienteId = cli?.Id ?? 0,
+        ClienteNombre = cli?.Nombre ?? nuevaCotizacion.Cliente,
+        ClienteContacto = cli?.Contacto ?? "",
+        Fecha = nuevaCotizacion.Fecha.ToString("yyyy-MM-dd"),
+        Total = total,
+        Abonado = abonado,
+        Saldo = saldo,
+        Estatus = estatus,
+        EstatusBadge = badge,
+        EstatusLabel = label,
+        Conceptos = conceptos
+    };
+
+    return Results.Created($"/api/cotizaciones/{nuevaCotizacion.Id}", dto);
 });
 
 // -- ENDPOINTS PARA CLIENTES (DTO con badge/label de estatus) --
@@ -136,7 +200,30 @@ app.MapPost("/api/clientes", async (Cliente nuevoCliente, ApplicationDbContext d
 {
     db.Clientes.Add(nuevoCliente);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/clientes/{nuevoCliente.Id}", nuevoCliente);
+
+    string badge, label;
+    var est = (nuevoCliente.Estatus ?? "activo").ToLowerInvariant();
+    switch (est)
+    {
+        case "inactivo": badge = "badge-gray"; label = "Inactivo"; break;
+        case "prospecto": badge = "badge-amber"; label = "Prospecto"; break;
+        default: badge = "badge-green"; label = "Activo"; break;
+    }
+
+    var dto = new ClienteDTO
+    {
+        Id = nuevoCliente.Id,
+        Nombre = nuevoCliente.Nombre ?? "",
+        Contacto = nuevoCliente.Contacto ?? "",
+        Email = nuevoCliente.Email ?? "",
+        Telefono = nuevoCliente.Telefono ?? "",
+        Estatus = est,
+        Tipo = nuevoCliente.Tipo ?? "empresa",
+        EstatusBadge = badge,
+        EstatusLabel = label
+    };
+
+    return Results.Created($"/api/clientes/{nuevoCliente.Id}", dto);
 });
 
 // -- ENDPOINTS PARA PROYECTOS (DTO con cliente resuelto, monto y seguridad) --
@@ -201,7 +288,39 @@ app.MapPost("/api/proyectos", async (Proyecto nuevoProyecto, ApplicationDbContex
 {
     db.Proyectos.Add(nuevoProyecto);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/proyectos/{nuevoProyecto.Id}", nuevoProyecto);
+
+    var cli = await db.Clientes.FirstOrDefaultAsync(cl => cl.Id == nuevoProyecto.ClienteId);
+
+    string badge, label;
+    switch (nuevoProyecto.Estatus?.ToLowerInvariant())
+    {
+        case "en-proceso": badge = "badge-blue"; label = "En Proceso"; break;
+        case "completado": badge = "badge-green"; label = "Completado"; break;
+        case "pausado": badge = "badge-gray"; label = "Pausado"; break;
+        default: badge = "badge-amber"; label = "Pendiente"; break;
+    }
+
+    var dto = new ProyectoDTO
+    {
+        Id = $"PRY-{nuevoProyecto.Id.ToString().PadLeft(3, '0')}",
+        IdNumerico = nuevoProyecto.Id,
+        Nombre = nuevoProyecto.Nombre ?? "",
+        ClienteId = nuevoProyecto.ClienteId,
+        ClienteNombre = cli?.Nombre ?? "",
+        Estatus = nuevoProyecto.Estatus ?? "pendiente",
+        EstatusBadge = badge,
+        EstatusLabel = label,
+        Prioridad = nuevoProyecto.Prioridad ?? "media",
+        Avance = nuevoProyecto.Avance,
+        FechaInicio = nuevoProyecto.FechaInicio.ToString("yyyy-MM-dd"),
+        Tipo = "licencia_construccion",
+        Descripcion = "",
+        Responsable = "usr-admin-1",
+        Monto = 0,
+        TotalPresupuestos = 0
+    };
+
+    return Results.Created($"/api/proyectos/{nuevoProyecto.Id}", dto);
 });
 
 // -- ENDPOINTS PARA PRESUPUESTOS (DTO con totales calculados y conceptos deserializados) --
@@ -288,7 +407,57 @@ app.MapPost("/api/presupuestos", async (Presupuesto nuevoPresupuesto, Applicatio
 {
     db.Presupuestos.Add(nuevoPresupuesto);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/presupuestos/{nuevoPresupuesto.Id}", nuevoPresupuesto);
+
+    var proy = await db.Proyectos.FirstOrDefaultAsync(pr =>
+        $"PRY-{pr.Id.ToString().PadLeft(3, '0')}" == nuevoPresupuesto.ProyectoId ||
+        pr.Id.ToString() == nuevoPresupuesto.ProyectoId);
+
+    string badge, label;
+    switch (nuevoPresupuesto.Estado?.ToLowerInvariant())
+    {
+        case "aprobado": badge = "badge-green"; label = "Aprobado"; break;
+        case "en-revision": badge = "badge-blue"; label = "En Revisión"; break;
+        case "rechazado": badge = "badge-red"; label = "Rechazado"; break;
+        default: badge = "badge-amber"; label = "Borrador"; break;
+    }
+
+    var conceptos = new List<ConceptoPresupuestoDTO>();
+    if (!string.IsNullOrEmpty(nuevoPresupuesto.ConceptosJson))
+    {
+        try
+        {
+            var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            conceptos = JsonSerializer.Deserialize<List<ConceptoPresupuestoDTO>>(nuevoPresupuesto.ConceptosJson, jsonOpts)
+                ?? new List<ConceptoPresupuestoDTO>();
+        }
+        catch { /* JSON inválido */ }
+    }
+
+    double directo = nuevoPresupuesto.TotalDirecto;
+    double indirecto = nuevoPresupuesto.TotalIndirecto;
+    double subtotal = directo + indirecto;
+
+    var dto = new PresupuestoDTO
+    {
+        Id = $"PRES-{nuevoPresupuesto.Id.ToString().PadLeft(4, '0')}",
+        IdNumerico = nuevoPresupuesto.Id,
+        ProyectoId = nuevoPresupuesto.ProyectoId ?? "",
+        ProyectoNombre = proy?.Nombre ?? "",
+        Titulo = nuevoPresupuesto.Titulo ?? "",
+        Estado = nuevoPresupuesto.Estado ?? "borrador",
+        EstadoBadge = badge,
+        EstadoLabel = label,
+        Version = nuevoPresupuesto.Version ?? "V1.0",
+        Fecha = nuevoPresupuesto.Fecha.ToString("yyyy-MM-dd"),
+        TotalDirecto = directo,
+        TotalIndirecto = indirecto,
+        Subtotal = subtotal,
+        Contingencia = 0,
+        TotalGeneral = subtotal,
+        Conceptos = conceptos
+    };
+
+    return Results.Created($"/api/presupuestos/{nuevoPresupuesto.Id}", dto);
 });
 
 // -- ENDPOINTS PARA TAREAS (DTO con prioridad badge/label y columna pre-calculada) --
@@ -348,7 +517,49 @@ app.MapPost("/api/tareas", async (TareaDiaria nuevaTarea, ApplicationDbContext d
 {
     db.TareasDiarias.Add(nuevaTarea);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/tareas/{nuevaTarea.Id}", nuevaTarea);
+
+    var hoy = DateTime.UtcNow.Date;
+
+    string prBadge, prLabel;
+    switch (nuevaTarea.Prioridad?.ToLowerInvariant())
+    {
+        case "alta": prBadge = "badge-red"; prLabel = "Alta"; break;
+        case "baja": prBadge = "badge-blue"; prLabel = "Baja"; break;
+        default: prBadge = "badge-amber"; prLabel = "Media"; break;
+    }
+
+    string columna;
+    if (nuevaTarea.Hecho)
+    {
+        columna = "completada";
+    }
+    else if (nuevaTarea.Fecha.Date == hoy)
+    {
+        columna = "hoy";
+    }
+    else if (nuevaTarea.Fecha.Date < hoy)
+    {
+        columna = "atrasada";
+    }
+    else
+    {
+        columna = "hoy";
+    }
+
+    var dto = new TareaDiariaDTO
+    {
+        Id = nuevaTarea.Id,
+        Titulo = nuevaTarea.Titulo ?? "",
+        Prioridad = nuevaTarea.Prioridad ?? "media",
+        PrioridadBadge = prBadge,
+        PrioridadLabel = prLabel,
+        Completada = nuevaTarea.Hecho,
+        Fecha = nuevaTarea.Fecha.ToString("yyyy-MM-dd"),
+        AsignadoA = nuevaTarea.AsignadoA ?? "u1",
+        Columna = columna
+    };
+
+    return Results.Created($"/api/tareas/{nuevaTarea.Id}", dto);
 });
 
 // -- ENDPOINTS PARA CONCEPTOS (CATÁLOGO) --

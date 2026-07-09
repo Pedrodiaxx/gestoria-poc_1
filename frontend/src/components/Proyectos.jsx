@@ -248,7 +248,7 @@ export function Proyectos() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      <span className={`badge ${est.badge}`}>{est.label}</span>
+                      <span className={`badge ${p.estatusBadge || est.badge}`}>{p.estatusLabel || est.label}</span>
                     </td>
                     <td style={{ padding: '10px 14px', minWidth: 120 }}>
                       <div className="progress-bar">
@@ -339,7 +339,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: col, fontWeight: 700, letterSpacing: 0.5 }}>{p.id}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginTop: 4, lineHeight: 1.3 }}>{p.nombre}</div>
           </div>
-          <span className={`badge ${est.badge}`} style={{ flexShrink: 0, marginLeft: 8 }}>{est.label}</span>
+          <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0, marginLeft: 8 }}>{p.estatusLabel || est.label}</span>
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -510,7 +510,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
           <div style={{ flex: 1, marginRight: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span style={{ fontFamily: 'DM Mono', fontSize: 11, background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, color: col, fontWeight: 700 }}>{p.id}</span>
-              {!isEditing && <span className={`badge ${est.badge}`}>{est.label}</span>}
+              {!isEditing && <span className={`badge ${p.estatusBadge || est.badge}`}>{p.estatusLabel || est.label}</span>}
             </div>
             {isEditing ? (
               <input
@@ -840,12 +840,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                             <span style={{ fontFamily: 'DM Mono', fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{b.version}</span>
                             <span style={{ fontSize: 10, background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, color: 'var(--text-3)', fontFamily: 'DM Mono' }}>{b.id}</span>
-                            <span style={{
-                              fontSize: 10,
-                              background: b.estado === 'Aprobado' ? 'var(--accent-light)' : b.estado === 'Enviado' ? 'var(--blue-light)' : b.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
-                              color: b.estado === 'Aprobado' ? 'var(--accent-text)' : b.estado === 'Enviado' ? 'var(--blue)' : b.estado === 'Rechazado' ? '#C0392B' : 'var(--text-3)',
-                              padding: '1px 6px', borderRadius: 4, fontWeight: 500
-                            }}>{b.estado}</span>
+                            <span className={`badge ${b.estadoBadge || 'badge-amber'}`} style={{ fontSize: 10 }}>{b.estadoLabel || b.estado}</span>
                             {b.isBaseline && <span className="badge badge-green" style={{ fontSize: 9, padding: '1px 4px' }}>Línea Base</span>}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 500 }}>{b.titulo}</div>
@@ -963,20 +958,15 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
       });
 
       if (!response.ok) throw new Error('Error al guardar proyecto en el servidor');
+      
+      // Obtenemos el ProyectoDTO calculado desde el backend
       const proyectoCreado = await response.json();
 
       const nuevo = {
-        id: `PRY-${String(proyectoCreado.id || Date.now()).slice(-3)}`,
-        nombre,
+        ...proyectoCreado,
         tipo,
-        clienteId: clienteId ? parseInt(clienteId) : null,
-        estatus,
-        prioridad,
-        avance: parseInt(avance) || 0,
         descripcion,
-        fechaInicio: new Date().toISOString().split('T')[0],
         responsable,
-        monto: 0,
         ubicacion,
         alcance,
         usoPrincipal,

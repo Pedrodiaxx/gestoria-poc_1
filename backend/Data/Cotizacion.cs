@@ -14,5 +14,7 @@ namespace Data
         public double Total { get; set; }
         
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
+
+        public string ConceptosJson { get; set; } = string.Empty;
     }
 }

@@ -276,11 +276,13 @@ export function Clientes() {
       });
 
       if (!response.ok) throw new Error('Error al guardar cliente en el servidor');
+      
+      // Obtenemos el ClienteDTO calculado desde el backend
       const clienteCreado = await response.json();
 
       const nuevo = {
         ...nuevoCliente,
-        id: clienteCreado.id || Math.max(...clientes.map(c => c.id), 0) + 1,
+        ...clienteCreado
       };
 
       addClient(nuevo);

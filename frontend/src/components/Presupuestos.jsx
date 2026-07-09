@@ -1130,14 +1130,10 @@ export function Presupuestos() {
       });
 
       if (!response.ok) throw new Error('Error al guardar presupuesto en el servidor');
-      const presCreado = await response.json();
       
-      const nuevoLocal = {
-        ...p,
-        id: `PRES-${String(presCreado.id || Date.now()).slice(-4)}`
-      };
+      const presupuestoMasticadoPorElBackend = await response.json();
 
-      setPresupuestos(prev => [nuevoLocal, ...prev]);
+      setPresupuestos(prev => [presupuestoMasticadoPorElBackend, ...prev]);
       if (preselectedProjectId) {
         setPreselectedProjectId(null);
       }
