@@ -4,6 +4,7 @@ import Icon from './common/Icon';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { filterClientsQuery } from '../core/cqrs/queries/clientQueries';
 import * as XLSX from 'xlsx';
+import { useClientes } from '../hooks/useClientes';
 
 export function Clientes() {
   const {
@@ -30,26 +31,8 @@ export function Clientes() {
     estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
   });
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
-
-  // EFECTO PARA TRAER DTOs LIMPIOS DE RENDER
-  useEffect(() => {
-    const cargarClientes = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/clientes`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos ya vienen procesados del DTO del servidor
-        if (setClientes) {
-          setClientes(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los clientes de Render:", error);
-      }
-    };
-    cargarClientes();
-  }, [setClientes]);
+  // Hook: carga de clientes delegada a la capa de servicios
+  const { crearCliente } = useClientes(setClientes);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedRows, setImportedRows] = useState(0);
@@ -269,16 +252,8 @@ export function Clientes() {
     };
 
     try {
-      const response = await fetch('https://gestoria-backend.onrender.com/api/clientes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
-
-      if (!response.ok) throw new Error('Error al guardar cliente en el servidor');
-      
-      // Obtenemos el ClienteDTO calculado desde el backend
-      const clienteCreado = await response.json();
+      // Delegamos la creación al hook → servicio de red → backend
+      const clienteCreado = await crearCliente(datosParaBackend);
 
       const nuevo = {
         ...nuevoCliente,

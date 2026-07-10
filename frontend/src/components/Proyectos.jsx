@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
+import { useProyectos } from '../hooks/useProyectos';
 import {
   PROYECTOS_MOCK,
   TRAMITES_TIPOS,
@@ -33,29 +34,8 @@ export function Proyectos() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [vista, setVista] = useState('grid'); // 'grid' | 'lista'
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
-
-  useEffect(() => {
-    const cargarProyectos = async () => {
-      try {
-        const queryParams = new URLSearchParams();
-        if (currentSession?.clienteId) queryParams.append('clienteId', currentSession.clienteId);
-        if (currentSession?.rol) queryParams.append('rol', currentSession.rol);
-
-        const response = await fetch(`${API_URL}/api/proyectos?${queryParams.toString()}`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos ya vienen masticados y procesados desde el backend en C#
-        if (setProyectos) {
-          setProyectos(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los proyectos de Render:", error);
-      }
-    };
-    cargarProyectos();
-  }, [setProyectos, currentSession]);
+  // Hook: carga y creación de proyectos delegada a la capa de servicios
+  const { crearProyecto } = useProyectos(setProyectos, currentSession);
 
   // Modal / Drawer state
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
@@ -951,16 +931,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
     };
 
     try {
-      const response = await fetch('https://gestoria-backend.onrender.com/api/proyectos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
-
-      if (!response.ok) throw new Error('Error al guardar proyecto en el servidor');
-      
-      // Obtenemos el ProyectoDTO calculado desde el backend
-      const proyectoCreado = await response.json();
+      // Delegamos la creación al hook → servicio de red → backend
+      const proyectoCreado = await crearProyecto(datosParaBackend);
 
       const nuevo = {
         ...proyectoCreado,

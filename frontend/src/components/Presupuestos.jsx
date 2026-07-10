@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money, EQUIPO } from '../data/mockData';
+import { usePresupuestos } from '../hooks/usePresupuestos';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
@@ -1077,29 +1078,8 @@ export function Presupuestos() {
   const [q, setQ] = useState('');
   const [expandedProyecto, setExpandedProyecto] = useState(null);
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
-
-  useEffect(() => {
-    const cargarPresupuestos = async () => {
-      try {
-        const queryParams = new URLSearchParams();
-        if (currentSession?.clienteId) queryParams.append('clienteId', currentSession.clienteId);
-        if (currentSession?.rol) queryParams.append('rol', currentSession.rol);
-
-        const response = await fetch(`${API_URL}/api/presupuestos?${queryParams.toString()}`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos ya vienen masticados desde el DTO del servidor
-        if (setPresupuestos) {
-          setPresupuestos(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los presupuestos de Render:", error);
-      }
-    };
-    cargarPresupuestos();
-  }, [setPresupuestos, currentSession]);
+  // Hook: carga y creación de presupuestos delegada a la capa de servicios
+  const { crearPresupuesto } = usePresupuestos(setPresupuestos, currentSession);
 
   // Automatically open creation tab if preselectedProjectId is active
   useEffect(() => {
@@ -1123,15 +1103,8 @@ export function Presupuestos() {
         conceptosJson: JSON.stringify(p.conceptos || [])
       };
 
-      const response = await fetch('https://gestoria-backend.onrender.com/api/presupuestos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
-
-      if (!response.ok) throw new Error('Error al guardar presupuesto en el servidor');
-      
-      const presupuestoMasticadoPorElBackend = await response.json();
+      // Delegamos la creación al hook → servicio de red → backend
+      const presupuestoMasticadoPorElBackend = await crearPresupuesto(datosParaBackend);
 
       setPresupuestos(prev => [presupuestoMasticadoPorElBackend, ...prev]);
       if (preselectedProjectId) {

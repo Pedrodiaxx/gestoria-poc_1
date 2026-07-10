@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Icon } from './common/Icon';
 import { EQUIPO, TRAMITES_MOCK, TRAMITES_TIPOS } from '../data/mockData';
 import { useAppContext } from '../core/context';
+import { useTareas } from '../hooks/useTareas';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
@@ -12,25 +13,8 @@ export default function TareasDiarias() {
   const [showNueva, setShowNueva] = useState(false);
   const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
-
-  useEffect(() => {
-    const cargarTareas = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/tareas`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos vienen procesados y pre-clasificados desde TareaDiariaDTO
-        if (setTareas) {
-          setTareas(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar las tareas de Render:", error);
-      }
-    };
-    cargarTareas();
-  }, [setTareas]);
+  // Hook: carga de tareas delegada a la capa de servicios
+  const { crearTarea } = useTareas(setTareas);
 
   const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
 
@@ -53,16 +37,8 @@ export default function TareasDiarias() {
     };
 
     try {
-      const response = await fetch('https://gestoria-backend.onrender.com/api/tareas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
-
-      if (!response.ok) throw new Error('Error al guardar tarea en el servidor');
-      
-      // Obtenemos el TareaDiariaDTO calculado desde el backend
-      const tareaMasticadaPorElBackend = await response.json();
+      // Delegamos la creación al hook → servicio de red → backend
+      const tareaMasticadaPorElBackend = await crearTarea(datosParaBackend);
 
       setTareas(prev => [...prev, tareaMasticadaPorElBackend]);
       setShowNueva(false);
