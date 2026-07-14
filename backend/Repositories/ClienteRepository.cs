@@ -28,5 +28,14 @@ namespace Backend.Repositories
             await _db.SaveChangesAsync();
             return cliente;
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var entity = await _db.Clientes.FindAsync(id);
+            if (entity == null) return false;
+            _db.Clientes.Remove(entity);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

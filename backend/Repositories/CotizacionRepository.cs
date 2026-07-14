@@ -30,5 +30,14 @@ namespace Backend.Repositories
             await _db.SaveChangesAsync();
             return cotizacion;
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var entity = await _db.Cotizaciones.FindAsync(id);
+            if (entity == null) return false;
+            _db.Cotizaciones.Remove(entity);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

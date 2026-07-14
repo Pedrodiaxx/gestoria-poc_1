@@ -54,6 +54,17 @@ namespace Backend.Services
         /// </summary>
         public async Task<PresupuestoDTO> CreateAsync(Presupuesto nuevoPresupuesto)
         {
+            var conceptos = DeserializeConceptos(nuevoPresupuesto.ConceptosJson);
+            double subtotalHonorarios = conceptos.Sum(c => c.Honorarios);
+            double ivaHonorarios = subtotalHonorarios * 0.16;
+            double totalHonorarios = subtotalHonorarios + ivaHonorarios;
+            double totalDerechos = conceptos.Sum(c => c.PagoDerechos);
+            double totalExtras = conceptos.Sum(c => c.Extra);
+
+            // Rellenar campos heredados para mantener compatibilidad (ej: ProyectoService.cs que suma estos dos campos)
+            nuevoPresupuesto.TotalDirecto = subtotalHonorarios;
+            nuevoPresupuesto.TotalIndirecto = ivaHonorarios + totalDerechos + totalExtras;
+
             var created = await _presupuestoRepo.AddAsync(nuevoPresupuesto);
             var proyectos = await _proyectoRepo.GetAllAsync();
             return MapToDTO(created, proyectos);
@@ -83,11 +94,15 @@ namespace Backend.Services
             var conceptos = DeserializeConceptos(p.ConceptosJson);
 
             // Cálculos financieros
-            double directo = p.TotalDirecto;
-            double indirecto = p.TotalIndirecto;
-            double subtotal = directo + indirecto;
-            double contingencia = 0;
-            double totalGeneral = subtotal + contingencia;
+            double subtotalHonorarios = conceptos.Sum(c => c.Honorarios);
+            double ivaHonorarios = subtotalHonorarios * 0.16;
+            double totalHonorarios = subtotalHonorarios + ivaHonorarios;
+            double totalDerechos = conceptos.Sum(c => c.PagoDerechos);
+            double totalExtras = conceptos.Sum(c => c.Extra);
+            double totalGeneral = totalHonorarios + totalDerechos + totalExtras;
+
+            double costoDirectoConst = p.CostoDirectoConstruccion ?? 0;
+            double pctGestion = costoDirectoConst > 0 ? (totalGeneral / costoDirectoConst) * 100 : 0;
 
             return new PresupuestoDTO
             {
@@ -101,11 +116,34 @@ namespace Backend.Services
                 EstadoLabel = label,
                 Version = p.Version ?? "V1.0",
                 Fecha = p.Fecha.ToString("yyyy-MM-dd"),
-                TotalDirecto = directo,
-                TotalIndirecto = indirecto,
-                Subtotal = subtotal,
-                Contingencia = contingencia,
+
+                // Nuevos metadatos del predio (caso real)
+                Direccion = p.Direccion ?? "",
+                Propietario = p.Propietario ?? "",
+                SupPredio = p.SupPredio ?? 0,
+                SupConstExistente = p.SupConstExistente ?? 0,
+                SupIntervenir = p.SupIntervenir ?? 0,
+                Uso = p.Uso ?? "",
+                Clasificacion = p.Clasificacion ?? "",
+                ZonaPrimaria = p.ZonaPrimaria ?? "",
+                TipoVialidad = p.TipoVialidad ?? "",
+                Estimacion = p.Estimacion ?? "",
+                CostoDirectoConstruccion = costoDirectoConst,
+                InfoAdicionalJson = p.InfoAdicionalJson ?? "",
+
+                // Totales detallados
+                SubtotalHonorarios = subtotalHonorarios,
+                IvaHonorarios = ivaHonorarios,
+                TotalHonorarios = totalHonorarios,
+                TotalDerechos = totalDerechos,
+                TotalExtras = totalExtras,
                 TotalGeneral = totalGeneral,
+                PorcentajeGestion = pctGestion,
+
+                // Campos heredados/compatibilidad
+                TotalDirecto = p.TotalDirecto,
+                TotalIndirecto = p.TotalIndirecto,
+
                 Conceptos = conceptos
             };
         }

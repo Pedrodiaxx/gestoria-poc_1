@@ -27,3 +27,11 @@ export async function createCotizacion(datos) {
   if (!response.ok) throw new Error('Error al guardar cotización en el servidor');
   return response.json();
 }
+
+export async function deleteCotizacion(id) {
+  const response = await fetch(`${API_BASE_URL}/api/cotizaciones/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Error al eliminar cotización en el servidor');
+  return true;
+}

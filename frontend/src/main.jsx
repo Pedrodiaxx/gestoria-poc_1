@@ -5,12 +5,9 @@ import './index.css';
 import { AppContextProvider } from './core/context/index.js';
 import { LocalStorageRepository } from './core/repository/index.js';
 import {
-  CLIENTES,
   CATALOGO_CONCEPTOS,
-  initialCotizaciones,
   initialPresupuestosDB,
-  PROYECTOS_MOCK,
-  TAREAS_MOCK
+  PROYECTOS_MOCK
 } from './data/mockData.js';
 
 // Default users for userRepository
@@ -55,14 +52,15 @@ const DEFAULT_ROLES = [
 ];
 
 // Instantiate LocalStorageRepositories (Injected as dependencies)
-const clientRepository = new LocalStorageRepository('giu_clientes', CLIENTES);
+// Los módulos que ya cargan del backend se inicializan con [] — los hooks los llenan.
+const clientRepository = new LocalStorageRepository('giu_clientes', []);
 const userRepository = new LocalStorageRepository('giu_usuarios', DEFAULT_USERS);
 const conceptRepository = new LocalStorageRepository('giu_conceptos', CATALOGO_CONCEPTOS);
-const quoteRepository = new LocalStorageRepository('giu_cotizaciones', initialCotizaciones);
+const quoteRepository = new LocalStorageRepository('giu_cotizaciones', []);
 const rolesRepository = new LocalStorageRepository('giu_roles', DEFAULT_ROLES);
 const budgetRepository = new LocalStorageRepository('giu_presupuestos', initialPresupuestosDB);
 const projectRepository = new LocalStorageRepository('giu_proyectos', PROYECTOS_MOCK);
-const taskRepository = new LocalStorageRepository('giu_tareas', TAREAS_MOCK);
+const taskRepository = new LocalStorageRepository('giu_tareas', []);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

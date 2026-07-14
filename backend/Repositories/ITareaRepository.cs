@@ -6,5 +6,6 @@ namespace Backend.Repositories
     {
         Task<List<TareaDiaria>> GetAllAsync();
         Task<TareaDiaria> AddAsync(TareaDiaria tarea);
+        Task<bool> DeleteAsync(int id);
     }
 }

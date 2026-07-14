@@ -25,6 +25,11 @@ namespace Backend.Services
             return MapToDTO(created);
         }
 
+        public async Task<bool> DeleteClienteAsync(int id)
+        {
+            return await _repo.DeleteAsync(id);
+        }
+
         // ────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Mapeo de estatus a badges
         // ────────────────────────────────────────────

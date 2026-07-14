@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchTareas, createTarea } from '../services/tareasService';
+import { fetchTareas, createTarea, deleteTarea } from '../services/tareasService';
 
 export function useTareas(setTareas) {
   useEffect(() => {
@@ -25,5 +25,18 @@ export function useTareas(setTareas) {
     }
   };
 
-  return { crearTarea };
+  const eliminarTarea = async (id) => {
+    try {
+      await deleteTarea(id);
+      if (setTareas) {
+        setTareas(prev => prev.filter(t => t.id !== id));
+      }
+      return true;
+    } catch (error) {
+      console.error(`Error al eliminar tarea ${id}:`, error);
+      throw error;
+    }
+  };
+
+  return { crearTarea, eliminarTarea };
 }

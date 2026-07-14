@@ -27,6 +27,11 @@ namespace Backend.Services
             return MapToDTO(created, hoy);
         }
 
+        public async Task<bool> DeleteTareaAsync(int id)
+        {
+            return await _repo.DeleteAsync(id);
+        }
+
         // ───────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Clasificación temporal y badges de prioridad
         // ───────────────────────────────────────────────────────────────────

@@ -28,5 +28,12 @@ namespace Backend.Controllers
             var dto = await _service.CreateAsync(nuevaTarea);
             return Created($"/api/tareas/{dto.Id}", dto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var res = await _service.DeleteTareaAsync(id);
+            return res ? NoContent() : NotFound();
+        }
     }
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchCotizaciones, createCotizacion } from '../services/cotizacionesService';
+import { fetchCotizaciones, createCotizacion, deleteCotizacion } from '../services/cotizacionesService';
 
 export function useCotizaciones(setCotizaciones, currentSession) {
   useEffect(() => {
@@ -30,5 +30,18 @@ export function useCotizaciones(setCotizaciones, currentSession) {
     }
   };
 
-  return { crearCotizacion };
+  const eliminarCotizacion = async (idNumerico) => {
+    try {
+      await deleteCotizacion(idNumerico);
+      if (setCotizaciones) {
+        setCotizaciones(prev => prev.filter(c => c.idNumerico !== idNumerico));
+      }
+      return true;
+    } catch (error) {
+      console.error(`Error al eliminar cotización ${idNumerico}:`, error);
+      throw error;
+    }
+  };
+
+  return { crearCotizacion, eliminarCotizacion };
 }

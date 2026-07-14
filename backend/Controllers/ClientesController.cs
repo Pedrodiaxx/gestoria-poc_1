@@ -28,5 +28,12 @@ namespace Backend.Controllers
             var dto = await _service.CreateAsync(nuevoCliente);
             return Created($"/api/clientes/{dto.Id}", dto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var res = await _service.DeleteClienteAsync(id);
+            return res ? NoContent() : NotFound();
+        }
     }
 }

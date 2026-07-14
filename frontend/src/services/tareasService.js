@@ -20,3 +20,11 @@ export async function createTarea(datos) {
   if (!response.ok) throw new Error('Error al guardar tarea en el servidor');
   return response.json();
 }
+
+export async function deleteTarea(id) {
+  const response = await fetch(`${API_BASE_URL}/api/tareas/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Error al eliminar tarea en el servidor');
+  return true;
+}

@@ -28,5 +28,12 @@ namespace Backend.Controllers
             var dto = await _service.CreateAsync(nuevaCotizacion);
             return Created($"/api/cotizaciones/{dto.IdNumerico}", dto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var res = await _service.DeleteCotizacionAsync(id);
+            return res ? NoContent() : NotFound();
+        }
     }
 }

@@ -48,6 +48,11 @@ namespace Backend.Services
             return MapToDTO(created, clientes);
         }
 
+        public async Task<bool> DeleteCotizacionAsync(int id)
+        {
+            return await _cotizacionRepo.DeleteAsync(id);
+        }
+
         // ────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Cálculos financieros, folios y badges
         // ────────────────────────────────────────────────────────────────

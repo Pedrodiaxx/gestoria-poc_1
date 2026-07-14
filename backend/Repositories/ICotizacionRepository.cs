@@ -9,5 +9,6 @@ namespace Backend.Repositories
         /// </summary>
         Task<List<Cotizacion>> GetAllAsync(string? filtroClienteNombre = null);
         Task<Cotizacion> AddAsync(Cotizacion cotizacion);
+        Task<bool> DeleteAsync(int id);
     }
 }
