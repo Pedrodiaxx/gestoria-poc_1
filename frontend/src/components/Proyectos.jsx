@@ -26,7 +26,8 @@ export function Proyectos() {
     addProyecto,
     presupuestos,
     setPreselectedProjectId,
-    setProyectos
+    setProyectos,
+    session
   } = useAppContext();
 
   const [q, setQ] = useState('');
@@ -35,7 +36,7 @@ export function Proyectos() {
   const [vista, setVista] = useState('grid'); // 'grid' | 'lista'
 
   // Hook: carga y creación de proyectos delegada a la capa de servicios
-  const { crearProyecto } = useProyectos(setProyectos, currentSession);
+  const { crearProyecto } = useProyectos(setProyectos, session);
 
   // Modal / Drawer state
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
@@ -283,6 +284,7 @@ export function Proyectos() {
             setMostrarNuevoProyecto(false);
           }}
           clientes={clientes}
+          crearProyecto={crearProyecto}
         />
       )}
     </div>
@@ -881,7 +883,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
 }
 
 // ─── MODAL NUEVO PROYECTO COMPONENT ───────────────────────────────────────────
-function ModalNuevoProyecto({ onClose, onGuardar, clientes }) {
+function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('licencia-const');
   const [clienteId, setClienteId] = useState('');

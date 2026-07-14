@@ -7,9 +7,10 @@ import { useConceptos } from '../hooks/useConceptos';
 export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConceptos }) {
   const context = useAppContext();
   const list = propsConceptos || context.conceptos;
+  const setConceptos = propsSetConceptos || context.setConceptos;
 
   // Hook: carga y creación de conceptos delegada a la capa de servicios
-  const { crearConcepto } = useConceptos(propsSetConceptos);
+  const { crearConcepto } = useConceptos(setConceptos);
 
   const [q, setQ] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -43,14 +44,11 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
 
     try {
       await crearConcepto(nuevo);
+      if (!propsSetConceptos) {
+        context.addConcept(nuevo);
+      }
     } catch (error) {
       console.error("Error al guardar el concepto en el servidor:", error);
-    }
-
-    if (propsSetConceptos) {
-      propsSetConceptos(prev => [...prev, nuevo]);
-    } else {
-      context.addConcept(nuevo);
     }
 
     setShowAddModal(false);

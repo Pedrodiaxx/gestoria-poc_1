@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '../config/api';
 
 /**
- * Servicio de red para el módulo Catálogo de Conceptos.
+ * Servicio de red para el módulo Conceptos.
  * Encapsula todas las llamadas fetch al endpoint /api/conceptos.
  */
 
@@ -11,12 +11,12 @@ export async function fetchConceptos() {
   return response.json();
 }
 
-export async function createConcepto(datos) {
+export async function createConcepto(nuevo) {
   const response = await fetch(`${API_BASE_URL}/api/conceptos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(datos)
+    body: JSON.stringify(nuevo)
   });
-  if (!response.ok) throw new Error('Error al guardar concepto en el servidor');
+  if (!response.ok) throw new Error('Error al guardar el concepto en el servidor');
   return response.json();
 }

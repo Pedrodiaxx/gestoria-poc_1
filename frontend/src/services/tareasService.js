@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '../config/api';
 
 /**
- * Servicio de red para el módulo Tareas Diarias.
+ * Servicio de red para el módulo Tareas.
  * Encapsula todas las llamadas fetch al endpoint /api/tareas.
  */
 

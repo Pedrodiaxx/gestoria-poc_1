@@ -1,41 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { fetchPresupuestos, createPresupuesto } from '../services/presupuestosService';
 
-/**
- * Hook para gestionar la carga y creación de presupuestos.
- * Reemplaza el useEffect + fetch incrustado en Presupuestos.jsx.
- *
- * @param {Function} setPresupuestos - Setter del estado global (desde AppContext)
- * @param {Object} currentSession - Sesión activa con rol y clienteId para seguridad
- */
 export function usePresupuestos(setPresupuestos, currentSession) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    const cargar = async () => {
+    if (!setPresupuestos) return;
+    const cargarPresupuestos = async () => {
       try {
-        setLoading(true);
-        const params = {};
-        if (currentSession?.clienteId) params.clienteId = currentSession.clienteId;
-        if (currentSession?.rol) params.rol = currentSession.rol;
+        const queryParams = {};
+        if (currentSession?.clienteId) queryParams.clienteId = currentSession.clienteId;
+        if (currentSession?.rol) queryParams.rol = currentSession.rol;
 
-        const datos = await fetchPresupuestos(params);
-        if (setPresupuestos) setPresupuestos(datos);
-      } catch (err) {
-        console.error("No se pudieron sincronizar los presupuestos de Render:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        const datosApi = await fetchPresupuestos(queryParams);
+        setPresupuestos(datosApi);
+      } catch (error) {
+        console.error("No se pudieron sincronizar los presupuestos:", error);
       }
     };
-    cargar();
+    cargarPresupuestos();
   }, [setPresupuestos, currentSession]);
 
   const crearPresupuesto = async (datosParaBackend) => {
-    const presupuestoCreado = await createPresupuesto(datosParaBackend);
-    return presupuestoCreado;
+    try {
+      const presupuestoCreado = await createPresupuesto(datosParaBackend);
+      return presupuestoCreado;
+    } catch (error) {
+      console.error("Error al crear presupuesto:", error);
+      throw error;
+    }
   };
 
-  return { loading, error, crearPresupuesto };
+  return { crearPresupuesto };
 }

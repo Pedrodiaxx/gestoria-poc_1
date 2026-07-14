@@ -1,36 +1,85 @@
-import { useEffect, useState } from 'react';
-import { fetchClientes, createCliente } from '../services/clientesService';
+import { useEffect } from 'react';
+import { fetchClientes, createCliente, updateCliente, deleteCliente } from '../services/clientesService';
 
-/**
- * Hook para gestionar la carga y creación de clientes.
- * Reemplaza el useEffect + fetch incrustado en Clientes.jsx.
- * 
- * @param {Function} setClientes - Setter del estado global (desde AppContext)
- */
-export function useClientes(setClientes) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+export function useClientes(setClientes, currentClientesList = []) {
   useEffect(() => {
-    const cargar = async () => {
+    if (!setClientes) return;
+    const cargarClientes = async () => {
       try {
-        setLoading(true);
-        const datos = await fetchClientes();
-        if (setClientes) setClientes(datos);
-      } catch (err) {
-        console.error("No se pudieron sincronizar los clientes de Render:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        const datosApi = await fetchClientes();
+        setClientes(datosApi);
+      } catch (error) {
+        console.error("No se pudieron sincronizar los clientes:", error);
       }
     };
-    cargar();
+    cargarClientes();
   }, [setClientes]);
 
   const crearCliente = async (datosParaBackend) => {
-    const clienteCreado = await createCliente(datosParaBackend);
-    return clienteCreado;
+    try {
+      const clienteCreado = await createCliente(datosParaBackend);
+      if (setClientes) {
+        setClientes(prev => {
+          // Evitar duplicados si ya fue agregado localmente por algún flujo
+          if (prev.some(c => c.id === clienteCreado.id)) {
+            return prev.map(c => c.id === clienteCreado.id ? clienteCreado : c);
+          }
+          return [...prev, clienteCreado];
+        });
+      }
+      return clienteCreado;
+    } catch (error) {
+      console.error("Error al crear cliente:", error);
+      throw error;
+    }
   };
 
-  return { loading, error, crearCliente };
+  const actualizarCampoCliente = async (id, field, value) => {
+    // Buscar el cliente en la lista actual
+    const clienteExistente = currentClientesList.find(c => c.id === id);
+    if (!clienteExistente) {
+      console.warn(`Cliente con ID ${id} no encontrado para actualizar.`);
+      return;
+    }
+
+    // Adaptar campo 'tel' a 'telefono' para el backend si corresponde
+    const backendField = field === 'tel' ? 'telefono' : field;
+
+    const clienteActualizado = {
+      id: clienteExistente.id,
+      nombre: clienteExistente.nombre || "",
+      contacto: clienteExistente.contacto || "",
+      email: clienteExistente.email || "",
+      telefono: clienteExistente.telefono || clienteExistente.tel || "",
+      estatus: clienteExistente.estatus || "activo",
+      tipo: clienteExistente.tipo || "empresa",
+      [backendField]: value // Reemplazar con el nuevo valor
+    };
+
+    try {
+      const dto = await updateCliente(id, clienteActualizado);
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? dto : c));
+      }
+      return dto;
+    } catch (error) {
+      console.error(`Error al actualizar campo ${field} del cliente ${id}:`, error);
+      throw error;
+    }
+  };
+
+  const eliminarCliente = async (id) => {
+    try {
+      await deleteCliente(id);
+      if (setClientes) {
+        setClientes(prev => prev.filter(c => c.id !== id));
+      }
+      return true;
+    } catch (error) {
+      console.error(`Error al eliminar cliente ${id}:`, error);
+      throw error;
+    }
+  };
+
+  return { crearCliente, actualizarCampoCliente, eliminarCliente };
 }

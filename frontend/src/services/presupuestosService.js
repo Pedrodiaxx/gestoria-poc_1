@@ -6,14 +6,11 @@ import { API_BASE_URL } from '../config/api';
  */
 
 export async function fetchPresupuestos({ clienteId, rol } = {}) {
-  const params = new URLSearchParams();
-  if (clienteId) params.append('clienteId', clienteId);
-  if (rol) params.append('rol', rol);
+  const queryParams = new URLSearchParams();
+  if (clienteId) queryParams.append('clienteId', clienteId);
+  if (rol) queryParams.append('rol', rol);
 
-  const queryString = params.toString();
-  const url = `${API_BASE_URL}/api/presupuestos${queryString ? `?${queryString}` : ''}`;
-
-  const response = await fetch(url);
+  const response = await fetch(`${API_BASE_URL}/api/presupuestos?${queryParams.toString()}`);
   if (!response.ok) throw new Error('Error al conectar con la API de presupuestos');
   return response.json();
 }

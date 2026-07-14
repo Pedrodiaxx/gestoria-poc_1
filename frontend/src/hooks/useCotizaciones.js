@@ -1,41 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { fetchCotizaciones, createCotizacion } from '../services/cotizacionesService';
 
-/**
- * Hook para gestionar la carga y creación de cotizaciones.
- * Reemplaza el useEffect + fetch incrustado en Cotizaciones.jsx.
- *
- * @param {Function} setCotizaciones - Setter del estado global (desde AppContext)
- * @param {Object} currentSession - Sesión activa con rol y clienteId para seguridad
- */
 export function useCotizaciones(setCotizaciones, currentSession) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    const cargar = async () => {
+    if (!setCotizaciones) return;
+    const cargarCotizaciones = async () => {
       try {
-        setLoading(true);
-        const params = {};
-        if (currentSession?.clienteId) params.clienteId = currentSession.clienteId;
-        if (currentSession?.rol) params.rol = currentSession.rol;
+        const queryParams = {};
+        if (currentSession?.clienteId) queryParams.clienteId = currentSession.clienteId;
+        if (currentSession?.rol) queryParams.rol = currentSession.rol;
 
-        const datos = await fetchCotizaciones(params);
-        if (setCotizaciones) setCotizaciones(datos);
-      } catch (err) {
-        console.error("No se pudieron sincronizar las cotizaciones de Render:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        const datosApi = await fetchCotizaciones(queryParams);
+        setCotizaciones(datosApi);
+      } catch (error) {
+        console.error("No se pudieron sincronizar las cotizaciones:", error);
       }
     };
-    cargar();
+
+    cargarCotizaciones();
   }, [setCotizaciones, currentSession]);
 
-  const crearCotizacion = async (datosParaBackend) => {
-    const cotizacionCreada = await createCotizacion(datosParaBackend);
-    return cotizacionCreada;
+  const crearCotizacion = async (payload) => {
+    try {
+      const cotizacionCreada = await createCotizacion(payload);
+      return cotizacionCreada;
+    } catch (error) {
+      console.error("Error al crear cotización:", error);
+      throw error;
+    }
   };
 
-  return { loading, error, crearCotizacion };
+  return { crearCotizacion };
 }

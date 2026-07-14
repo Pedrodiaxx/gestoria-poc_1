@@ -1,36 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { fetchTareas, createTarea } from '../services/tareasService';
 
-/**
- * Hook para gestionar la carga y creación de tareas diarias.
- * Reemplaza el useEffect + fetch incrustado en TareasDiarias.jsx.
- *
- * @param {Function} setTareas - Setter del estado global (desde AppContext)
- */
 export function useTareas(setTareas) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    const cargar = async () => {
+    if (!setTareas) return;
+    const cargarTareas = async () => {
       try {
-        setLoading(true);
-        const datos = await fetchTareas();
-        if (setTareas) setTareas(datos);
-      } catch (err) {
-        console.error("No se pudieron sincronizar las tareas de Render:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        const datosApi = await fetchTareas();
+        setTareas(datosApi);
+      } catch (error) {
+        console.error("No se pudieron sincronizar las tareas:", error);
       }
     };
-    cargar();
+    cargarTareas();
   }, [setTareas]);
 
   const crearTarea = async (datosParaBackend) => {
-    const tareaCreada = await createTarea(datosParaBackend);
-    return tareaCreada;
+    try {
+      const tareaCreada = await createTarea(datosParaBackend);
+      return tareaCreada;
+    } catch (error) {
+      console.error("Error al crear tarea:", error);
+      throw error;
+    }
   };
 
-  return { loading, error, crearTarea };
+  return { crearTarea };
 }

@@ -20,3 +20,21 @@ export async function createCliente(datos) {
   if (!response.ok) throw new Error('Error al guardar cliente en el servidor');
   return response.json();
 }
+
+export async function updateCliente(id, datos) {
+  const response = await fetch(`${API_BASE_URL}/api/clientes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos)
+  });
+  if (!response.ok) throw new Error('Error al actualizar cliente en el servidor');
+  return response.json();
+}
+
+export async function deleteCliente(id) {
+  const response = await fetch(`${API_BASE_URL}/api/clientes/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Error al eliminar cliente en el servidor');
+  return true;
+}

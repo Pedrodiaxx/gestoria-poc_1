@@ -6,6 +6,7 @@ import { useTareas } from '../hooks/useTareas';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
+const todayStr = fmt(hoy);
 
 export default function TareasDiarias() {
   const { tareas, setTareas } = useAppContext();

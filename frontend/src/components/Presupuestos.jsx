@@ -9,9 +9,9 @@ const fmt = (d) => d.toISOString().split('T')[0];
 
 const ESTATUS_CONFIG = {
   'en-proceso': { label: 'En Proceso', color: '#1A5276', badge: 'badge-blue' },
-  'completado':  { label: 'Completado', color: '#2A5F3F', badge: 'badge-green' },
-  'pendiente':   { label: 'Pendiente', color: '#B87A0A', badge: 'badge-amber' },
-  'pausado':     { label: 'Pausado', color: '#9C9A94', badge: 'badge-gray' },
+  'completado': { label: 'Completado', color: '#2A5F3F', badge: 'badge-green' },
+  'pendiente': { label: 'Pendiente', color: '#B87A0A', badge: 'badge-amber' },
+  'pausado': { label: 'Pausado', color: '#9C9A94', badge: 'badge-gray' },
 };
 
 const COLOR_MAP = { blue: '#1A5276', amber: '#B87A0A', purple: '#5B2C6F', green: '#2A5F3F', red: '#C0392B' };
@@ -66,17 +66,17 @@ const calcBudgetTotal = (b) => {
   } else if (b.costosDirectos) {
     const cd = b.costosDirectos || {};
     directos = (parseFloat(cd.materiales) || 0) +
-               (parseFloat(cd.manoDeObra) || 0) +
-               (parseFloat(cd.equipos) || 0) +
-               (parseFloat(cd.subcontratistas) || 0);
+      (parseFloat(cd.manoDeObra) || 0) +
+      (parseFloat(cd.equipos) || 0) +
+      (parseFloat(cd.subcontratistas) || 0);
   }
 
   const ci = b.costosIndirectos || {};
 
   const indirectos = (parseFloat(ci.oficina) || 0) +
-                     (parseFloat(ci.seguros) || 0) +
-                     (parseFloat(ci.permisos) || 0) +
-                     (parseFloat(ci.administracion) || 0);
+    (parseFloat(ci.seguros) || 0) +
+    (parseFloat(ci.permisos) || 0) +
+    (parseFloat(ci.administracion) || 0);
 
   const subtotal = directos + indirectos;
   const contingencia = subtotal * ((parseFloat(b.contingenciaPorcentaje) || 0) / 100);
@@ -262,7 +262,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, catalog = 
       {editable && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, background: 'var(--surface2)', padding: 12, borderRadius: 8 }}>
           <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-2)' }}>Agregar Concepto de Obra</div>
-          
+
           {catalog && catalog.length > 0 && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Importar del catálogo:</span>
@@ -332,7 +332,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, catalog = 
 // ─── SUPPLIER COMPARISON TABLE COMPONENT ──────────────────────────────────────
 function ComparativaProveedores({ comparaciones, onChange, editable = false }) {
   const [nuevoConcepto, setNuevoConcepto] = useState('');
-  
+
   const addRow = () => {
     if (!nuevoConcepto.trim()) return;
     const nuevaFila = {
@@ -563,9 +563,9 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
   const calcIndirectos = () => {
     return (parseFloat(costosIndirectos.oficina) || 0) +
-           (parseFloat(costosIndirectos.seguros) || 0) +
-           (parseFloat(costosIndirectos.permisos) || 0) +
-           (parseFloat(costosIndirectos.administracion) || 0);
+      (parseFloat(costosIndirectos.seguros) || 0) +
+      (parseFloat(costosIndirectos.permisos) || 0) +
+      (parseFloat(costosIndirectos.administracion) || 0);
   };
 
   const sumDirectos = calcDirectos();
@@ -675,19 +675,19 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
             <div className="form-grid-2">
               <div>
                 <label style={labelStyle}>Oficina y Gastos Centrales</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.oficina} onChange={e => setCostosIndirectos({...costosIndirectos, oficina: e.target.value})} />
+                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.oficina} onChange={e => setCostosIndirectos({ ...costosIndirectos, oficina: e.target.value })} />
               </div>
               <div>
                 <label style={labelStyle}>Seguros y Fianzas</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.seguros} onChange={e => setCostosIndirectos({...costosIndirectos, seguros: e.target.value})} />
+                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.seguros} onChange={e => setCostosIndirectos({ ...costosIndirectos, seguros: e.target.value })} />
               </div>
               <div>
                 <label style={labelStyle}>Permisos, Licencias y Derechos</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.permisos} onChange={e => setCostosIndirectos({...costosIndirectos, permisos: e.target.value})} />
+                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.permisos} onChange={e => setCostosIndirectos({ ...costosIndirectos, permisos: e.target.value })} />
               </div>
               <div>
                 <label style={labelStyle}>Personal Administrativo</label>
-                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.administracion} onChange={e => setCostosIndirectos({...costosIndirectos, administracion: e.target.value})} />
+                <input style={inputStyle} type="number" placeholder="$0.00" value={costosIndirectos.administracion} onChange={e => setCostosIndirectos({ ...costosIndirectos, administracion: e.target.value })} />
               </div>
             </div>
             <div style={{ background: 'var(--surface2)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, border: '1px solid var(--border)' }}>
@@ -702,7 +702,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
             <div className="form-grid-2" style={{ alignItems: 'center' }}>
               <div>
                 <label style={labelStyle}>Porcentaje %</label>
-                <input style={{...inputStyle, textAlign: 'center'}} type="number" min="0" max="100" value={contingenciaPorcentaje} onChange={e => setContingenciaPorcentaje(parseFloat(e.target.value) || 0)} />
+                <input style={{ ...inputStyle, textAlign: 'center' }} type="number" min="0" max="100" value={contingenciaPorcentaje} onChange={e => setContingenciaPorcentaje(parseFloat(e.target.value) || 0)} />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
                 Se sumará un fondo de reserva del <strong>{contingenciaPorcentaje}%</strong> calculado sobre la suma de costos directos e indirectos (Subtotal: {money(subtotal)}).
@@ -856,9 +856,9 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   const directosVal = directMat + directMo + directEq;
 
   const indirectosVal = (parseFloat(costosIndirectos.oficina) || 0) +
-                        (parseFloat(costosIndirectos.seguros) || 0) +
-                        (parseFloat(costosIndirectos.permisos) || 0) +
-                        (parseFloat(costosIndirectos.administracion) || 0);
+    (parseFloat(costosIndirectos.seguros) || 0) +
+    (parseFloat(costosIndirectos.permisos) || 0) +
+    (parseFloat(costosIndirectos.administracion) || 0);
 
   const subtotal = directosVal + indirectosVal;
   const contingenciaVal = subtotal * ((parseFloat(contingenciaPct) || 0) / 100);
@@ -907,13 +907,13 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       {/* Action Buttons Toolbar */}
       <div className="card" style={{ padding: '12px 20px', marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface2)' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)' }}>Acciones de Gestión:</span>
-        
+
         {p.estado === 'Borrador' && (
           <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
             Enviar al Cliente
           </button>
         )}
-        
+
         {p.estado === 'Enviado' && (
           <>
             <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
@@ -986,7 +986,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
 
       {/* Supplier Comparison Display */}
       {p.comparacionProveedores && p.comparacionProveedores.length > 0 && (
-        <ComparativaProveedores comparaciones={p.comparacionProveedores} onChange={() => {}} editable={false} />
+        <ComparativaProveedores comparaciones={p.comparacionProveedores} onChange={() => { }} editable={false} />
       )}
 
       {/* Tabla de costos desglosados */}
@@ -1038,7 +1038,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--text)', border: 'none', color: '#fff', padding: '20px 24px' }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Subtotal Costos</div>
           <div style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 16, color: '#fff', margin: '4px 0 10px' }}>{money(subtotal)}</div>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Contingencia ({contingenciaPct}%)</span>
             {isBorrador && (
@@ -1046,7 +1046,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
             )}
           </div>
           <div style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 16, color: '#B87A0A', margin: '4px 0 14px' }}>{money(contingenciaVal)}</div>
-          
+
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12 }}>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>Total General</div>
             <div style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 24, color: '#FFFFFF', lineHeight: 1.1, marginTop: 4 }}>{money(total)}</div>
@@ -1079,7 +1079,7 @@ export function Presupuestos() {
   const [expandedProyecto, setExpandedProyecto] = useState(null);
 
   // Hook: carga y creación de presupuestos delegada a la capa de servicios
-  const { crearPresupuesto } = usePresupuestos(setPresupuestos, currentSession);
+  const { crearPresupuesto } = usePresupuestos(setPresupuestos, session);
 
   // Automatically open creation tab if preselectedProjectId is active
   useEffect(() => {
@@ -1138,7 +1138,7 @@ export function Presupuestos() {
         id: `conc-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       })) : []
     };
-    
+
     // Add clone to state
     setPresupuestos(prev => [clon, ...prev]);
     setViendoId(clon.id);
@@ -1250,8 +1250,8 @@ export function Presupuestos() {
     }
     const cli = clientes.find(c => c.id === p.clienteId);
     const matchQ = p.nombre.toLowerCase().includes(q.toLowerCase()) ||
-                   p.id.toLowerCase().includes(q.toLowerCase()) ||
-                   (cli && cli.nombre.toLowerCase().includes(q.toLowerCase()));
+      p.id.toLowerCase().includes(q.toLowerCase()) ||
+      (cli && cli.nombre.toLowerCase().includes(q.toLowerCase()));
     return matchQ;
   });
 
@@ -1353,7 +1353,7 @@ export function Presupuestos() {
                             </tr>
                           </thead>
                           <tbody>
-                            {associatedBudgets.sort((a,b) => b.version.localeCompare(a.version)).map(b => {
+                            {associatedBudgets.sort((a, b) => b.version.localeCompare(a.version)).map(b => {
                               const totalCost = calcBudgetTotal(b);
                               return (
                                 <tr

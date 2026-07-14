@@ -61,11 +61,14 @@ namespace Data.DTOs
         public string Clave { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Unidad { get; set; } = string.Empty;
+        public string UnidadMedida { get; set; } = string.Empty;
         public double Cantidad { get; set; }
         public double CostoMaterial { get; set; }
+        public double CostoMateriales { get; set; }
         public double CostoManoObra { get; set; }
         public double CostoEquipo { get; set; }
         public double Subtotal { get; set; }
         public string AsignadoA { get; set; } = string.Empty;
+        public string EmpleadoAsignadoId { get; set; } = string.Empty;
     }
 }
