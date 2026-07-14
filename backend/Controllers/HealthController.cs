@@ -11,5 +11,11 @@ namespace Backend.Controllers
         {
             return Ok(new[] { "Conexión Exitosa con Minimal APIs y Postgres" });
         }
+
+        [HttpGet("api/health")]
+        public IActionResult Health()
+        {
+            return Ok("Healthy");
+        }
     }
 }
