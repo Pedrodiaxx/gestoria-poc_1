@@ -7,7 +7,11 @@ export function useTareas(setTareas) {
     const cargarTareas = async () => {
       try {
         const datosApi = await fetchTareas();
-        setTareas(datosApi);
+        if (datosApi && datosApi.length > 0) {
+          setTareas(datosApi);
+        } else {
+          setTareas(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
+        }
       } catch (error) {
         console.error("No se pudieron sincronizar las tareas:", error);
       }

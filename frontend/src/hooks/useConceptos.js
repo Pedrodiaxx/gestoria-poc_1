@@ -7,7 +7,11 @@ export function useConceptos(setConceptos) {
     const cargarConceptos = async () => {
       try {
         const datosApi = await fetchConceptos();
-        setConceptos(datosApi);
+        if (datosApi && datosApi.length > 0) {
+          setConceptos(datosApi);
+        } else {
+          setConceptos(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
+        }
       } catch (error) {
         console.error("No se pudieron sincronizar los conceptos:", error);
       }

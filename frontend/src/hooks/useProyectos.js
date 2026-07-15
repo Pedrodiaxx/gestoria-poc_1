@@ -11,7 +11,11 @@ export function useProyectos(setProyectos, currentSession) {
         if (currentSession?.rol) queryParams.rol = currentSession.rol;
 
         const datosApi = await fetchProyectos(queryParams);
-        setProyectos(datosApi);
+        if (datosApi && datosApi.length > 0) {
+          setProyectos(datosApi);
+        } else {
+          setProyectos(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
+        }
       } catch (error) {
         console.error("No se pudieron sincronizar los proyectos:", error);
       }

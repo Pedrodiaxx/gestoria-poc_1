@@ -40,6 +40,20 @@ builder.Services.AddScoped<ConceptoService>();
 
 var app = builder.Build();
 
+// Inicializar y sembrar base de datos si está vacía
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        SeedData.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error al sembrar la base de datos: {ex.Message}");
+    }
+}
+
 app.UseHttpsRedirection();
 app.UseCors(); // Activar la política de CORS
 

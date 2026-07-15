@@ -7,7 +7,11 @@ export function useClientes(setClientes, currentClientesList = []) {
     const cargarClientes = async () => {
       try {
         const datosApi = await fetchClientes();
-        setClientes(datosApi);
+        if (datosApi && datosApi.length > 0) {
+          setClientes(datosApi);
+        } else {
+          setClientes(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
+        }
       } catch (error) {
         console.error("No se pudieron sincronizar los clientes:", error);
       }

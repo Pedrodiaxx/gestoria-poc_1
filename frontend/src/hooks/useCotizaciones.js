@@ -11,7 +11,11 @@ export function useCotizaciones(setCotizaciones, currentSession) {
         if (currentSession?.rol) queryParams.rol = currentSession.rol;
 
         const datosApi = await fetchCotizaciones(queryParams);
-        setCotizaciones(datosApi);
+        if (datosApi && datosApi.length > 0) {
+          setCotizaciones(datosApi);
+        } else {
+          setCotizaciones(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
+        }
       } catch (error) {
         console.error("No se pudieron sincronizar las cotizaciones:", error);
       }
