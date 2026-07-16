@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchTareas, createTarea, deleteTarea } from '../services/tareasService';
+import { fetchTareas, createTarea, deleteTarea, updateTarea } from '../services/tareasService';
 
 export function useTareas(setTareas) {
   useEffect(() => {
@@ -13,7 +13,7 @@ export function useTareas(setTareas) {
           setTareas(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
         }
       } catch (error) {
-        console.error("No se pudieron sincronizar las tareas:", error);
+        console.error("No se pudieron sincronizar los tareas:", error);
       }
     };
     cargarTareas();
@@ -25,6 +25,19 @@ export function useTareas(setTareas) {
       return tareaCreada;
     } catch (error) {
       console.error("Error al crear tarea:", error);
+      throw error;
+    }
+  };
+
+  const actualizarTarea = async (id, datosParaBackend) => {
+    try {
+      const tareaActualizada = await updateTarea(id, datosParaBackend);
+      if (setTareas) {
+        setTareas(prev => prev.map(t => t.id === id ? tareaActualizada : t));
+      }
+      return tareaActualizada;
+    } catch (error) {
+      console.error("Error al actualizar tarea:", error);
       throw error;
     }
   };
@@ -42,5 +55,5 @@ export function useTareas(setTareas) {
     }
   };
 
-  return { crearTarea, eliminarTarea };
+  return { crearTarea, actualizarTarea, eliminarTarea };
 }

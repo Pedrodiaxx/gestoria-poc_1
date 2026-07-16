@@ -7,6 +7,7 @@ namespace Backend.Repositories
         Task<List<Cliente>> GetAllAsync();
         Task<Cliente?> GetByIdAsync(int id);
         Task<Cliente> AddAsync(Cliente cliente);
+        Task<Cliente> UpdateAsync(Cliente cliente);
         Task<bool> DeleteAsync(int id);
     }
 }

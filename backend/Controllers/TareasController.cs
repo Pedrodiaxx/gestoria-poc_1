@@ -29,6 +29,17 @@ namespace Backend.Controllers
             return Created($"/api/tareas/{dto.Id}", dto);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] TareaDiaria tarea)
+        {
+            if (id != tarea.Id)
+            {
+                return BadRequest("El ID de la ruta no coincide con el del cuerpo.");
+            }
+            var dto = await _service.UpdateAsync(tarea);
+            return Ok(dto);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

@@ -15,9 +15,32 @@ export default function TareasDiarias() {
   const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
 
   // Hook: carga de tareas delegada a la capa de servicios
-  const { crearTarea } = useTareas(setTareas);
+  const { crearTarea, actualizarTarea } = useTareas(setTareas);
 
-  const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+  const toggle = async (id) => {
+    const task = tareas.find(t => t.id === id);
+    if (!task) return;
+
+    const updatedTask = {
+      id: task.id,
+      titulo: task.titulo,
+      prioridad: task.prioridad,
+      hecho: !task.hecho,
+      fecha: task.fecha ? new Date(task.fecha).toISOString() : new Date().toISOString(),
+      asignadoA: task.asignadoA
+    };
+
+    // Optimistic UI update
+    setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+
+    try {
+      await actualizarTarea(id, updatedTask);
+    } catch (error) {
+      console.error("Error al actualizar estado de la tarea en el servidor:", error);
+      // Revert optimistic update
+      setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+    }
+  };
 
   const filtered = tareas.filter(t => filtroUser === 'todos' || t.asignadoA === filtroUser);
 

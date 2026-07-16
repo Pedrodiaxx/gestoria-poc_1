@@ -8,6 +8,9 @@ export class LocalStorageRepository extends IRepository {
   }
 
   getAll() {
+    if (this.key !== 'giu_usuarios' && this.key !== 'giu_roles') {
+      return [];
+    }
     const saved = localStorage.getItem(this.key);
     if (saved) {
       try {
@@ -32,6 +35,9 @@ export class LocalStorageRepository extends IRepository {
   }
 
   save(data) {
+    if (this.key !== 'giu_usuarios' && this.key !== 'giu_roles') {
+      return;
+    }
     localStorage.setItem(this.key, JSON.stringify(data));
   }
 }

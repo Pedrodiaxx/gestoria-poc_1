@@ -18,6 +18,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   const [nuevaDesc, setNuevaDesc] = useState('');
   const [nuevoPrecio, setNuevoPrecio] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
   const filtered = list.filter(c =>
     c.clave.toLowerCase().includes(q.toLowerCase()) ||
@@ -25,6 +26,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   );
 
   const handleAdd = async () => {
+    if (guardando) return;
     if (!nuevaClave || !nuevaDesc || !nuevoPrecio) {
       setErrorMsg('Por favor completa todos los campos.');
       return;
@@ -42,23 +44,23 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
       precio: parseFloat(nuevoPrecio) || 0
     };
 
+    setGuardando(true);
     try {
       await crearConcepto(nuevo);
-      if (!propsSetConceptos) {
-        context.addConcept(nuevo);
-      }
+      setShowAddModal(false);
+      setNuevaClave('');
+      setNuevaDesc('');
+      setNuevoPrecio('');
+      setErrorMsg('');
     } catch (error) {
       console.error("Error al guardar el concepto en el servidor:", error);
+      setErrorMsg('No se pudo guardar el concepto en el servidor.');
+    } finally {
+      setGuardando(false);
     }
-
-    setShowAddModal(false);
-    setNuevaClave('');
-    setNuevaDesc('');
-    setNuevoPrecio('');
-    setErrorMsg('');
   };
 
-  const showAddButton = !!(propsSetConceptos || context.addConcept);
+  const showAddButton = !!propsSetConceptos || !!context.setConceptos;
 
   return (
     <div>
@@ -151,10 +153,10 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
               <button
                 className="btn btn-primary"
                 onClick={handleAdd}
-                disabled={!nuevaClave || !nuevaDesc || !nuevoPrecio}
-                style={{ opacity: (!nuevaClave || !nuevaDesc || !nuevoPrecio) ? 0.5 : 1 }}
+                disabled={!nuevaClave || !nuevaDesc || !nuevoPrecio || guardando}
+                style={{ opacity: (!nuevaClave || !nuevaDesc || !nuevoPrecio || guardando) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> Registrar
+                <Icon name="check" size={14} /> {guardando ? 'Registrando...' : 'Registrar'}
               </button>
             </div>
           </div>

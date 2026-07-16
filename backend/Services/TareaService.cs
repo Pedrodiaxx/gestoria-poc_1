@@ -27,6 +27,13 @@ namespace Backend.Services
             return MapToDTO(created, hoy);
         }
 
+        public async Task<TareaDiariaDTO> UpdateAsync(TareaDiaria tarea)
+        {
+            var updated = await _repo.UpdateAsync(tarea);
+            var hoy = DateTime.UtcNow.Date;
+            return MapToDTO(updated, hoy);
+        }
+
         public async Task<bool> DeleteTareaAsync(int id)
         {
             return await _repo.DeleteAsync(id);

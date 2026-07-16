@@ -24,3 +24,13 @@ export async function createPresupuesto(datos) {
   if (!response.ok) throw new Error('Error al guardar presupuesto en el servidor');
   return response.json();
 }
+
+export async function updatePresupuesto(id, datos) {
+  const response = await fetch(`${API_BASE_URL}/api/presupuestos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos)
+  });
+  if (!response.ok) throw new Error('Error al actualizar presupuesto en el servidor');
+  return response.json();
+}

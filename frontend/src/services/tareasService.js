@@ -28,3 +28,13 @@ export async function deleteTarea(id) {
   if (!response.ok) throw new Error('Error al eliminar tarea en el servidor');
   return true;
 }
+
+export async function updateTarea(id, datos) {
+  const response = await fetch(`${API_BASE_URL}/api/tareas/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos)
+  });
+  if (!response.ok) throw new Error('Error al actualizar tarea en el servidor');
+  return response.json();
+}

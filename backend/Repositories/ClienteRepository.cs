@@ -29,6 +29,13 @@ namespace Backend.Repositories
             return cliente;
         }
 
+        public async Task<Cliente> UpdateAsync(Cliente cliente)
+        {
+            _db.Entry(cliente).State = EntityState.Modified;
+            await _db.SaveChangesAsync();
+            return cliente;
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _db.Clientes.FindAsync(id);

@@ -5,6 +5,12 @@ import {
   addQuoteCommand, addConceptCommand 
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
+import { fetchClientes, updateCliente } from '../../services/clientesService';
+import { fetchProyectos, updateProyecto as updateProyectoService } from '../../services/proyectosService';
+import { fetchPresupuestos } from '../../services/presupuestosService';
+import { fetchCotizaciones } from '../../services/cotizacionesService';
+import { fetchTareas } from '../../services/tareasService';
+import { fetchConceptos } from '../../services/conceptosService';
 
 const AppContext = createContext(null);
 
@@ -97,6 +103,57 @@ export const AppContextProvider = ({
   const [presupuestos, setPresupuestos] = useState(() => budgetRepository.getAll());
   const [tareas, setTareas] = useState(() => taskRepository.getAll());
 
+  // Global background synchronization with remote backend (Render API)
+  useEffect(() => {
+    if (!session) return;
+    const cargarTodo = async () => {
+      try {
+        const queryParams = {};
+        if (session.clienteId) queryParams.clienteId = session.clienteId;
+        if (session.rol) queryParams.rol = session.rol;
+
+        // Fetch and load clients
+        const clientsData = await fetchClientes();
+        if (clientsData && clientsData.length > 0) {
+          setClientes(clientsData);
+        }
+
+        // Fetch and load projects
+        const projectsData = await fetchProyectos(queryParams);
+        if (projectsData && projectsData.length > 0) {
+          setProyectos(projectsData);
+        }
+
+        // Fetch and load budgets
+        const budgetsData = await fetchPresupuestos(queryParams);
+        if (budgetsData && budgetsData.length > 0) {
+          setPresupuestos(budgetsData);
+        }
+
+        // Fetch and load quotes
+        const quotesData = await fetchCotizaciones(queryParams);
+        if (quotesData && quotesData.length > 0) {
+          setCotizaciones(quotesData);
+        }
+
+        // Fetch and load tasks
+        const tasksData = await fetchTareas();
+        if (tasksData && tasksData.length > 0) {
+          setTareas(tasksData);
+        }
+
+        // Fetch and load concepts
+        const conceptsData = await fetchConceptos();
+        if (conceptsData && conceptsData.length > 0) {
+          setConceptos(conceptsData);
+        }
+      } catch (err) {
+        console.error("Error en sincronizacion global inicial:", err);
+      }
+    };
+    cargarTodo();
+  }, [session]);
+
   // Sync to database repositories on changes
   useEffect(() => {
     userRepository.save(usuarios);
@@ -133,7 +190,28 @@ export const AppContextProvider = ({
   // Command wrappers
   const addClient = (nuevo) => addClientCommand(setClientes, nuevo, clientRepository);
   const deleteClient = (id) => deleteClientCommand(setClientes, id, clientRepository);
-  const updateClientField = (id, field, value) => updateClientFieldCommand(setClientes, id, field, value, clientRepository);
+  const updateClientField = async (id, field, value) => {
+    setClientes(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+    const clienteExistente = clientes.find(c => c.id === id);
+    if (clienteExistente) {
+      const backendField = field === 'tel' ? 'telefono' : field;
+      const clienteActualizado = {
+        id: clienteExistente.id,
+        nombre: clienteExistente.nombre || "",
+        contacto: clienteExistente.contacto || "",
+        email: clienteExistente.email || "",
+        telefono: clienteExistente.telefono || clienteExistente.tel || "",
+        estatus: clienteExistente.estatus || "activo",
+        tipo: clienteExistente.tipo || "empresa",
+        [backendField]: value
+      };
+      try {
+        await updateCliente(id, clienteActualizado);
+      } catch (err) {
+        console.error("Error al persistir cambio de cliente en backend:", err);
+      }
+    }
+  };
 
   const addUser = (nuevo) => addUserCommand(setUsuarios, nuevo, userRepository);
   const saveUserEdit = (updatedUser) => saveUserEditCommand(setUsuarios, updatedUser, userRepository);
@@ -145,8 +223,25 @@ export const AppContextProvider = ({
   const addProyecto = (nuevo) => {
     setProyectos(prev => [nuevo, ...prev]);
   };
-  const updateProyecto = (updated) => {
+  const updateProyecto = async (updated) => {
+    // Optimistic update of local state
     setProyectos(prev => prev.map(p => p.id === updated.id ? updated : p));
+    try {
+      const idNumerico = updated.idNumerico || updated.id;
+      const modeloProyecto = {
+        id: idNumerico,
+        nombre: updated.nombre,
+        clienteId: updated.clienteId,
+        estatus: updated.estatus,
+        prioridad: updated.prioridad,
+        avance: updated.avance,
+        fechaInicio: updated.fechaInicio,
+        monto: updated.monto
+      };
+      await updateProyectoService(idNumerico, modeloProyecto);
+    } catch (err) {
+      console.error("Error al actualizar proyecto en el backend:", err);
+    }
   };
 
   const linkClientAccount = (user, currentClientesList = clientes) => {

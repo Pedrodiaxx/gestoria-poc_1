@@ -3,6 +3,7 @@ import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money, EQUIPO } from '../data/mockData';
 import { usePresupuestos } from '../hooks/usePresupuestos';
+import { useTareas } from '../hooks/useTareas';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
@@ -1220,7 +1221,8 @@ export function Presupuestos() {
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
 
   // Network services hook integration
-  const { crearPresupuesto } = usePresupuestos(setPresupuestos, session);
+  const { crearPresupuesto, actualizarPresupuesto } = usePresupuestos(setPresupuestos, session);
+  const { crearTarea } = useTareas(setTareas);
 
   // Automatically open creation tab if preselectedProjectId is active
   useEffect(() => {
@@ -1281,90 +1283,209 @@ export function Presupuestos() {
   };
 
   // Change management clone function (Immutable versioning)
-  const handleAjustar = (budget) => {
+  // Change management clone function (Immutable versioning)
+  const handleAjustar = async (budget) => {
     const nextVer = incrementVersion(budget.version);
-    const clon = {
-      ...budget,
-      id: `PRES-${String(Date.now()).slice(-4)}`,
-      version: nextVer,
+    const datosParaBackend = {
+      proyectoId: budget.proyectoId,
+      titulo: budget.titulo,
       estado: 'Borrador',
-      isBaseline: false,
+      version: nextVer,
       fecha: fmt(hoy),
-      conceptos: budget.conceptos ? budget.conceptos.map(c => ({
+      conceptosJson: budget.conceptos ? JSON.stringify(budget.conceptos.map(c => ({
         ...c,
         id: `conc-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-      })) : []
+      }))) : '[]',
+      propietario: budget.propietario,
+      direccion: budget.direccion,
+      supPredio: budget.supPredio || 0,
+      supConstExistente: budget.supConstExistente || 0,
+      supIntervenir: budget.supIntervenir || 0,
+      uso: budget.uso,
+      clasificacion: budget.clasificacion,
+      zonaPrimaria: budget.zonaPrimaria,
+      tipoVialidad: budget.tipoVialidad,
+      estimacion: budget.estimacion,
+      costoDirectoConstruccion: budget.costoDirectoConstruccion || 0,
+      infoAdicionalJson: budget.infoAdicionalJson,
+      isBaseline: false
     };
 
-    setPresupuestos(prev => [clon, ...prev]);
-    setViendoId(clon.id);
-    setTab('ver');
+    try {
+      const presupuestoCreado = await crearPresupuesto(datosParaBackend);
+      setPresupuestos(prev => [presupuestoCreado, ...prev]);
+      setViendoId(presupuestoCreado.id);
+      setTab('ver');
+    } catch (error) {
+      console.error("Error al clonar/ajustar presupuesto:", error);
+      alert("Hubo un error al guardar la nueva versión del presupuesto.");
+    }
   };
 
   // Save changes to draft budgets
-  const handleGuardarCambios = (updated) => {
-    setPresupuestos(prev => prev.map(b => b.id === updated.id ? updated : b));
+  const handleGuardarCambios = async (updated) => {
+    const idNumerico = updated.idNumerico || updated.id;
+    const modeloPresupuesto = {
+      id: idNumerico,
+      proyectoId: updated.proyectoId,
+      titulo: updated.titulo,
+      estado: updated.estado,
+      version: updated.version,
+      fecha: updated.fecha ? new Date(updated.fecha).toISOString() : new Date().toISOString(),
+      conceptosJson: JSON.stringify(updated.conceptos || []),
+      propietario: updated.propietario,
+      direccion: updated.direccion,
+      supPredio: parseFloat(updated.supPredio) || 0,
+      supConstExistente: parseFloat(updated.supConstExistente) || 0,
+      supIntervenir: parseFloat(updated.supIntervenir) || 0,
+      uso: updated.uso,
+      clasificacion: updated.clasificacion,
+      zonaPrimaria: updated.zonaPrimaria,
+      tipoVialidad: updated.tipoVialidad,
+      estimacion: updated.estimacion,
+      costoDirectoConstruccion: parseFloat(updated.costoDirectoConstruccion) || 0,
+      infoAdicionalJson: updated.infoAdicionalJson,
+      isBaseline: updated.isBaseline || false
+    };
+
+    try {
+      const presupuestoActualizado = await actualizarPresupuesto(idNumerico, modeloPresupuesto);
+      setPresupuestos(prev => prev.map(b => b.id === updated.id ? presupuestoActualizado : b));
+    } catch (error) {
+      console.error("Error al guardar cambios del presupuesto:", error);
+      alert("Hubo un error al guardar los cambios en el servidor.");
+    }
   };
 
   // Update budget status and trigger automatic task generation on approval
-  const handleCambiarEstatus = (id, nuevoEstatus) => {
-    setPresupuestos(prev => prev.map(b => {
-      if (b.id === id) {
-        if (nuevoEstatus === 'Aprobado') {
-          const newTasks = [];
-          if (b.conceptos && b.conceptos.length > 0) {
-            b.conceptos.forEach(c => {
-              if (c.empleadoAsignadoId) {
-                const alreadyExists = tareas.some(t => t.conceptoOrigenId === c.id);
-                if (!alreadyExists) {
-                  newTasks.push({
-                    id: `task-${Date.now()}-${c.no}`,
-                    titulo: `[${c.etapa}] ${c.concepto}`,
-                    proyectoId: b.proyectoId,
-                    conceptoOrigenId: c.id,
-                    asignadoA: c.empleadoAsignadoId,
-                    fecha: b.fecha || fmt(new Date()),
-                    prioridad: 'media',
-                    hecho: false,
-                    estado: 'Por hacer'
-                  });
-                }
-              }
-            });
-          }
-          if (newTasks.length > 0) {
-            setTareas(prevTareas => [...prevTareas, ...newTasks]);
-            alert(`Se han creado y asignado ${newTasks.length} tareas de gestoría basadas en el presupuesto aprobado.`);
-          }
-        }
-        return { ...b, estado: nuevoEstatus };
-      }
-      return b;
-    }));
-  };
-
-  // Mark budget as project baseline
-  const handleMarcarBaseline = (id) => {
+  const handleCambiarEstatus = async (id, nuevoEstatus) => {
     const targetBudget = presupuestos.find(b => b.id === id);
     if (!targetBudget) return;
 
-    setPresupuestos(prev => prev.map(b => {
-      if (b.proyectoId === targetBudget.proyectoId) {
-        return {
-          ...b,
-          isBaseline: b.id === id
-        };
-      }
-      return b;
-    }));
+    const idNumerico = targetBudget.idNumerico || targetBudget.id;
+    const modeloPresupuesto = {
+      id: idNumerico,
+      proyectoId: targetBudget.proyectoId,
+      titulo: targetBudget.titulo,
+      estado: nuevoEstatus,
+      version: targetBudget.version,
+      fecha: targetBudget.fecha ? new Date(targetBudget.fecha).toISOString() : new Date().toISOString(),
+      conceptosJson: JSON.stringify(targetBudget.conceptos || []),
+      propietario: targetBudget.propietario,
+      direccion: targetBudget.direccion,
+      supPredio: targetBudget.supPredio || 0,
+      supConstExistente: targetBudget.supConstExistente || 0,
+      supIntervenir: targetBudget.supIntervenir || 0,
+      uso: targetBudget.uso,
+      clasificacion: targetBudget.clasificacion,
+      zonaPrimaria: targetBudget.zonaPrimaria,
+      tipoVialidad: targetBudget.tipoVialidad,
+      estimacion: targetBudget.estimacion,
+      costoDirectoConstruccion: targetBudget.costoDirectoConstruccion || 0,
+      infoAdicionalJson: targetBudget.infoAdicionalJson,
+      isBaseline: targetBudget.isBaseline || false
+    };
 
-    const budgetTotalVal = calcBudgetTotal(targetBudget);
-    const associatedProj = proyectos.find(pr => pr.id === targetBudget.proyectoId);
-    if (associatedProj) {
-      updateProyecto({
-        ...associatedProj,
-        monto: budgetTotalVal
-      });
+    try {
+      const presupuestoActualizado = await actualizarPresupuesto(idNumerico, modeloPresupuesto);
+      setPresupuestos(prev => prev.map(b => b.id === id ? presupuestoActualizado : b));
+
+      if (nuevoEstatus === 'Aprobado') {
+        const newTasks = [];
+        if (targetBudget.conceptos && targetBudget.conceptos.length > 0) {
+          for (const c of targetBudget.conceptos) {
+            if (c.empleadoAsignadoId) {
+              const alreadyExists = tareas.some(t => t.conceptoOrigenId === c.id);
+              if (!alreadyExists) {
+                const taskData = {
+                  titulo: `[${c.etapa}] ${c.concepto}`,
+                  prioridad: 'media',
+                  hecho: false,
+                  fecha: targetBudget.fecha ? new Date(targetBudget.fecha).toISOString() : new Date().toISOString(),
+                  asignadoA: c.empleadoAsignadoId
+                };
+                try {
+                  const tareaCreada = await crearTarea(taskData);
+                  const taskLocal = {
+                    ...tareaCreada,
+                    proyectoId: targetBudget.proyectoId,
+                    conceptoOrigenId: c.id
+                  };
+                  newTasks.push(taskLocal);
+                } catch (taskErr) {
+                  console.error("Error al crear tarea de presupuesto aprobado:", taskErr);
+                }
+              }
+            }
+          }
+        }
+        if (newTasks.length > 0) {
+          setTareas(prevTareas => [...prevTareas, ...newTasks]);
+          alert(`Se han creado y asignado ${newTasks.length} tareas de gestoría basadas en el presupuesto aprobado.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error al cambiar estatus del presupuesto:", error);
+      alert("Hubo un error al cambiar el estatus en el servidor.");
+    }
+  };
+
+  // Mark budget as project baseline
+  const handleMarcarBaseline = async (id) => {
+    const targetBudget = presupuestos.find(b => b.id === id);
+    if (!targetBudget) return;
+
+    try {
+      const budgetsOfProj = presupuestos.filter(b => b.proyectoId === targetBudget.proyectoId);
+      for (const b of budgetsOfProj) {
+        const idNum = b.idNumerico || b.id;
+        const updatedBaselineVal = (b.id === id);
+        const modeloPresupuesto = {
+          id: idNum,
+          proyectoId: b.proyectoId,
+          titulo: b.titulo,
+          estado: b.estado,
+          version: b.version,
+          fecha: b.fecha ? new Date(b.fecha).toISOString() : new Date().toISOString(),
+          conceptosJson: JSON.stringify(b.conceptos || []),
+          propietario: b.propietario,
+          direccion: b.direccion,
+          supPredio: b.supPredio || 0,
+          supConstExistente: b.supConstExistente || 0,
+          supIntervenir: b.supIntervenir || 0,
+          uso: b.uso,
+          clasificacion: b.clasificacion,
+          zonaPrimaria: b.zonaPrimaria,
+          tipoVialidad: b.tipoVialidad,
+          estimacion: b.estimacion,
+          costoDirectoConstruccion: b.costoDirectoConstruccion || 0,
+          infoAdicionalJson: b.infoAdicionalJson,
+          isBaseline: updatedBaselineVal
+        };
+        await actualizarPresupuesto(idNum, modeloPresupuesto);
+      }
+
+      setPresupuestos(prev => prev.map(b => {
+        if (b.proyectoId === targetBudget.proyectoId) {
+          return {
+            ...b,
+            isBaseline: b.id === id
+          };
+        }
+        return b;
+      }));
+
+      const budgetTotalVal = calcBudgetTotal(targetBudget);
+      const associatedProj = proyectos.find(pr => pr.id === targetBudget.proyectoId);
+      if (associatedProj) {
+        await updateProyecto({
+          ...associatedProj,
+          monto: budgetTotalVal
+        });
+      }
+    } catch (error) {
+      console.error("Error al marcar baseline en el servidor:", error);
+      alert("Hubo un error al marcar el baseline en el servidor.");
     }
   };
 
@@ -1505,7 +1626,7 @@ export function Presupuestos() {
                             </tr>
                           </thead>
                           <tbody>
-                            {associatedBudgets.sort((a, b) => b.version.localeCompare(a.version)).map(b => {
+                            {associatedBudgets.sort((a, b) => (b.version || '').localeCompare(a.version || '')).map(b => {
                               const totalCost = calcBudgetTotal(b);
                               return (
                                 <tr

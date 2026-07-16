@@ -15,6 +15,28 @@ namespace Data
             // Check and migrate automatically if needed
             context.Database.Migrate();
 
+            // Eliminar conceptos duplicados (conservar el primero por Id)
+            try
+            {
+                var duplicateGroups = context.Conceptos
+                    .ToList()
+                    .GroupBy(c => c.Clave)
+                    .Where(g => g.Count() > 1);
+
+                foreach (var group in duplicateGroups)
+                {
+                    var sorted = group.OrderBy(c => c.Id).ToList();
+                    var keep = sorted.First();
+                    var dupes = sorted.Skip(1).ToList();
+                    context.Conceptos.RemoveRange(dupes);
+                }
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al limpiar conceptos duplicados: {ex.Message}");
+            }
+
             if (!context.Clientes.Any(c => c.Id == 1))
             {
                 context.Clientes.Add(new Cliente

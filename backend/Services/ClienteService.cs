@@ -25,6 +25,12 @@ namespace Backend.Services
             return MapToDTO(created);
         }
 
+        public async Task<ClienteDTO> UpdateAsync(Cliente cliente)
+        {
+            var updated = await _repo.UpdateAsync(cliente);
+            return MapToDTO(updated);
+        }
+
         public async Task<bool> DeleteClienteAsync(int id)
         {
             return await _repo.DeleteAsync(id);

@@ -70,6 +70,22 @@ namespace Backend.Services
             return MapToDTO(created, proyectos);
         }
 
+        public async Task<PresupuestoDTO> UpdateAsync(Presupuesto presupuesto)
+        {
+            var conceptos = DeserializeConceptos(presupuesto.ConceptosJson);
+            double subtotalHonorarios = conceptos.Sum(c => c.Honorarios);
+            double ivaHonorarios = subtotalHonorarios * 0.16;
+            double totalDerechos = conceptos.Sum(c => c.PagoDerechos);
+            double totalExtras = conceptos.Sum(c => c.Extra);
+
+            presupuesto.TotalDirecto = subtotalHonorarios;
+            presupuesto.TotalIndirecto = ivaHonorarios + totalDerechos + totalExtras;
+
+            var updated = await _presupuestoRepo.UpdateAsync(presupuesto);
+            var proyectos = await _proyectoRepo.GetAllAsync();
+            return MapToDTO(updated, proyectos);
+        }
+
         // ──────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Folio, proyecto resuelto, totales, badges
         // ──────────────────────────────────────────────────────────────────

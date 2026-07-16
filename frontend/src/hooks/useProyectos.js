@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { fetchProyectos, createProyecto } from '../services/proyectosService';
+import { fetchProyectos, createProyecto, updateProyecto } from '../services/proyectosService';
 
 export function useProyectos(setProyectos, currentSession) {
   useEffect(() => {
@@ -33,5 +32,18 @@ export function useProyectos(setProyectos, currentSession) {
     }
   };
 
-  return { crearProyecto };
+  const actualizarProyecto = async (id, datosParaBackend) => {
+    try {
+      const proyectoActualizado = await updateProyecto(id, datosParaBackend);
+      if (setProyectos) {
+        setProyectos(prev => prev.map(p => p.idNumerico === id ? proyectoActualizado : p));
+      }
+      return proyectoActualizado;
+    } catch (error) {
+      console.error("Error al actualizar proyecto:", error);
+      throw error;
+    }
+  };
+
+  return { crearProyecto, actualizarProyecto };
 }

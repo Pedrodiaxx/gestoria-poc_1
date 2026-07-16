@@ -47,6 +47,14 @@ namespace Backend.Services
             return MapToDTO(created, clientes, new List<Presupuesto>());
         }
 
+        public async Task<ProyectoDTO> UpdateAsync(Proyecto proyecto)
+        {
+            var updated = await _proyectoRepo.UpdateAsync(proyecto);
+            var clientes = await _clienteRepo.GetAllAsync();
+            var presupuestos = await _presupuestoRepo.GetAllAsync();
+            return MapToDTO(updated, clientes, presupuestos);
+        }
+
         // ────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Folio, cliente resuelto, monto, badges
         // ────────────────────────────────────────────────────────────

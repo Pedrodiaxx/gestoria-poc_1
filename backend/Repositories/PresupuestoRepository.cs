@@ -24,9 +24,21 @@ namespace Backend.Repositories
             return await query.ToListAsync();
         }
 
+        public async Task<Presupuesto?> GetByIdAsync(int id)
+        {
+            return await _db.Presupuestos.FirstOrDefaultAsync(p => p.Id == id);
+        }
+
         public async Task<Presupuesto> AddAsync(Presupuesto presupuesto)
         {
             _db.Presupuestos.Add(presupuesto);
+            await _db.SaveChangesAsync();
+            return presupuesto;
+        }
+
+        public async Task<Presupuesto> UpdateAsync(Presupuesto presupuesto)
+        {
+            _db.Entry(presupuesto).State = EntityState.Modified;
             await _db.SaveChangesAsync();
             return presupuesto;
         }

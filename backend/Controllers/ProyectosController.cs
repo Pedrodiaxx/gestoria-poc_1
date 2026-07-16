@@ -28,5 +28,16 @@ namespace Backend.Controllers
             var dto = await _service.CreateAsync(nuevoProyecto);
             return Created($"/api/proyectos/{dto.IdNumerico}", dto);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] Proyecto proyecto)
+        {
+            if (id != proyecto.Id)
+            {
+                return BadRequest("El ID de la ruta no coincide con el del cuerpo.");
+            }
+            var dto = await _service.UpdateAsync(proyecto);
+            return Ok(dto);
+        }
     }
 }

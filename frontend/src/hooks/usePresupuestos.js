@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchPresupuestos, createPresupuesto } from '../services/presupuestosService';
+import { fetchPresupuestos, createPresupuesto, updatePresupuesto } from '../services/presupuestosService';
 
 export function usePresupuestos(setPresupuestos, currentSession) {
   useEffect(() => {
@@ -33,5 +33,18 @@ export function usePresupuestos(setPresupuestos, currentSession) {
     }
   };
 
-  return { crearPresupuesto };
+  const actualizarPresupuesto = async (id, datosParaBackend) => {
+    try {
+      const presupuestoActualizado = await updatePresupuesto(id, datosParaBackend);
+      if (setPresupuestos) {
+        setPresupuestos(prev => prev.map(b => b.idNumerico === id ? presupuestoActualizado : b));
+      }
+      return presupuestoActualizado;
+    } catch (error) {
+      console.error("Error al actualizar presupuesto:", error);
+      throw error;
+    }
+  };
+
+  return { crearPresupuesto, actualizarPresupuesto };
 }
