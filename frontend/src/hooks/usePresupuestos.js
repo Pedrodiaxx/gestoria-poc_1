@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchPresupuestos, createPresupuesto, updatePresupuesto } from '../services/presupuestosService';
+import { fetchPresupuestos, createPresupuesto, updatePresupuesto, deletePresupuesto } from '../services/presupuestosService';
 
 export function usePresupuestos(setPresupuestos, currentSession) {
   useEffect(() => {
@@ -46,5 +46,18 @@ export function usePresupuestos(setPresupuestos, currentSession) {
     }
   };
 
-  return { crearPresupuesto, actualizarPresupuesto };
+  const eliminarPresupuesto = async (id) => {
+    try {
+      await deletePresupuesto(id);
+      if (setPresupuestos) {
+        setPresupuestos(prev => prev.filter(b => b.idNumerico !== id && b.id !== id));
+      }
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar presupuesto:", error);
+      throw error;
+    }
+  };
+
+  return { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto };
 }

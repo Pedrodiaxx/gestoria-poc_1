@@ -34,7 +34,28 @@ export const AppContextProvider = ({
   taskRepository,
   initialActiveTab = 'home'
 }) => {
-  const [active, setActive] = useState(initialActiveTab);
+  // ── Hash-based navigation: sync active tab with URL for browser back/forward ──
+  const [active, setActiveRaw] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || initialActiveTab;
+  });
+
+  // Wrapper: every time we change tab programmatically, push to browser history
+  const setActive = (tab) => {
+    if (tab === active) return;
+    setActiveRaw(tab);
+    window.history.pushState(null, '', `#${tab}`);
+  };
+
+  // Listen for browser back/forward button
+  useEffect(() => {
+    const onPopState = () => {
+      const hash = window.location.hash.replace('#', '') || 'home';
+      setActiveRaw(hash);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const [preselectedProjectId, setPreselectedProjectId] = useState(null);
   const [session, setSession] = useState(() => {
     const saved = sessionStorage.getItem('giu_session');

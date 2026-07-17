@@ -86,6 +86,11 @@ namespace Backend.Services
             return MapToDTO(updated, proyectos);
         }
 
+        public async Task<bool> DeleteAsync(int id)
+        {
+            return await _presupuestoRepo.DeleteAsync(id);
+        }
+
         // ──────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Folio, proyecto resuelto, totales, badges
         // ──────────────────────────────────────────────────────────────────

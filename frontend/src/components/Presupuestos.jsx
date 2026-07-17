@@ -23,6 +23,18 @@ const incrementVersion = (v) => {
   return (val + 0.01).toFixed(2);
 };
 
+const flatTextarea = {
+  width: '100%',
+  border: '1px solid var(--border)',
+  borderRadius: '4px',
+  padding: '8px 12px',
+  background: 'var(--bg)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  fontSize: '12px',
+  resize: 'vertical'
+};
+
 // Helper to calculate total budget using new schema
 const calcBudgetTotal = (b) => {
   if (!b) return 0;
@@ -804,7 +816,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 }
 
 // ─── VISTA DETALLADA DEL PRESUPUESTO COMPONENT ────────────────────────────────
-function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambiarEstatus, onMarcarBaseline, onGuardarCambios }) {
+function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambiarEstatus, onMarcarBaseline, onGuardarCambios, onEliminar }) {
   const { conceptos: catalog } = useAppContext();
   const proj = proyectos.find(pr => pr.id === p.proyectoId);
   const cliente = proj ? clientes.find(c => String(c.id) === String(proj.clienteId) || c.id === proj.clienteId) : (p.clienteId ? clientes.find(c => String(c.id) === String(p.clienteId) || c.id === p.clienteId) : null);
@@ -832,7 +844,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
     if (p.infoAdicionalJson) {
       try {
         return JSON.parse(p.infoAdicionalJson);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       duracionUsoSuelo: "3 meses",
@@ -891,7 +903,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
     if (p.infoAdicionalJson) {
       try {
         setInfoAdicional(JSON.parse(p.infoAdicionalJson));
-      } catch (e) {}
+      } catch (e) { }
     }
     setIsEdited(false);
   }, [p]);
@@ -976,9 +988,14 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>Acciones Disponibles:</span>
 
         {p.estado === 'Borrador' && (
-          <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
-            Enviar al Cliente
-          </button>
+          <>
+            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
+              Enviar al Cliente
+            </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => onEliminar(p.id, p.idNumerico)} style={{ color: 'var(--red)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="trash" size={14} /> Eliminar Presupuesto
+            </button>
+          </>
         )}
 
         {p.estado === 'Enviado' && (
@@ -1283,15 +1300,21 @@ export function Presupuestos() {
   };
 
   // Change management clone function (Immutable versioning)
-  // Change management clone function (Immutable versioning)
   const handleAjustar = async (budget) => {
     const nextVer = incrementVersion(budget.version);
+    const subtotalHono = budget.conceptos?.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0) || 0;
+    const ivaVal = subtotalHono * 0.16;
+    const derechosVal = budget.conceptos?.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0) || 0;
+    const extrasVal = budget.conceptos?.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0) || 0;
+
     const datosParaBackend = {
       proyectoId: budget.proyectoId,
       titulo: budget.titulo,
       estado: 'Borrador',
       version: nextVer,
-      fecha: fmt(hoy),
+      fecha: new Date().toISOString(),
+      totalDirecto: subtotalHono,
+      totalIndirecto: ivaVal + derechosVal + extrasVal,
       conceptosJson: budget.conceptos ? JSON.stringify(budget.conceptos.map(c => ({
         ...c,
         id: `conc-${Date.now()}-${Math.floor(Math.random() * 1000)}`
@@ -1307,8 +1330,7 @@ export function Presupuestos() {
       tipoVialidad: budget.tipoVialidad,
       estimacion: budget.estimacion,
       costoDirectoConstruccion: budget.costoDirectoConstruccion || 0,
-      infoAdicionalJson: budget.infoAdicionalJson,
-      isBaseline: false
+      infoAdicionalJson: budget.infoAdicionalJson
     };
 
     try {
@@ -1489,6 +1511,22 @@ export function Presupuestos() {
     }
   };
 
+  const handleEliminarPresupuesto = async (id, idNumerico) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este presupuesto permanentemente? Esta acción no se puede deshacer.")) {
+      return;
+    }
+    try {
+      const targetId = idNumerico || id;
+      await eliminarPresupuesto(targetId);
+      alert("Presupuesto eliminado con éxito.");
+      setTab('agrupado');
+      setViendoId(null);
+    } catch (error) {
+      console.error("Error al eliminar presupuesto:", error);
+      alert("Hubo un error al eliminar el presupuesto en el servidor.");
+    }
+  };
+
   if (tab === 'nuevo') {
     return (
       <FormNuevoPresupuesto
@@ -1512,6 +1550,7 @@ export function Presupuestos() {
         onCambiarEstatus={handleCambiarEstatus}
         onMarcarBaseline={handleMarcarBaseline}
         onGuardarCambios={handleGuardarCambios}
+        onEliminar={handleEliminarPresupuesto}
       />
     );
   }

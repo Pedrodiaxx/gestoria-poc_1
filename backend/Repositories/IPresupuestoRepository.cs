@@ -11,5 +11,6 @@ namespace Backend.Repositories
         Task<Presupuesto?> GetByIdAsync(int id);
         Task<Presupuesto> AddAsync(Presupuesto presupuesto);
         Task<Presupuesto> UpdateAsync(Presupuesto presupuesto);
+        Task<bool> DeleteAsync(int id);
     }
 }

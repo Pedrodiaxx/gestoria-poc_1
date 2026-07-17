@@ -42,5 +42,15 @@ namespace Backend.Repositories
             await _db.SaveChangesAsync();
             return presupuesto;
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var presupuesto = await _db.Presupuestos.FirstOrDefaultAsync(p => p.Id == id);
+            if (presupuesto == null) return false;
+
+            _db.Presupuestos.Remove(presupuesto);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

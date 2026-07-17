@@ -39,5 +39,16 @@ namespace Backend.Controllers
             var dto = await _service.UpdateAsync(presupuesto);
             return Ok(dto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _service.DeleteAsync(id);
+            if (!result)
+            {
+                return NotFound("Presupuesto no encontrado.");
+            }
+            return NoContent();
+        }
     }
 }

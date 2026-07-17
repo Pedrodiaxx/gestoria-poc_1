@@ -34,3 +34,11 @@ export async function updatePresupuesto(id, datos) {
   if (!response.ok) throw new Error('Error al actualizar presupuesto en el servidor');
   return response.json();
 }
+
+export async function deletePresupuesto(id) {
+  const response = await fetch(`${API_BASE_URL}/api/presupuestos/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Error al eliminar presupuesto en el servidor');
+  return true;
+}

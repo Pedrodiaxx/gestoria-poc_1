@@ -3,6 +3,8 @@ using Data;
 using Backend.Repositories;
 using Backend.Services;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. CONEXIÓN A POSTGRESQL EN RENDER (INTOCABLE)
