@@ -91,9 +91,10 @@ export const AppContextProvider = ({
     }
   }, [session]);
 
-  const [clientes, setClientes] = useState(() => clientRepository.getAll());
-  const [conceptos, setConceptos] = useState(() => conceptRepository.getAll());
-  const [cotizaciones, setCotizaciones] = useState(() => quoteRepository.getAll());
+  // Business entities: empty initial state — populated exclusively from the remote API
+  const [clientes, setClientes] = useState([]);
+  const [conceptos, setConceptos] = useState([]);
+  const [cotizaciones, setCotizaciones] = useState([]);
   const [usuarios, setUsuarios] = useState(() => {
     const rawUsers = userRepository.getAll();
     return rawUsers.map(u => {
@@ -120,11 +121,12 @@ export const AppContextProvider = ({
   });
 
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
-  const [proyectos, setProyectos] = useState(() => projectRepository.getAll());
-  const [presupuestos, setPresupuestos] = useState(() => budgetRepository.getAll());
-  const [tareas, setTareas] = useState(() => taskRepository.getAll());
+  const [proyectos, setProyectos] = useState([]);
+  const [presupuestos, setPresupuestos] = useState([]);
+  const [tareas, setTareas] = useState([]);
 
-  // Global background synchronization with remote backend (Render API)
+  // Sincronización exclusiva con el backend remoto (PostgreSQL en Render)
+  // La API es la ÚNICA fuente de verdad para todas las entidades de negocio.
   useEffect(() => {
     if (!session) return;
     const cargarTodo = async () => {
@@ -133,84 +135,41 @@ export const AppContextProvider = ({
         if (session.clienteId) queryParams.clienteId = session.clienteId;
         if (session.rol) queryParams.rol = session.rol;
 
-        // Fetch and load clients
-        const clientsData = await fetchClientes();
-        if (clientsData && clientsData.length > 0) {
-          setClientes(clientsData);
-        }
+        const [clientsData, projectsData, budgetsData, quotesData, tasksData, conceptsData] =
+          await Promise.all([
+            fetchClientes(),
+            fetchProyectos(queryParams),
+            fetchPresupuestos(queryParams),
+            fetchCotizaciones(queryParams),
+            fetchTareas(),
+            fetchConceptos()
+          ]);
 
-        // Fetch and load projects
-        const projectsData = await fetchProyectos(queryParams);
-        if (projectsData && projectsData.length > 0) {
-          setProyectos(projectsData);
-        }
-
-        // Fetch and load budgets
-        const budgetsData = await fetchPresupuestos(queryParams);
-        if (budgetsData && budgetsData.length > 0) {
-          setPresupuestos(budgetsData);
-        }
-
-        // Fetch and load quotes
-        const quotesData = await fetchCotizaciones(queryParams);
-        if (quotesData && quotesData.length > 0) {
-          setCotizaciones(quotesData);
-        }
-
-        // Fetch and load tasks
-        const tasksData = await fetchTareas();
-        if (tasksData && tasksData.length > 0) {
-          setTareas(tasksData);
-        }
-
-        // Fetch and load concepts
-        const conceptsData = await fetchConceptos();
-        if (conceptsData && conceptsData.length > 0) {
-          setConceptos(conceptsData);
-        }
+        setClientes(clientsData || []);
+        setProyectos(projectsData || []);
+        setPresupuestos(budgetsData || []);
+        setCotizaciones(quotesData || []);
+        setTareas(tasksData || []);
+        setConceptos(conceptsData || []);
       } catch (err) {
-        console.error("Error en sincronizacion global inicial:", err);
+        console.error("Error en sincronización con el backend:", err);
       }
     };
     cargarTodo();
   }, [session]);
 
-  // Sync to database repositories on changes
+  // Persistencia local SOLO para usuarios y roles (no respaldados por API aún)
   useEffect(() => {
     userRepository.save(usuarios);
   }, [usuarios, userRepository]);
 
   useEffect(() => {
-    clientRepository.save(clientes);
-  }, [clientes, clientRepository]);
-
-  useEffect(() => {
-    conceptRepository.save(conceptos);
-  }, [conceptos, conceptRepository]);
-
-  useEffect(() => {
-    quoteRepository.save(cotizaciones);
-  }, [cotizaciones, quoteRepository]);
-
-  useEffect(() => {
     rolesRepository.save(rolesList);
   }, [rolesList, rolesRepository]);
 
-  useEffect(() => {
-    projectRepository.save(proyectos);
-  }, [proyectos, projectRepository]);
-
-  useEffect(() => {
-    budgetRepository.save(presupuestos);
-  }, [presupuestos, budgetRepository]);
-
-  useEffect(() => {
-    taskRepository.save(tareas);
-  }, [tareas, taskRepository]);
-
   // Command wrappers
-  const addClient = (nuevo) => addClientCommand(setClientes, nuevo, clientRepository);
-  const deleteClient = (id) => deleteClientCommand(setClientes, id, clientRepository);
+  const addClient = (nuevo) => addClientCommand(setClientes, nuevo);
+  const deleteClient = (id) => deleteClientCommand(setClientes, id);
   const updateClientField = async (id, field, value) => {
     setClientes(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
     const clienteExistente = clientes.find(c => c.id === id);
@@ -238,8 +197,8 @@ export const AppContextProvider = ({
   const saveUserEdit = (updatedUser) => saveUserEditCommand(setUsuarios, updatedUser, userRepository);
   const deleteUser = (id) => deleteUserCommand(setUsuarios, id, userRepository);
 
-  const addQuote = (nueva) => addQuoteCommand(setCotizaciones, nueva, quoteRepository);
-  const addConcept = (nuevo) => addConceptCommand(setConceptos, nuevo, conceptRepository);
+  const addQuote = (nueva) => addQuoteCommand(setCotizaciones, nueva);
+  const addConcept = (nuevo) => addConceptCommand(setConceptos, nuevo);
   
   const addProyecto = (nuevo) => {
     setProyectos(prev => [nuevo, ...prev]);
