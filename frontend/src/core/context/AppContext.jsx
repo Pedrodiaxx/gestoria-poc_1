@@ -10,7 +10,7 @@ import { fetchPresupuestos } from '../../services/presupuestosService';
 import { fetchCotizaciones } from '../../services/cotizacionesService';
 import { fetchTareas } from '../../services/tareasService';
 import { fetchConceptos } from '../../services/conceptosService';
-import { fetchUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
+import { fetchUsuarios, fetchUsuarioPorId, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
 
 
 const AppContext = createContext(null);
@@ -91,6 +91,46 @@ export const AppContextProvider = ({
       sessionStorage.removeItem('giu_session');
     }
   }, [session]);
+
+  // ── Sincronización de Sesión Activa tras F5 / Recarga ──
+  useEffect(() => {
+    const verificarSesionActiva = async () => {
+      const savedSession = sessionStorage.getItem('giu_session');
+      if (!savedSession) return;
+      
+      try {
+        const parsedSession = JSON.parse(savedSession);
+        if (!parsedSession || !parsedSession.id) return;
+        
+        // Consultar los datos frescos del usuario al backend
+        const freshUser = await fetchUsuarioPorId(parsedSession.id);
+        if (freshUser) {
+          // Mantener la información de vinculación local de cliente si existe
+          const clienteIdVal = freshUser.clienteId || parsedSession.clienteId;
+          const userWithClient = {
+            ...freshUser,
+            clienteId: clienteIdVal
+          };
+          
+          // Mapear los módulos
+          const userWithModulos = {
+            ...userWithClient,
+            modulos: userWithClient.modulos && userWithClient.modulos.length > 0
+              ? userWithClient.modulos
+              : getDefaultModulos(userWithClient.rol)
+          };
+          
+          // Actualizar estado y almacenamiento
+          setSession(userWithModulos);
+          sessionStorage.setItem('giu_session', JSON.stringify(userWithModulos));
+        }
+      } catch (err) {
+        console.error("Error al validar sesión activa con el servidor:", err);
+      }
+    };
+    
+    verificarSesionActiva();
+  }, []);
 
   // Business entities: empty initial state — populated exclusively from the remote API
   const [clientes, setClientes] = useState([]);
