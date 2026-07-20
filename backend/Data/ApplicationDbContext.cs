@@ -14,5 +14,6 @@ namespace Data
         public DbSet<Presupuesto> Presupuestos { get; set; }
         public DbSet<TareaDiaria> TareasDiarias { get; set; }
         public DbSet<Concepto> Conceptos { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
     }
 }

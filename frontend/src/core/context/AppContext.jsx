@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   addClientCommand, deleteClientCommand, updateClientFieldCommand,
-  addUserCommand, saveUserEditCommand, deleteUserCommand,
   addQuoteCommand, addConceptCommand 
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
@@ -11,6 +10,8 @@ import { fetchPresupuestos } from '../../services/presupuestosService';
 import { fetchCotizaciones } from '../../services/cotizacionesService';
 import { fetchTareas } from '../../services/tareasService';
 import { fetchConceptos } from '../../services/conceptosService';
+import { fetchUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
+
 
 const AppContext = createContext(null);
 
@@ -95,30 +96,7 @@ export const AppContextProvider = ({
   const [clientes, setClientes] = useState([]);
   const [conceptos, setConceptos] = useState([]);
   const [cotizaciones, setCotizaciones] = useState([]);
-  const [usuarios, setUsuarios] = useState(() => {
-    const rawUsers = userRepository.getAll();
-    return rawUsers.map(u => {
-      const mappedRol = u.rol === 'empleado' ? 'gestor' : u.rol;
-      let currentModulos = u.modulos || [];
-      if (currentModulos.length === 0) {
-        currentModulos = getDefaultModulos(mappedRol);
-      }
-      // Auto-migrate: Ensure 'proyectos' and 'clientes' modules are enabled for admin / gestor in DB
-      if (mappedRol === 'admin' || mappedRol === 'gestor') {
-        if (!currentModulos.includes('proyectos')) {
-          currentModulos = [...currentModulos, 'proyectos'];
-        }
-        if (!currentModulos.includes('clientes')) {
-          currentModulos = [...currentModulos, 'clientes'];
-        }
-      }
-      return {
-        ...u,
-        rol: mappedRol,
-        modulos: currentModulos
-      };
-    });
-  });
+  const [usuarios, setUsuarios] = useState([]);
 
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
   const [proyectos, setProyectos] = useState([]);
@@ -135,14 +113,15 @@ export const AppContextProvider = ({
         if (session.clienteId) queryParams.clienteId = session.clienteId;
         if (session.rol) queryParams.rol = session.rol;
 
-        const [clientsData, projectsData, budgetsData, quotesData, tasksData, conceptsData] =
+        const [clientsData, projectsData, budgetsData, quotesData, tasksData, conceptsData, usersData] =
           await Promise.all([
             fetchClientes(),
             fetchProyectos(queryParams),
             fetchPresupuestos(queryParams),
             fetchCotizaciones(queryParams),
             fetchTareas(),
-            fetchConceptos()
+            fetchConceptos(),
+            fetchUsuarios()
           ]);
 
         setClientes(clientsData || []);
@@ -151,6 +130,7 @@ export const AppContextProvider = ({
         setCotizaciones(quotesData || []);
         setTareas(tasksData || []);
         setConceptos(conceptsData || []);
+        setUsuarios(usersData || []);
       } catch (err) {
         console.error("Error en sincronización con el backend:", err);
       }
@@ -158,11 +138,7 @@ export const AppContextProvider = ({
     cargarTodo();
   }, [session]);
 
-  // Persistencia local SOLO para usuarios y roles (no respaldados por API aún)
-  useEffect(() => {
-    userRepository.save(usuarios);
-  }, [usuarios, userRepository]);
-
+  // Persistencia local SOLO para roles (no respaldados por API aún)
   useEffect(() => {
     rolesRepository.save(rolesList);
   }, [rolesList, rolesRepository]);
@@ -193,9 +169,38 @@ export const AppContextProvider = ({
     }
   };
 
-  const addUser = (nuevo) => addUserCommand(setUsuarios, nuevo, userRepository);
-  const saveUserEdit = (updatedUser) => saveUserEditCommand(setUsuarios, updatedUser, userRepository);
-  const deleteUser = (id) => deleteUserCommand(setUsuarios, id, userRepository);
+  const addUser = async (nuevo) => {
+    try {
+      const creado = await createUsuario(nuevo);
+      setUsuarios(prev => [...prev, creado]);
+    } catch (err) {
+      console.error("Error al crear usuario en backend:", err);
+      alert(err.message || "Error al crear usuario");
+    }
+  };
+
+  const saveUserEdit = async (updatedUser) => {
+    try {
+      const actualizado = await updateUsuario(updatedUser.id, updatedUser);
+      setUsuarios(prev => prev.map(u => u.id === updatedUser.id ? actualizado : u));
+      if (session && session.id === updatedUser.id) {
+        setSession(actualizado);
+      }
+    } catch (err) {
+      console.error("Error al guardar edición de usuario en backend:", err);
+      alert(err.message || "Error al guardar edición de usuario");
+    }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      await deleteUsuario(id);
+      setUsuarios(prev => prev.filter(u => u.id !== id));
+    } catch (err) {
+      console.error("Error al eliminar usuario en backend:", err);
+      alert(err.message || "Error al eliminar usuario");
+    }
+  };
 
   const addQuote = (nueva) => addQuoteCommand(setCotizaciones, nueva);
   const addConcept = (nuevo) => addConceptCommand(setConceptos, nuevo);
