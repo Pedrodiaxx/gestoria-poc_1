@@ -78,6 +78,17 @@ namespace Backend.Controllers
             return Ok(dtos);
         }
 
+        [HttpGet("usuarios/{id}")]
+        public async Task<IActionResult> GetUsuario(string id)
+        {
+            var user = await _context.Usuarios.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound("Usuario no encontrado.");
+            }
+            return Ok(MapToDTO(user));
+        }
+
         [HttpPost("usuarios")]
         public async Task<IActionResult> CreateUsuario([FromBody] UsuarioDTO dto)
         {

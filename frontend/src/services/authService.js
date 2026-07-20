@@ -26,6 +26,12 @@ export async function fetchUsuarios() {
   return response.json();
 }
 
+export async function fetchUsuarioPorId(id) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`);
+  if (!response.ok) throw new Error('Error al obtener el perfil de usuario');
+  return response.json();
+}
+
 export async function createUsuario(usuario) {
   const response = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
     method: 'POST',
