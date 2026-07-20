@@ -17,13 +17,14 @@ export default function Login({ onLogin }) {
   // Autocomplete / Suggestions states
   const [savedEmails, setSavedEmails] = useState(() => {
     const saved = localStorage.getItem('giu_saved_emails');
-    if (saved) {
-      return JSON.parse(saved);
-    } else {
-      const defaults = ['Gabrielcoc@gmail.com', 'laura@gestoria.com', 'pnoriega@gmail.com'];
-      localStorage.setItem('giu_saved_emails', JSON.stringify(defaults));
-      return defaults;
-    }
+    const parsed = saved ? JSON.parse(saved) : [];
+    // Purgar de raíz los correos mock de prueba antiguos
+    const cleaned = parsed.filter(email => 
+      email.toLowerCase() !== 'laura@gestoria.com' && 
+      email.toLowerCase() !== 'pnoriega@gmail.com'
+    );
+    localStorage.setItem('giu_saved_emails', JSON.stringify(cleaned));
+    return cleaned;
   });
   const [showSuggestions, setShowSuggestions] = useState(false);
 
