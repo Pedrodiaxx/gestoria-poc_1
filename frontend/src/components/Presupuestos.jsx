@@ -4,6 +4,7 @@ import Icon from './common/Icon';
 import { money, EQUIPO } from '../data/mockData';
 import { usePresupuestos } from '../hooks/usePresupuestos';
 import { useTareas } from '../hooks/useTareas';
+import Swal from 'sweetalert2';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
@@ -1238,7 +1239,7 @@ export function Presupuestos() {
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
 
   // Network services hook integration
-  const { crearPresupuesto, actualizarPresupuesto } = usePresupuestos(setPresupuestos, session);
+  const { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto } = usePresupuestos(setPresupuestos, session);
   const { crearTarea } = useTareas(setTareas);
 
   // Automatically open creation tab if preselectedProjectId is active
@@ -1512,18 +1513,45 @@ export function Presupuestos() {
   };
 
   const handleEliminarPresupuesto = async (id, idNumerico) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar este presupuesto permanentemente? Esta acción no se puede deshacer.")) {
+    const targetId = idNumerico || id;
+    
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "Deseas eliminar este presupuesto permanentemente. Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#C0392B',
+      cancelButtonColor: '#7F8C8D',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
+
     try {
-      const targetId = idNumerico || id;
       await eliminarPresupuesto(targetId);
-      alert("Presupuesto eliminado con éxito.");
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'El presupuesto ha sido eliminado con éxito.',
+        icon: 'success',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
       setTab('agrupado');
       setViendoId(null);
     } catch (error) {
       console.error("Error al eliminar presupuesto:", error);
-      alert("Hubo un error al eliminar el presupuesto en el servidor.");
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un error al eliminar el presupuesto en el servidor.',
+        icon: 'error',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
     }
   };
 
@@ -1662,6 +1690,9 @@ export function Presupuestos() {
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Estatus</th>
                               <th style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Costo Total</th>
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Línea Base</th>
+                              {session.rol !== 'cliente' && (
+                                <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Acciones</th>
+                              )}
                             </tr>
                           </thead>
                           <tbody>
@@ -1694,6 +1725,18 @@ export function Presupuestos() {
                                       <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
                                     )}
                                   </td>
+                                  {session.rol !== 'cliente' && (
+                                    <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                      <button 
+                                        className="btn btn-ghost btn-sm" 
+                                        style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
+                                        title="Eliminar Presupuesto"
+                                      >
+                                        <Icon name="trash" size={13} />
+                                      </button>
+                                    </td>
+                                  )}
                                 </tr>
                               );
                             })}
