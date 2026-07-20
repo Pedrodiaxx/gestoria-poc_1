@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import logoImg from '../logo.png';
+import { login as loginService, createUsuario } from '../services/authService';
+
 
 export default function Login({ onLogin }) {
   const { usuarios, setUsuarios, handleLogin: contextLogin } = useAppContext();
@@ -32,7 +34,7 @@ export default function Login({ onLogin }) {
   const [signupConfirm, setSignupConfirm] = useState('');
   const [error, setError] = useState('');
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!username || !password) {
       setError('Por favor ingresa usuario y contraseña.');
@@ -42,25 +44,27 @@ export default function Login({ onLogin }) {
     const emailClean = username.trim().toLowerCase();
     const pClean = password.trim();
 
-    const user = (usuarios || []).find(u => u.email.trim().toLowerCase() === emailClean);
-    if (user && user.contrasenia === pClean) {
-      const cleanEmail = user.email.trim();
+    try {
+      setError('');
+      const loggedUser = await loginService(emailClean, pClean);
+      
       setSavedEmails(prev => {
-        const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase());
+        const exists = prev.some(email => email.toLowerCase() === emailClean);
         if (!exists) {
-          const next = [cleanEmail, ...prev];
+          const next = [emailClean, ...prev];
           localStorage.setItem('giu_saved_emails', JSON.stringify(next));
           return next;
         }
         return prev;
       });
-      loginAction(user);
-    } else {
-      setError('Credenciales inválidas. Revisa el correo y contraseña.');
+
+      loginAction(loggedUser);
+    } catch (err) {
+      setError(err.message || 'Credenciales inválidas. Revisa el correo y contraseña.');
     }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     if (!signupNombre || !signupEmail || !signupPassword || !signupConfirm) {
       setError('Por favor completa todos los campos de registro.');
@@ -74,39 +78,35 @@ export default function Login({ onLogin }) {
 
     const emailClean = signupEmail.trim().toLowerCase();
 
-    const exists = (usuarios || []).some(u => u.email.trim().toLowerCase() === emailClean);
-    if (exists) {
-      setError('El correo electrónico ya está registrado.');
-      return;
+    try {
+      setError('');
+      const newUserPayload = {
+        nombre: signupNombre.trim(),
+        email: emailClean,
+        contrasenia: signupPassword.trim(),
+        rol: 'cliente',
+        modulos: ['presupuestos', 'cotizaciones'],
+        avatar: signupNombre.trim().split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U',
+        color: ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085'][Math.floor(Math.random() * 7)]
+      };
+
+      const createdUser = await createUsuario(newUserPayload);
+
+      setSavedEmails(prev => {
+        const cleanEmail = createdUser.email.trim();
+        const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase());
+        if (!exists) {
+          const next = [cleanEmail, ...prev];
+          localStorage.setItem('giu_saved_emails', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+
+      loginAction(createdUser);
+    } catch (err) {
+      setError(err.message || 'Error al registrar el usuario.');
     }
-
-    const words = signupNombre.trim().split(' ');
-    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U';
-    const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-
-    const newUser = {
-      id: `usr-${Date.now()}`,
-      nombre: signupNombre.trim(),
-      email: emailClean,
-      contrasenia: signupPassword,
-      rol: 'cliente',
-      avatar,
-      color
-    };
-
-    setUsuarios(prev => [...prev, newUser]);
-    setSavedEmails(prev => {
-      const cleanEmail = newUser.email.trim();
-      const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase());
-      if (!exists) {
-        const next = [cleanEmail, ...prev];
-        localStorage.setItem('giu_saved_emails', JSON.stringify(next));
-        return next;
-      }
-      return prev;
-    });
-    loginAction(newUser);
   };
 
   const filteredSuggestions = savedEmails.filter(email =>
