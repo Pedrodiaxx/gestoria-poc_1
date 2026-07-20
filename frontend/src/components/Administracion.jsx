@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { Catalogo } from './Catalogo';
-import { getDefaultModulos } from '../data/mockData';
+import { getDefaultModulos, AVAILABLE_MODULES } from '../data/mockData';
 import { filterUsersQuery } from '../core/cqrs/queries/userQueries';
 
 export default function Administracion() {
@@ -399,7 +399,7 @@ export default function Administracion() {
                     setNuevoUsuario(n => ({
                       ...n,
                       rol: selectedRol,
-                      modulos: n.modulos || getDefaultModulos(selectedRol)
+                      modulos: getDefaultModulos(selectedRol)
                     }));
                   }}
                   style={{ flex: 1 }}
@@ -461,8 +461,10 @@ export default function Administracion() {
                 border: '1px solid var(--border)'
               }}>
                 <div className="form-grid-2" style={{ gap: '10px 16px' }}>
-                  {getDefaultModulos(nuevoUsuario.rol).map(mid => {
-                    const label = mid.charAt(0).toUpperCase() + mid.slice(1);
+                  {AVAILABLE_MODULES.map(module => {
+                    const mid = module.id;
+                    const label = module.label;
+                    const isChecked = nuevoUsuario.modulos?.includes(mid);
                     return (
                       <div
                         key={mid}
@@ -470,12 +472,22 @@ export default function Administracion() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: 8,
-                          userSelect: 'none',
-                          opacity: 0.8
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                        onClick={() => {
+                          setNuevoUsuario(prev => {
+                            const currentModulos = prev.modulos || [];
+                            const exists = currentModulos.includes(mid);
+                            const modulos = exists
+                              ? currentModulos.filter(id => id !== mid)
+                              : [...currentModulos, mid];
+                            return { ...prev, modulos };
+                          });
                         }}
                       >
-                        <div className="checklist-checkbox checked" style={{ margin: 0 }}>
-                          <Icon name="check" size={10} />
+                        <div className={`checklist-checkbox ${isChecked ? 'checked' : ''}`} style={{ margin: 0 }}>
+                          {isChecked && <Icon name="check" size={10} />}
                         </div>
                         <span style={{ fontSize: 13, color: 'var(--text)' }}>{label}</span>
                       </div>
@@ -635,7 +647,9 @@ export default function Administracion() {
                 border: '1px solid var(--border)'
               }}>
                 <div className="form-grid-2" style={{ gap: '10px 16px' }}>
-                  {getDefaultModulos(editandoUsuario.rol).map(mid => {
+                  {AVAILABLE_MODULES.map(module => {
+                    const mid = module.id;
+                    const label = module.label;
                     const isChecked = editandoUsuario.modulos?.includes(mid);
                     const isMainAdmin = editandoUsuario.email.toLowerCase() === 'gabrielcoc@gmail.com';
                     const isDisabled = isMainAdmin && mid === 'administracion';
@@ -665,7 +679,7 @@ export default function Administracion() {
                         <div className={`checklist-checkbox ${isChecked ? 'checked' : ''}`} style={{ margin: 0 }}>
                           {isChecked && <Icon name="check" size={10} />}
                         </div>
-                        <span style={{ fontSize: 13, color: 'var(--text)' }}>{mid.charAt(0).toUpperCase() + mid.slice(1)}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text)' }}>{label}</span>
                       </div>
                     );
                   })}
