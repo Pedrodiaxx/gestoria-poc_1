@@ -128,44 +128,28 @@ namespace Data
                 context.SaveChanges();
             }
 
-            if (!context.Usuarios.Any())
+            // Asegurar que solo Gabriel Cervera existe y remover los mock de prueba si existen
+            var laura = context.Usuarios.Find("usr-emp-1");
+            if (laura != null) context.Usuarios.Remove(laura);
+
+            var patricia = context.Usuarios.Find("usr-cli-1");
+            if (patricia != null) context.Usuarios.Remove(patricia);
+
+            context.SaveChanges();
+
+            if (!context.Usuarios.Any(u => u.Rol == "admin"))
             {
-                context.Usuarios.AddRange(
-                    new Usuario
-                    {
-                        Id = "usr-admin-1",
-                        Nombre = "Gabriel (Admin)",
-                        Email = "gabrielcoc@gmail.com",
-                        Contrasenia = "123456789",
-                        Rol = "admin",
-                        ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"cotizaciones\",\"proyectos\",\"clientes\"]",
-                        Avatar = "G",
-                        Color = "#2A5F3F"
-                    },
-                    new Usuario
-                    {
-                        Id = "usr-emp-1",
-                        Nombre = "Laura M.",
-                        Email = "laura@gestoria.com",
-                        Contrasenia = "empleado123",
-                        Rol = "gestor",
-                        ModulosJson = "[\"presupuestos\",\"tareas\",\"catalogo\",\"cotizaciones\",\"proyectos\",\"clientes\"]",
-                        Avatar = "LM",
-                        Color = "#1A5276"
-                    },
-                    new Usuario
-                    {
-                        Id = "usr-cli-1",
-                        Nombre = "Patricia N.",
-                        Email = "pnoriega@gmail.com",
-                        Contrasenia = "cliente123",
-                        Rol = "cliente",
-                        ModulosJson = "[\"presupuestos\",\"cotizaciones\"]",
-                        Avatar = "PN",
-                        Color = "#5B2C6F",
-                        ClienteId = 1
-                    }
-                );
+                context.Usuarios.Add(new Usuario
+                {
+                    Id = "usr-admin-1",
+                    Nombre = "Gabriel Cervera",
+                    Email = "gabrielcoc@gmail.com",
+                    Contrasenia = "123456789",
+                    Rol = "admin",
+                    ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"cotizaciones\",\"proyectos\",\"clientes\"]",
+                    Avatar = "GC",
+                    Color = "#2A5F3F"
+                });
                 context.SaveChanges();
             }
         }
