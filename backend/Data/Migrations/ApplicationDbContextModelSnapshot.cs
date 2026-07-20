@@ -59,6 +59,30 @@ namespace backend.Data.Migrations
                     b.ToTable("Clientes");
                 });
 
+            modelBuilder.Entity("Data.Concepto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Clave")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Precio")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Conceptos");
+                });
+
             modelBuilder.Entity("Data.Cotizacion", b =>
                 {
                     b.Property<int>("Id")
@@ -68,6 +92,10 @@ namespace backend.Data.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Cliente")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConceptosJson")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -90,19 +118,49 @@ namespace backend.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Clasificacion")
+                        .HasColumnType("text");
+
                     b.Property<string>("ConceptosJson")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("CostoDirectoConstruccion")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Direccion")
                         .HasColumnType("text");
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Estimacion")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("InfoAdicionalJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Propietario")
+                        .HasColumnType("text");
+
                     b.Property<string>("ProyectoId")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("SupConstExistente")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SupIntervenir")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SupPredio")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("TipoVialidad")
                         .HasColumnType("text");
 
                     b.Property<string>("Titulo")
@@ -115,8 +173,14 @@ namespace backend.Data.Migrations
                     b.Property<double>("TotalIndirecto")
                         .HasColumnType("double precision");
 
+                    b.Property<string>("Uso")
+                        .HasColumnType("text");
+
                     b.Property<string>("Version")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ZonaPrimaria")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

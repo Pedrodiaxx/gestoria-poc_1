@@ -4,6 +4,7 @@ import Icon from './common/Icon';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { filterClientsQuery } from '../core/cqrs/queries/clientQueries';
 import * as XLSX from 'xlsx';
+import { useClientes } from '../hooks/useClientes';
 
 export function Clientes() {
   const {
@@ -30,26 +31,8 @@ export function Clientes() {
     estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
   });
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
-
-  // EFECTO PARA TRAER DTOs LIMPIOS DE RENDER
-  useEffect(() => {
-    const cargarClientes = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/clientes`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos ya vienen procesados del DTO del servidor
-        if (setClientes) {
-          setClientes(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los clientes de Render:", error);
-      }
-    };
-    cargarClientes();
-  }, [setClientes]);
+  // Hook: carga de clientes delegada a la capa de servicios
+  const { crearCliente, actualizarCampoCliente, eliminarCliente } = useClientes(setClientes, clientes);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedRows, setImportedRows] = useState(0);
@@ -129,7 +112,7 @@ export function Clientes() {
   const totalClientes = clientes.length;
 
   const handleUpdateClientField = (id, field, value) => {
-    updateClientField(id, field, value);
+    actualizarCampoCliente(id, field, value);
   };
 
   const handleDeleteClient = (id) => {
@@ -141,12 +124,16 @@ export function Clientes() {
     });
   };
 
-  const handleBulkMoveStatus = (newStatusId) => {
+  const handleBulkMoveStatus = async (newStatusId) => {
     if (selectedClients.length === 0) return;
-    selectedClients.forEach(id => {
-      updateClientField(id, 'estatus', newStatusId);
-    });
-    setSelectedClients([]);
+    try {
+      for (const id of selectedClients) {
+        await actualizarCampoCliente(id, 'estatus', newStatusId);
+      }
+      setSelectedClients([]);
+    } catch (error) {
+      console.error("Error al mover estatus en lote:", error);
+    }
   };
 
   const handleBulkDelete = () => {
@@ -157,34 +144,36 @@ export function Clientes() {
     });
   };
 
-  const confirmEliminarClientes = () => {
+  const confirmEliminarClientes = async () => {
     if (!clientsToDelete) return;
-    clientsToDelete.ids.forEach(id => {
-      deleteClient(id);
-    });
-    setSelectedClients(prev => prev.filter(selectedId => !clientsToDelete.ids.includes(selectedId)));
-    setClientsToDelete(null);
+    try {
+      for (const id of clientsToDelete.ids) {
+        await eliminarCliente(id);
+      }
+      setSelectedClients(prev => prev.filter(selectedId => !clientsToDelete.ids.includes(selectedId)));
+      setClientsToDelete(null);
+    } catch (error) {
+      console.error("Error al eliminar clientes:", error);
+    }
   };
 
-  const handleInlineAdd = (groupId) => {
+  const handleInlineAdd = async (groupId) => {
     const name = inlineAddName[groupId]?.trim();
     if (!name) return;
-    const newId = Math.max(...clientes.map(c => c.id), 0) + 1;
     const newClient = {
-      id: newId,
       nombre: name,
       contacto: 'S/N',
       email: '',
-      tel: '',
+      telefono: '',
       tipo: 'empresa',
-      rfc: '',
-      ciudad: '',
-      estatus: groupId,
-      proyectos: [],
-      responsable: session.id || 'usr-admin-1'
+      estatus: groupId
     };
-    addClient(newClient);
-    setInlineAddName(prev => ({ ...prev, [groupId]: '' }));
+    try {
+      await crearCliente(newClient);
+      setInlineAddName(prev => ({ ...prev, [groupId]: '' }));
+    } catch (error) {
+      console.error("Error al añadir cliente en línea:", error);
+    }
   };
 
   const handleSelectAll = (groupId, groupClients) => {
@@ -231,24 +220,22 @@ export function Clientes() {
     setStatusList(prev => prev.filter(s => s.id !== statusId));
   };
 
-  const handleQuickAddClient = () => {
+  const handleQuickAddClient = async () => {
     const defaultGroup = statusList[0]?.id || 'lead';
-    const newId = Math.max(...clientes.map(c => c.id), 0) + 1;
     const newClient = {
-      id: newId,
-      nombre: 'Nuevo Cliente ' + newId,
+      nombre: 'Nuevo Cliente',
       contacto: 'S/N',
       email: '',
-      tel: '',
+      telefono: '',
       tipo: 'empresa',
-      rfc: '',
-      ciudad: '',
-      estatus: defaultGroup,
-      proyectos: [],
-      responsable: session.id || 'usr-admin-1'
+      estatus: defaultGroup
     };
-    addClient(newClient);
-    setShowAddClientDropdown(false);
+    try {
+      await crearCliente(newClient);
+      setShowAddClientDropdown(false);
+    } catch (error) {
+      console.error("Error al añadir cliente rápido:", error);
+    }
   };
 
   const handleMockImport = () => {
@@ -269,21 +256,9 @@ export function Clientes() {
     };
 
     try {
-      const response = await fetch('https://gestoria-backend.onrender.com/api/clientes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
+      // Delegamos la creación al hook → servicio de red → backend
+      await crearCliente(datosParaBackend);
 
-      if (!response.ok) throw new Error('Error al guardar cliente en el servidor');
-      const clienteCreado = await response.json();
-
-      const nuevo = {
-        ...nuevoCliente,
-        id: clienteCreado.id || Math.max(...clientes.map(c => c.id), 0) + 1,
-      };
-
-      addClient(nuevo);
       setShowAddClienteModal(false);
       setNuevoCliente({
         nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
@@ -294,7 +269,7 @@ export function Clientes() {
       setProyectoSearch('');
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
-      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+      alert("No se pudo conectar con el servidor. Revisa la consola.");
     }
   };
 
@@ -364,9 +339,26 @@ export function Clientes() {
           return;
         }
 
-        newClients.forEach(c => addClient(c));
-        setImportedRows(newClients.length);
-        setImportSuccess(true);
+        const saveImported = async () => {
+          try {
+            for (const c of newClients) {
+              const payload = {
+                nombre: c.nombre,
+                contacto: c.contacto,
+                email: c.email,
+                telefono: c.tel,
+                estatus: c.estatus,
+                tipo: c.tipo
+              };
+              await crearCliente(payload);
+            }
+            setImportedRows(newClients.length);
+            setImportSuccess(true);
+          } catch (err) {
+            setImportError('Error al guardar los clientes importados: ' + err.message);
+          }
+        };
+        saveImported();
       } catch (err) {
         setImportError('Error al leer el archivo: ' + err.message);
       }

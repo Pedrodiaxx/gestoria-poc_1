@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Icon } from './common/Icon';
 import { EQUIPO, TRAMITES_MOCK, TRAMITES_TIPOS } from '../data/mockData';
 import { useAppContext } from '../core/context';
+import { useTareas } from '../hooks/useTareas';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
+const todayStr = fmt(hoy);
 
 export default function TareasDiarias() {
   const { tareas, setTareas } = useAppContext();
@@ -12,27 +14,33 @@ export default function TareasDiarias() {
   const [showNueva, setShowNueva] = useState(false);
   const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
 
-  const API_URL = 'https://gestoria-backend.onrender.com';
+  // Hook: carga de tareas delegada a la capa de servicios
+  const { crearTarea, actualizarTarea } = useTareas(setTareas);
 
-  useEffect(() => {
-    const cargarTareas = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/tareas`);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
+  const toggle = async (id) => {
+    const task = tareas.find(t => t.id === id);
+    if (!task) return;
 
-        // Los datos vienen procesados y pre-clasificados desde TareaDiariaDTO
-        if (setTareas) {
-          setTareas(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar las tareas de Render:", error);
-      }
+    const updatedTask = {
+      id: task.id,
+      titulo: task.titulo,
+      prioridad: task.prioridad,
+      hecho: !task.hecho,
+      fecha: task.fecha ? new Date(task.fecha).toISOString() : new Date().toISOString(),
+      asignadoA: task.asignadoA
     };
-    cargarTareas();
-  }, [setTareas]);
 
-  const toggle = (id) => setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+    // Optimistic UI update
+    setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+
+    try {
+      await actualizarTarea(id, updatedTask);
+    } catch (error) {
+      console.error("Error al actualizar estado de la tarea en el servidor:", error);
+      // Revert optimistic update
+      setTareas(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada, hecho: !t.hecho } : t));
+    }
+  };
 
   const filtered = tareas.filter(t => filtroUser === 'todos' || t.asignadoA === filtroUser);
 
@@ -53,22 +61,10 @@ export default function TareasDiarias() {
     };
 
     try {
-      const response = await fetch('https://gestoria-backend.onrender.com/api/tareas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaBackend)
-      });
+      // Delegamos la creación al hook → servicio de red → backend
+      const tareaMasticadaPorElBackend = await crearTarea(datosParaBackend);
 
-      if (!response.ok) throw new Error('Error al guardar tarea en el servidor');
-      const tareaCreada = await response.json();
-
-      const nuevoLocal = {
-        ...nueva,
-        id: `t${tareaCreada.id || Date.now()}`,
-        hecho: false
-      };
-
-      setTareas(prev => [...prev, nuevoLocal]);
+      setTareas(prev => [...prev, tareaMasticadaPorElBackend]);
       setShowNueva(false);
       setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
     } catch (error) {

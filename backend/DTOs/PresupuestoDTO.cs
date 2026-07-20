@@ -2,8 +2,8 @@ namespace Data.DTOs
 {
     /// <summary>
     /// DTO de salida para el endpoint GET /api/presupuestos.
-    /// Centraliza todos los cálculos de costos directos, indirectos, contingencia
-    /// y total general en el servidor. React solo pinta los números.
+    /// Centraliza todos los cálculos de costos directos, indirectos, IVA
+    /// y total general en el servidor.
     /// </summary>
     public class PresupuestoDTO
     {
@@ -33,39 +33,51 @@ namespace Data.DTOs
         /// <summary>Fecha formateada como "yyyy-MM-dd".</summary>
         public string Fecha { get; set; } = string.Empty;
 
-        /// <summary>Suma de costos directos (materiales + mano de obra + equipos + subcontratistas).</summary>
-        public double TotalDirecto { get; set; }
+        // Nuevos metadatos del predio (caso real)
+        public string Direccion { get; set; } = string.Empty;
+        public string Propietario { get; set; } = string.Empty;
+        public double SupPredio { get; set; }
+        public double SupConstExistente { get; set; }
+        public double SupIntervenir { get; set; }
+        public string Uso { get; set; } = string.Empty;
+        public string Clasificacion { get; set; } = string.Empty;
+        public string ZonaPrimaria { get; set; } = string.Empty;
+        public string TipoVialidad { get; set; } = string.Empty;
+        public string Estimacion { get; set; } = string.Empty;
+        public double CostoDirectoConstruccion { get; set; }
+        public string InfoAdicionalJson { get; set; } = string.Empty;
 
-        /// <summary>Suma de costos indirectos (oficina + seguros + permisos + administración).</summary>
-        public double TotalIndirecto { get; set; }
-
-        /// <summary>Subtotal = TotalDirecto + TotalIndirecto.</summary>
-        public double Subtotal { get; set; }
-
-        /// <summary>Monto de contingencia calculado sobre el subtotal.</summary>
-        public double Contingencia { get; set; }
-
-        /// <summary>Total general = Subtotal + Contingencia.</summary>
+        // Nuevos campos calculados para sumas financieras
+        public double SubtotalHonorarios { get; set; }
+        public double IvaHonorarios { get; set; }
+        public double TotalHonorarios { get; set; }
+        public double TotalDerechos { get; set; }
+        public double TotalExtras { get; set; }
         public double TotalGeneral { get; set; }
+        public double PorcentajeGestion { get; set; }
+
+        // Campos heredados/compatibilidad
+        public double TotalDirecto { get; set; }
+        public double TotalIndirecto { get; set; }
 
         /// <summary>Lista de conceptos del presupuesto, ya deserializados desde ConceptosJson.</summary>
         public List<ConceptoPresupuestoDTO> Conceptos { get; set; } = new();
     }
 
     /// <summary>
-    /// DTO para cada línea de concepto dentro de un presupuesto.
+    /// DTO para cada línea de concepto dentro de un presupuesto de gestoría.
     /// Se deserializa en el servidor desde la columna ConceptosJson de la DB.
     /// </summary>
     public class ConceptoPresupuestoDTO
     {
-        public string Clave { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public string Unidad { get; set; } = string.Empty;
-        public double Cantidad { get; set; }
-        public double CostoMaterial { get; set; }
-        public double CostoManoObra { get; set; }
-        public double CostoEquipo { get; set; }
-        public double Subtotal { get; set; }
-        public string AsignadoA { get; set; } = string.Empty;
+        public int No { get; set; }
+        public string Etapa { get; set; } = string.Empty; // Ej: "Uso de Suelo", "Licencia de Construcción"
+        public string Concepto { get; set; } = string.Empty; // Descripción del trámite/servicio
+        public string Unidad { get; set; } = string.Empty; // Ej: "GESTIÓN", "TRAMITE", "ESTUDIO", "PROYECTO"
+        public double Honorarios { get; set; } // Honorarios profesionales
+        public string Comentarios { get; set; } = string.Empty;
+        public double PagoDerechos { get; set; } // Derechos de pago municipales/estatales
+        public double Extra { get; set; } // Costos extras
+        public string EmpleadoAsignadoId { get; set; } = string.Empty;
     }
 }

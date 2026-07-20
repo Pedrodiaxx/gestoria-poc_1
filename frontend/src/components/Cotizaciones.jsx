@@ -1,12 +1,12 @@
-import React, { useState, Fragment, useEffect } from 'react';
+import React, { useState, Fragment } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money } from '../data/mockData';
+import { useCotizaciones } from '../hooks/useCotizaciones';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 
-const API_URL = 'https://gestoria-backend.onrender.com'; 
 
 export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session }) {
   const context = useAppContext();
@@ -25,31 +25,8 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
   const [guardado, setGuardado] = useState(false);
   const [qList, setQList] = useState('');
 
-  // 2. EFECTO PARA TRAER LOS DATOS DEL DTO CALCULADO DESDE RENDER
-  useEffect(() => {
-    const cargarCotizaciones = async () => {
-      try {
-        // Parametrizar el fetch con seguridad por rol (el backend filtra)
-        const params = new URLSearchParams();
-        if (currentSession?.clienteId) params.append('clienteId', currentSession.clienteId);
-        if (currentSession?.rol) params.append('rol', currentSession.rol);
-        const url = `${API_URL}/api/cotizaciones?${params.toString()}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Error al conectar con la API');
-        const datosApi = await response.json();
-
-        // Los datos ya vienen "masticados" del DTO del servidor
-        if (setCotizaciones) {
-          setCotizaciones(datosApi);
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar las cotizaciones de Render:", error);
-      }
-    };
-
-    cargarCotizaciones();
-  }, [setCotizaciones, currentSession]);
+  // Hook: carga y creación de cotizaciones delegada a la capa de servicios
+  const { crearCotizacion } = useCotizaciones(setCotizaciones, currentSession);
 
   const getConcepto = (clave) => context.conceptos.find(c => c.clave === clave);
   const getCliente = (id) => listClientes.find(c => c.id === id);
@@ -90,62 +67,37 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
     if (!clienteId || lineItems.length === 0) return;
 
     const nombreCliente = getCliente(parseInt(clienteId))?.nombre || "Cliente General";
+    const conceptosMapeados = lineItems.map(li => {
+      const con = getConcepto(li.clave);
+      return {
+        clave: li.clave,
+        descripcion: con?.descripcion || '',
+        unidad: '',
+        cantidad: li.cantidad,
+        precioUnitario: con?.precio || 0,
+        subtotal: (con?.precio || 0) * li.cantidad
+      };
+    });
 
-    // Enviamos el formato plano exacto que pide tu backend .NET
+    // Enviamos el formato plano con conceptosJson serializados para persistir en la DB
     const payload = {
       cliente: nombreCliente,
       total: parseFloat(totalNuevo),
-      fecha: new Date().toISOString()
+      fecha: new Date().toISOString(),
+      conceptosJson: JSON.stringify(conceptosMapeados)
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/cotizaciones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) throw new Error('Error en el servidor de Render');
-      
-      const resultadoApi = await response.json();
-
-      // Creamos el objeto con la estructura del DTO usando el ID real que arrojó la DB
-      const cli = getCliente(parseInt(clienteId));
-      const conceptosMapeados = lineItems.map(li => {
-        const con = getConcepto(li.clave);
-        return {
-          clave: li.clave,
-          descripcion: con?.descripcion || '',
-          unidad: '',
-          cantidad: li.cantidad,
-          precioUnitario: con?.precio || 0,
-          subtotal: (con?.precio || 0) * li.cantidad
-        };
-      });
-
-      const nueva = {
-        id: `COT-${String(resultadoApi.id).padStart(3, '0')}`,
-        idNumerico: resultadoApi.id,
-        clienteId: parseInt(clienteId),
-        clienteNombre: cli?.nombre || "Cliente General",
-        clienteContacto: cli?.contacto || "",
-        fecha: fmt(hoy),
-        total: parseFloat(totalNuevo),
-        abonado: 0,
-        saldo: parseFloat(totalNuevo),
-        estatus: 'pendiente',
-        estatusBadge: 'badge-red',
-        estatusLabel: 'Sin abono',
-        conceptos: conceptosMapeados
-      };
+      // Delegamos la creación al hook → servicio de red → backend
+      const cotizacionMasticadaPorElBackend = await crearCotizacion(payload);
 
       if (setCotizaciones) {
-        setCotizaciones(prev => [nueva, ...prev]);
+        setCotizaciones(prev => [cotizacionMasticadaPorElBackend, ...prev]);
       } else {
-        addQuote(nueva);
+        addQuote(cotizacionMasticadaPorElBackend);
       }
 
-      setGuardado(nueva.id);
+      setGuardado(cotizacionMasticadaPorElBackend.id);
       setTimeout(() => {
         resetForm();
         setVista('lista');

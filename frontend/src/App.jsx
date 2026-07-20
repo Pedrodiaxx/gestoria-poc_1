@@ -14,7 +14,7 @@ import {
   Administracion,
   Login
 } from './components';
-import { TAREAS_MOCK, getDefaultModulos } from './data/mockData';
+import { getDefaultModulos } from './data/mockData';
 
 export default function App() {
   const {
@@ -25,6 +25,7 @@ export default function App() {
     usuarios,
     conceptos,
     cotizaciones,
+    tareas,
     handleLogin,
     handleLogout
   } = useAppContext();
@@ -90,7 +91,7 @@ export default function App() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined }}>
         {active === 'home' && <Home setActive={setActive} />}
-        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={TAREAS_MOCK} setActive={setActive} session={session} />}
+        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={tareas} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
         {active === 'cotizaciones' && <Cotizaciones />}
         {active === 'presupuestos' && <Presupuestos />}

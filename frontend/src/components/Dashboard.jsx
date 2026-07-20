@@ -4,7 +4,6 @@ import {
   TRAMITES_MOCK, 
   TRAMITES_TIPOS, 
   COLOR_MAP, 
-  TAREAS_MOCK,
   money
 } from '../data/mockData';
 
@@ -12,7 +11,7 @@ const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 
 export function Dashboard() {
-  const { session, cotizaciones, conceptos, clientes, setActive } = useAppContext();
+  const { session, cotizaciones, conceptos, clientes, tareas, setActive } = useAppContext();
 
   const getConcepto = (clave) => conceptos.find(c => c.clave === clave);
   const getCliente = (id) => clientes.find(c => c.id === id);
@@ -36,7 +35,7 @@ export function Dashboard() {
   const totalCotizado = clientCotizaciones.reduce((s, c) => s + cotTotal(c), 0);
   const totalAbonado = clientCotizaciones.reduce((s, c) => s + cotAbonado(c), 0);
   const pendienteCobro = clientCotizaciones.reduce((s, c) => s + Math.max(0, cotSaldo(c)), 0);
-  const tareasHoy = session.rol === 'cliente' ? 0 : TAREAS_MOCK.filter(t => t.fecha === fmt(hoy) && !t.hecho).length;
+  const tareasHoy = session.rol === 'cliente' ? 0 : (tareas || []).filter(t => t.fecha === fmt(hoy) && !t.completada).length;
   const tramitesActivos = clientTramites.length;
 
   return (

@@ -17,7 +17,7 @@ namespace Data.DTOs
 
         /// <summary>
         /// Clase CSS del badge de estatus, calculada en el servidor.
-        /// "badge-green" para activo, "badge-gray" para inactivo, "badge-amber" para prospecto.
+        /// "badge-green" para activo, "badge-gray" para inactivo, "badge-amber" para prospecto.    
         /// </summary>
         public string EstatusBadge { get; set; } = "badge-green";
 
