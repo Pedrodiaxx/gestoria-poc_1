@@ -287,6 +287,8 @@ export const AppContextProvider = ({
       setActive,
       session,
       setSession,
+      currentSession: session,
+      setCurrentSession: setSession,
       clientes,
       setClientes,
       conceptos,
