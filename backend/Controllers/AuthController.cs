@@ -89,12 +89,39 @@ namespace Backend.Controllers
             return Ok(MapToDTO(user));
         }
 
+        private (bool isValid, string errorMessage) ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                return (false, "La contraseña no puede estar vacía.");
+
+            if (password.Length < 8)
+                return (false, "La contraseña debe tener al menos 8 caracteres.");
+
+            bool hasUpper = password.Any(char.IsUpper);
+            bool hasLower = password.Any(char.IsLower);
+            bool hasDigit = password.Any(char.IsDigit);
+            bool hasSymbol = password.Any(c => !char.IsLetterOrDigit(c));
+
+            if (!hasUpper || !hasLower || !hasDigit || !hasSymbol)
+            {
+                return (false, "La contraseña no cumple con las políticas de seguridad: Debe incluir al menos una mayúscula (A-Z), una minúscula (a-z), un número (0-9) y un símbolo (!@#$%^&*...).");
+            }
+
+            return (true, string.Empty);
+        }
+
         [HttpPost("usuarios")]
         public async Task<IActionResult> CreateUsuario([FromBody] UsuarioDTO dto)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Contrasenia))
             {
                 return BadRequest("Datos inválidos.");
+            }
+
+            var (passValid, passError) = ValidatePassword(dto.Contrasenia);
+            if (!passValid)
+            {
+                return BadRequest(passError);
             }
 
             var emailClean = dto.Email.Trim().ToLower();
@@ -135,6 +162,12 @@ namespace Backend.Controllers
             if (user == null)
             {
                 return NotFound("Usuario no encontrado.");
+            }
+
+            var (passValid, passError) = ValidatePassword(dto.Contrasenia);
+            if (!passValid)
+            {
+                return BadRequest(passError);
             }
 
             user.Nombre = dto.Nombre;
