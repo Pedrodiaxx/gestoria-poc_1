@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
-import { 
-  TRAMITES_MOCK, 
-  TRAMITES_TIPOS, 
-  COLOR_MAP, 
-  BG_MAP, 
-  EQUIPO 
+import {
+  TRAMITES_MOCK,
+  TRAMITES_TIPOS,
+  COLOR_MAP,
+  BG_MAP,
+  EQUIPO
 } from '../data/mockData';
 
 export function HojasRuta() {
   const { session = {}, clientes = [], usuarios = [] } = useAppContext();
-  
+
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
   const resolveUser = (id) => {
@@ -29,16 +30,17 @@ export function HojasRuta() {
   };
 
   const isClient = session?.rol === 'cliente';
-  const clientTramitesList = isClient
+  const initialList = isClient
     ? TRAMITES_MOCK.filter(t => t?.clienteId === session?.clienteId)
     : TRAMITES_MOCK;
 
-  const [selectedTramite, setSelectedTramite] = useState(clientTramitesList[0] || null);
-  const [pasoActual, setPasoActual] = useState(clientTramitesList[0]?.pasoActual || 0);
+  const [tramitesList, setTramitesList] = useState(initialList);
+  const [selectedTramite, setSelectedTramite] = useState(initialList[0] || null);
+  const [pasoActual, setPasoActual] = useState(initialList[0]?.pasoActual || 1);
 
   const seleccionar = (t) => {
     setSelectedTramite(t);
-    setPasoActual(t?.pasoActual || 0);
+    setPasoActual(t?.pasoActual || 1);
   };
 
   if (!selectedTramite) {
@@ -63,14 +65,41 @@ export function HojasRuta() {
   const equipo = resolveUser(selectedTramite?.asignadoA);
   const pasosList = tipo?.pasos || [];
   const totalPasos = pasosList.length || 1;
-  const pct = Math.round((pasoActual / totalPasos) * 100);
+
+  const isCompletado = pasoActual > totalPasos;
+  const pct = isCompletado
+    ? 100
+    : Math.min(100, Math.round(((pasoActual - 1) / totalPasos) * 100));
 
   const avanzar = () => {
-    if (pasoActual < totalPasos) setPasoActual(p => p + 1);
+    if (pasoActual <= totalPasos) {
+      const nuevoPaso = pasoActual + 1;
+      setPasoActual(nuevoPaso);
+      setSelectedTramite(prev => ({ ...prev, pasoActual: nuevoPaso }));
+      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso } : t));
+
+      if (nuevoPaso > totalPasos) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: '🎉 ¡Trámite completado al 100%!',
+          showConfirmButton: false,
+          timer: 2000,
+          background: 'var(--surface)',
+          color: 'var(--text)'
+        });
+      }
+    }
   };
 
   const retroceder = () => {
-    if (pasoActual > 0) setPasoActual(p => p - 1);
+    if (pasoActual > 1) {
+      const nuevoPaso = pasoActual - 1;
+      setPasoActual(nuevoPaso);
+      setSelectedTramite(prev => ({ ...prev, pasoActual: nuevoPaso }));
+      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso } : t));
+    }
   };
 
   return (
@@ -82,12 +111,14 @@ export function HojasRuta() {
 
       <div className="cotizacion-form-layout">
         <div>
-          {clientTramitesList.map(t => {
+          {tramitesList.map(t => {
             const tp = TRAMITES_TIPOS[t?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', pasos: [] };
             const c = COLOR_MAP[tp?.color] || '#1A5276';
             const bg = BG_MAP[tp?.color] || '#EAF2F8';
             const tPasosLen = tp?.pasos?.length || 1;
-            const pct2 = Math.round(((t?.pasoActual || 0) / tPasosLen) * 100);
+            const tPaso = t?.pasoActual || 1;
+            const tCompletado = tPaso > tPasosLen;
+            const pct2 = tCompletado ? 100 : Math.min(100, Math.round(((tPaso - 1) / tPasosLen) * 100));
             const isActive = selectedTramite?.id === t?.id;
             return (
               <div key={t?.id || Math.random()} onClick={() => seleccionar(t)} style={{
@@ -102,8 +133,8 @@ export function HojasRuta() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600, color: c }}>{t?.id}</span>
-                  <span className={`badge badge-${t?.prioridad === 'alta' ? 'red' : t?.prioridad === 'media' ? 'amber' : 'gray'}`} style={{ fontSize: 10 }}>
-                    {t?.prioridad || 'media'}
+                  <span className={`badge badge-${tCompletado ? 'green' : t?.prioridad === 'alta' ? 'red' : t?.prioridad === 'media' ? 'amber' : 'gray'}`} style={{ fontSize: 10 }}>
+                    {tCompletado ? 'completado' : t?.prioridad || 'media'}
                   </span>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{tp?.nombre || 'Gestión'}</div>
@@ -111,7 +142,9 @@ export function HojasRuta() {
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${pct2}%`, background: c }} />
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>{t?.pasoActual || 0}/{tPasosLen} pasos · {pct2}%</div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>
+                  {tCompletado ? `${tPasosLen}/${tPasosLen} pasos · 100%` : `${Math.min(tPaso, tPasosLen)}/${tPasosLen} pasos · ${pct2}%`}
+                </div>
               </div>
             );
           })}
@@ -138,15 +171,17 @@ export function HojasRuta() {
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: col, fontFamily: 'DM Mono' }}>{pct}%</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>completado</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: isCompletado ? 'var(--green)' : col, fontFamily: 'DM Mono' }}>{pct}%</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{isCompletado ? 'completado' : 'avance global'}</div>
             </div>
           </div>
 
           <div className="progress-bar" style={{ height: 8, marginBottom: 6 }}>
-            <div className="progress-fill" style={{ width: `${pct}%`, background: col, transition: 'width 0.3s' }} />
+            <div className="progress-fill" style={{ width: `${pct}%`, background: isCompletado ? 'var(--green)' : col, transition: 'width 0.3s' }} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 24 }}>Paso {pasoActual} de {totalPasos}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 20 }}>
+            {isCompletado ? `Todos los ${totalPasos} pasos han sido completados` : `Paso ${Math.min(pasoActual, totalPasos)} de ${totalPasos}`}
+          </div>
 
           {(selectedTramite?.notas || selectedTramite?.notes) && (
             <div className="alert alert-amber" style={{ marginBottom: 20 }}>
@@ -155,20 +190,36 @@ export function HojasRuta() {
             </div>
           )}
 
+          {isCompletado && (
+            <div className="alert alert-green" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="check" size={16} />
+              <span><strong>¡Trámite Finalizado!</strong> Todas las gestiones e inspecciones han sido aprobadas exitosamente.</span>
+            </div>
+          )}
+
           <div style={{ marginBottom: 20 }}>
             {pasosList.map((paso, i) => {
               const idx = i + 1;
-              const hecho = idx < pasoActual;
-              const actual = idx === pasoActual;
-              const pendiente = idx > pasoActual;
+              const hecho = isCompletado || idx < pasoActual;
+              const actual = !isCompletado && idx === pasoActual;
+              const pendiente = !isCompletado && idx > pasoActual;
               return (
-                <div key={i} className="roadmap-step">
+                <div key={i} className="roadmap-step" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
                   <div className="step-num" style={{
-                    background: hecho ? col : actual ? bgCol : 'var(--surface2)',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: hecho ? (isCompletado ? 'var(--green)' : col) : actual ? bgCol : 'var(--surface2)',
                     color: hecho ? '#fff' : actual ? col : 'var(--text-3)',
                     border: actual ? `2px solid ${col}` : '1px solid var(--border)',
+                    flexShrink: 0
                   }}>
-                    {hecho ? <Icon name="check" size={11} /> : idx}
+                    {hecho ? <Icon name="check" size={12} /> : idx}
                   </div>
                   <div style={{ flex: 1, paddingTop: 2 }}>
                     <div style={{
@@ -179,7 +230,7 @@ export function HojasRuta() {
                     }}>
                       {paso}
                     </div>
-                    {actual && <div style={{ fontSize: 11, color: col, fontWeight: 500, marginTop: 2 }}>← Paso actual</div>}
+                    {actual && <div style={{ fontSize: 11, color: col, fontWeight: 600, marginTop: 2 }}>← Paso actual en proceso</div>}
                   </div>
                 </div>
               );
@@ -188,12 +239,44 @@ export function HojasRuta() {
 
           {!isClient ? (
             <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-secondary" onClick={retroceder} disabled={pasoActual === 0} style={{ opacity: pasoActual === 0 ? 0.4 : 1 }}>
+              <button
+                className="btn btn-secondary"
+                onClick={retroceder}
+                disabled={pasoActual <= 1}
+                style={{ opacity: pasoActual <= 1 ? 0.4 : 1 }}
+              >
                 ← Paso anterior
               </button>
-              <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= totalPasos} style={{ opacity: pasoActual >= totalPasos ? 0.4 : 1 }}>
-                {pasoActual >= totalPasos ? 'Trámite completado' : 'Siguiente paso →'}
-              </button>
+
+              {isCompletado ? (
+                <button
+                  className="btn"
+                  disabled
+                  style={{
+                    background: 'var(--green)',
+                    color: '#fff',
+                    border: 'none',
+                    opacity: 1,
+                    cursor: 'default',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <Icon name="check" size={14} /> Trámite Completado (100%)
+                </button>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={avanzar}
+                  style={{
+                    background: pasoActual === totalPasos ? 'var(--green)' : undefined,
+                    borderColor: pasoActual === totalPasos ? 'var(--green)' : undefined,
+                  }}
+                >
+                  {pasoActual === totalPasos ? '✔ Finalizar y Marcar Completado' : 'Siguiente paso →'}
+                </button>
+              )}
             </div>
           ) : (
             <div className="alert alert-green" style={{ display: 'flex', alignItems: 'center' }}>
