@@ -6,11 +6,14 @@ import { API_BASE_URL } from '../config/api';
  */
 
 export async function login(email, contrasenia) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const endpoint = `${API_BASE_URL}/api/auth/login`;
+  console.log("[AUTH_ENDPOINT]:", endpoint);
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, contrasenia })
   });
+
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
