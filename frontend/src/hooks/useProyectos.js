@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { fetchProyectos, createProyecto, updateProyecto } from '../services/proyectosService';
+import { fetchProyectos, createProyecto, updateProyecto, deleteProyecto } from '../services/proyectosService';
 
 export function useProyectos(setProyectos, currentSession) {
   useEffect(() => {
@@ -46,5 +46,19 @@ export function useProyectos(setProyectos, currentSession) {
     }
   };
 
-  return { crearProyecto, actualizarProyecto };
+  const eliminarProyecto = async (id, idNumerico) => {
+    const targetId = idNumerico || id;
+    try {
+      await deleteProyecto(targetId);
+      if (setProyectos) {
+        setProyectos(prev => prev.filter(p => p.id !== id && p.idNumerico !== targetId));
+      }
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar proyecto:", error);
+      throw error;
+    }
+  };
+
+  return { crearProyecto, actualizarProyecto, eliminarProyecto };
 }

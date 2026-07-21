@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Component } from 'react';
+import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { useProyectos } from '../hooks/useProyectos';
@@ -87,6 +88,7 @@ function ProyectosContent() {
     setActive,
     proyectos = [],
     addProyecto,
+    deleteProyecto,
     presupuestos = [],
     setPreselectedProjectId,
     setProyectos,
@@ -98,8 +100,8 @@ function ProyectosContent() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [vista, setVista] = useState('grid'); // 'grid' | 'lista'
 
-  // Hook: carga y creación de proyectos delegada a la capa de servicios
-  const { crearProyecto } = useProyectos(setProyectos, session);
+  // Hook: carga, creación y eliminación de proyectos delegada a la capa de servicios
+  const { crearProyecto, eliminarProyecto } = useProyectos(setProyectos, session);
 
   // Modal / Drawer state
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
@@ -127,6 +129,55 @@ function ProyectosContent() {
     const matchTipo = filtroTipo === 'todos' || p.tipo === filtroTipo;
     return matchQ && matchEstatus && matchTipo;
   });
+
+  const handleEliminarProyecto = async (id, idNumerico) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#C0392B',
+      cancelButtonColor: '#7F8C8D',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const targetId = idNumerico || id;
+      if (eliminarProyecto) {
+        await eliminarProyecto(id, idNumerico);
+      } else if (deleteProyecto) {
+        await deleteProyecto(id, idNumerico);
+      } else {
+        setProyectos(prev => prev.filter(p => p.id !== id && p.idNumerico !== targetId));
+      }
+
+      if (proyectoDetalle && (proyectoDetalle.id === id || proyectoDetalle.idNumerico === targetId)) {
+        setProyectoDetalle(null);
+      }
+
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'El proyecto ha sido eliminado con éxito.',
+        icon: 'success',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    } catch (error) {
+      console.error("Error al eliminar proyecto:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un problema al eliminar el proyecto en el servidor.',
+        icon: 'error',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    }
+  };
 
   // Stats (monto ya procesado en el servidor)
   const total = safeProyectos.length;
@@ -258,7 +309,9 @@ function ProyectosContent() {
               clientes={clientes}
               setActive={setActive}
               onClick={() => setProyectoDetalle(p)}
+              onEliminar={handleEliminarProyecto}
               montoReal={p.monto || 0}
+              session={session}
             />
           ))}
         </div>
@@ -273,6 +326,7 @@ function ProyectosContent() {
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Estatus</th>
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Avance</th>
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Monto</th>
+                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -312,6 +366,21 @@ function ProyectosContent() {
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                       {money(monto)}
                     </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                      {session?.rol !== 'cliente' && (
+                        <button
+                          className="btn btn-ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEliminarProyecto(p.id, p.idNumerico);
+                          }}
+                          style={{ padding: 6, minWidth: 'auto', color: 'var(--red)', borderRadius: 4 }}
+                          title="Eliminar Proyecto"
+                        >
+                          <Icon name="trash" size={14} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -339,11 +408,13 @@ function ProyectosContent() {
           presupuestos={presupuestos}
           getBudgetTotal={calcBudgetTotal}
           onClose={() => setProyectoDetalle(null)}
+          onEliminar={handleEliminarProyecto}
           onCrearPresupuesto={(pid) => {
             setPreselectedProjectId && setPreselectedProjectId(pid);
             setActive && setActive('presupuestos');
             setProyectoDetalle(null);
           }}
+          session={session}
         />
       )}
 
@@ -364,7 +435,7 @@ function ProyectosContent() {
 }
 
 // ─── PROYECTO CARD COMPONENT ──────────────────────────────────────────────────
-function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) {
+function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, montoReal, session }) {
   if (!p) return null;
 
   const cli = (clientes || []).find(c => c?.id === p?.clienteId);
@@ -397,7 +468,22 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: col, fontWeight: 700, letterSpacing: 0.5 }}>{p.id || 'PRY-???'}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginTop: 4, lineHeight: 1.3 }}>{p.nombre || 'Sin nombre'}</div>
           </div>
-          <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0, marginLeft: 8 }}>{p.estatusLabel || est.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0 }}>{p.estatusLabel || est.label}</span>
+            {session?.rol !== 'cliente' && (
+              <button
+                className="btn btn-ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEliminar && onEliminar(p.id, p.idNumerico);
+                }}
+                style={{ padding: 4, minWidth: 'auto', color: 'var(--red)', borderRadius: 4 }}
+                title="Eliminar Proyecto"
+              >
+                <Icon name="trash" size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -477,7 +563,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
 }
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
-function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onCrearPresupuesto }) {
+function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, session }) {
   const { proyectos = [], updateProyecto, tareas = [] } = useAppContext();
 
   // Guard previas si no existe initialProyecto
@@ -638,6 +724,16 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
               </>
             ) : (
               <>
+                {session?.rol !== 'cliente' && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => onEliminar && onEliminar(p?.id, p?.idNumerico)}
+                    style={{ padding: 6, borderRadius: '50%', minWidth: 'auto', color: 'var(--red)' }}
+                    title="Eliminar Proyecto"
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
+                )}
                 <button
                   className="btn btn-ghost"
                   onClick={() => setIsEditing(true)}
