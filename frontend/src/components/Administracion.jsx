@@ -48,7 +48,7 @@ export default function Administracion() {
   const [showAddRoleInputEdit, setShowAddRoleInputEdit] = useState(false);
   const [newRoleLabelEdit, setNewRoleLabelEdit] = useState('');
 
-  // Password Security Handlers
+  // Password Security Helpers
   const handleCopyPassword = (pass) => {
     if (!pass) return;
     navigator.clipboard.writeText(pass);
@@ -56,9 +56,9 @@ export default function Administracion() {
       toast: true,
       position: 'top-end',
       icon: 'success',
-      title: '¡Contraseña copiada al portapapeles!',
+      title: '¡Contraseña copiada!',
       showConfirmButton: false,
-      timer: 2000,
+      timer: 1800,
       background: 'var(--surface)',
       color: 'var(--text)'
     });
@@ -72,9 +72,9 @@ export default function Administracion() {
       toast: true,
       position: 'top-end',
       icon: 'info',
-      title: '🎲 Contraseña segura de 12 caracteres generada',
+      title: '🎲 Contraseña segura generada',
       showConfirmButton: false,
-      timer: 2200,
+      timer: 1800,
       background: 'var(--surface)',
       color: 'var(--text)'
     });
@@ -88,16 +88,13 @@ export default function Administracion() {
       toast: true,
       position: 'top-end',
       icon: 'info',
-      title: '🎲 Nueva contraseña segura de 12 caracteres generada',
+      title: '🎲 Nueva contraseña segura generada',
       showConfirmButton: false,
-      timer: 2200,
+      timer: 1800,
       background: 'var(--surface)',
       color: 'var(--text)'
     });
   };
-
-  const addPassVal = validatePasswordSecurity(nuevoUsuario.contrasenia);
-  const editPassVal = validatePasswordSecurity(editandoUsuario?.contrasenia || '');
 
   const handleCreateRole = () => {
     const label = newRoleLabel.trim();
@@ -150,8 +147,10 @@ export default function Administracion() {
 
   const handleAddUsuario = () => {
     if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) return;
-    if (!addPassVal.isValid) {
-      alert('La contraseña no cumple con todas las reglas de seguridad requeridas.');
+
+    const passCheck = validatePasswordSecurity(nuevoUsuario.contrasenia);
+    if (!passCheck.isValid) {
+      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
       return;
     }
 
@@ -196,8 +195,10 @@ export default function Administracion() {
 
   const handleSaveEditUsuario = () => {
     if (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) return;
-    if (!editPassVal.isValid) {
-      alert('La contraseña no cumple con todas las reglas de seguridad requeridas.');
+
+    const passCheck = validatePasswordSecurity(editandoUsuario.contrasenia);
+    if (!passCheck.isValid) {
+      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
       return;
     }
 
@@ -263,8 +264,8 @@ export default function Administracion() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Administración</div>
-        <div className="page-subtitle">Configuración global · catálogo de conceptos y control de acceso</div>
+        <div className="page-title">Módulo Administrativo</div>
+        <div className="page-subtitle">Administración de catálogo de trámites y control de usuarios</div>
       </div>
 
       {/* Tabs */}
@@ -273,7 +274,7 @@ export default function Administracion() {
           className={`btn ${adminTab === 'conceptos' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setAdminTab('conceptos')}
         >
-          Catálogo General de Conceptos
+          Catálogo Trámites
         </button>
         <button
           className={`btn ${adminTab === 'usuarios' ? 'btn-primary' : 'btn-ghost'}`}
@@ -294,7 +295,7 @@ export default function Administracion() {
               <Icon name="search" size={14} />
               <input
                 className="form-control search-input"
-                placeholder="Buscar usuario por nombre, correo o rol..."
+                placeholder="Buscar usuarios por nombre, correo o rol..."
                 value={qUsuarios}
                 onChange={e => setQUsuarios(e.target.value)}
               />
@@ -306,7 +307,7 @@ export default function Administracion() {
                 setShowAddUsuarioModal(true);
               }}
             >
-              <Icon name="plus" size={14} /> Crear Nuevo Usuario
+              <Icon name="plus" size={14} /> Registrar Usuario
             </button>
           </div>
 
@@ -315,12 +316,11 @@ export default function Administracion() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'var(--surface2)' }}>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Usuario</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Correo Electrónico</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Rol</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Módulos Habilitados</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Contraseña</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Acciones</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>USUARIO</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CORREO ELECTRÓNICO</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CONTRASEÑA</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ROL</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,43 +346,12 @@ export default function Administracion() {
                           </div>
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'DM Mono' }}>{u.id}</div>
                           </div>
                         </div>
                       </td>
 
                       <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-2)' }}>
                         {u.email}
-                      </td>
-
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        <span className={`badge ${u.rol === 'admin' ? 'badge-blue' : u.rol === 'cliente' ? 'badge-gray' : 'badge-amber'}`}>
-                          {rolLabel}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 260 }}>
-                          {AVAILABLE_MODULES.map(m => {
-                            const hasAccess = u.modulos?.includes(m.id);
-                            return (
-                              <span
-                                key={m.id}
-                                style={{
-                                  fontSize: 10,
-                                  padding: '2px 6px',
-                                  borderRadius: 4,
-                                  background: hasAccess ? 'var(--surface2)' : 'transparent',
-                                  color: hasAccess ? 'var(--text-2)' : 'var(--text-3)',
-                                  border: `1px solid ${hasAccess ? 'var(--border)' : 'transparent'}`,
-                                  opacity: hasAccess ? 1 : 0.4
-                                }}
-                              >
-                                {m.label}
-                              </span>
-                            );
-                          })}
-                        </div>
                       </td>
 
                       <td style={{ padding: '12px 16px' }}>
@@ -399,6 +368,12 @@ export default function Administracion() {
                             <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={14} />
                           </button>
                         </div>
+                      </td>
+
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <span className={`badge ${u.rol === 'admin' ? 'badge-blue' : u.rol === 'cliente' ? 'badge-gray' : 'badge-amber'}`}>
+                          {rolLabel}
+                        </span>
                       </td>
 
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>
@@ -466,74 +441,67 @@ export default function Administracion() {
               />
             </div>
 
-            {/* Password input block with generator & strength meter */}
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ margin: 0 }}>Contraseña *</label>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={handleGeneratePasswordAdd}
-                  style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, padding: '2px 6px' }}
-                >
-                  🎲 Generar contraseña segura
-                </button>
-              </div>
-
+              <label className="form-label">Contraseña *</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
                   type={showNuevoPassword ? "text" : "password"}
-                  placeholder="Mínimo 8 caracteres (12 recomendado)"
+                  placeholder="••••••••"
                   value={nuevoUsuario.contrasenia}
                   onChange={e => setNuevoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
-                  style={{ paddingRight: 74 }}
+                  style={{ paddingRight: 80 }}
                 />
-                <div style={{ position: 'absolute', right: 6, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <div style={{ position: 'absolute', right: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* Botón rojo generador estilo Password Manager (HBO/Bitwarden) */}
+                  <button
+                    type="button"
+                    onClick={handleGeneratePasswordAdd}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      background: 'var(--red)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: -0.5,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.1s, opacity 0.1s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    title="Generar contraseña aleatoria y segura"
+                  >
+                    •••|
+                  </button>
+
                   {nuevoUsuario.contrasenia && (
                     <button
                       type="button"
                       onClick={() => handleCopyPassword(nuevoUsuario.contrasenia)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
                       title="Copiar contraseña al portapapeles"
                     >
                       <Icon name="copy" size={15} />
                     </button>
                   )}
+
                   <button
                     type="button"
                     onClick={() => setShowNuevoPassword(!showNuevoPassword)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
                     title={showNuevoPassword ? "Ocultar" : "Mostrar"}
                   >
                     <Icon name={showNuevoPassword ? "eyeoff" : "eye"} size={16} />
                   </button>
                 </div>
               </div>
-
-              {/* Password strength checklist */}
-              {nuevoUsuario.contrasenia && (
-                <div style={{ background: 'var(--surface2)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginTop: 8, fontSize: 11 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-2)' }}>Requisitos de seguridad:</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px' }}>
-                    <span style={{ color: addPassVal.hasMinLength ? 'var(--green)' : 'var(--text-3)' }}>
-                      {addPassVal.hasMinLength ? '✓' : '○'} Min. 8 caracteres {addPassVal.isRecommendedLength ? '(12 ★)' : ''}
-                    </span>
-                    <span style={{ color: addPassVal.hasUpper ? 'var(--green)' : 'var(--text-3)' }}>
-                      {addPassVal.hasUpper ? '✓' : '○'} Mayúscula (A-Z)
-                    </span>
-                    <span style={{ color: addPassVal.hasLower ? 'var(--green)' : 'var(--text-3)' }}>
-                      {addPassVal.hasLower ? '✓' : '○'} Minúscula (a-z)
-                    </span>
-                    <span style={{ color: addPassVal.hasNumber ? 'var(--green)' : 'var(--text-3)' }}>
-                      {addPassVal.hasNumber ? '✓' : '○'} Número (0-9)
-                    </span>
-                    <span style={{ color: addPassVal.hasSymbol ? 'var(--green)' : 'var(--text-3)', gridColumn: '1/-1' }}>
-                      {addPassVal.hasSymbol ? '✓' : '○'} Carácter especial (!@#$%...)
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Asignar Rol */}
@@ -651,8 +619,8 @@ export default function Administracion() {
               <button
                 className="btn btn-primary"
                 onClick={handleAddUsuario}
-                disabled={!nuevoUsuario.nombre || !nuevoUsuario.email || !addPassVal.isValid}
-                style={{ opacity: (!nuevoUsuario.nombre || !nuevoUsuario.email || !addPassVal.isValid) ? 0.5 : 1 }}
+                disabled={!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia}
+                style={{ opacity: (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) ? 0.5 : 1 }}
               >
                 <Icon name="check" size={14} /> Registrar
               </button>
@@ -688,74 +656,67 @@ export default function Administracion() {
               />
             </div>
 
-            {/* Password input block for edit */}
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ margin: 0 }}>Restablecer Contraseña *</label>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={handleGeneratePasswordEdit}
-                  style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, padding: '2px 6px' }}
-                >
-                  🎲 Generar contraseña segura
-                </button>
-              </div>
-
+              <label className="form-label">Contraseña *</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
                   type={showEditPassword ? "text" : "password"}
-                  placeholder="Mínimo 8 caracteres (12 recomendado)"
+                  placeholder="••••••••"
                   value={editandoUsuario.contrasenia}
                   onChange={e => setEditandoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
-                  style={{ paddingRight: 74 }}
+                  style={{ paddingRight: 80 }}
                 />
-                <div style={{ position: 'absolute', right: 6, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <div style={{ position: 'absolute', right: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* Botón rojo generador estilo Password Manager (HBO/Bitwarden) */}
+                  <button
+                    type="button"
+                    onClick={handleGeneratePasswordEdit}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      background: 'var(--red)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: -0.5,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.1s, opacity 0.1s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    title="Generar contraseña aleatoria y segura"
+                  >
+                    •••|
+                  </button>
+
                   {editandoUsuario.contrasenia && (
                     <button
                       type="button"
                       onClick={() => handleCopyPassword(editandoUsuario.contrasenia)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
                       title="Copiar contraseña al portapapeles"
                     >
                       <Icon name="copy" size={15} />
                     </button>
                   )}
+
                   <button
                     type="button"
                     onClick={() => setShowEditPassword(!showEditPassword)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
                     title={showEditPassword ? "Ocultar" : "Mostrar"}
                   >
                     <Icon name={showEditPassword ? "eyeoff" : "eye"} size={16} />
                   </button>
                 </div>
               </div>
-
-              {/* Password strength checklist */}
-              {editandoUsuario.contrasenia && (
-                <div style={{ background: 'var(--surface2)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginTop: 8, fontSize: 11 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-2)' }}>Requisitos de seguridad:</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px' }}>
-                    <span style={{ color: editPassVal.hasMinLength ? 'var(--green)' : 'var(--text-3)' }}>
-                      {editPassVal.hasMinLength ? '✓' : '○'} Min. 8 caracteres {editPassVal.isRecommendedLength ? '(12 ★)' : ''}
-                    </span>
-                    <span style={{ color: editPassVal.hasUpper ? 'var(--green)' : 'var(--text-3)' }}>
-                      {editPassVal.hasUpper ? '✓' : '○'} Mayúscula (A-Z)
-                    </span>
-                    <span style={{ color: editPassVal.hasLower ? 'var(--green)' : 'var(--text-3)' }}>
-                      {editPassVal.hasLower ? '✓' : '○'} Minúscula (a-z)
-                    </span>
-                    <span style={{ color: editPassVal.hasNumber ? 'var(--green)' : 'var(--text-3)' }}>
-                      {editPassVal.hasNumber ? '✓' : '○'} Número (0-9)
-                    </span>
-                    <span style={{ color: editPassVal.hasSymbol ? 'var(--green)' : 'var(--text-3)', gridColumn: '1/-1' }}>
-                      {editPassVal.hasSymbol ? '✓' : '○'} Carácter especial (!@#$%...)
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Asignar Rol */}
@@ -877,8 +838,8 @@ export default function Administracion() {
               <button
                 className="btn btn-primary"
                 onClick={handleSaveEditUsuario}
-                disabled={!editandoUsuario.nombre || !editandoUsuario.email || !editPassVal.isValid}
-                style={{ opacity: (!editandoUsuario.nombre || !editandoUsuario.email || !editPassVal.isValid) ? 0.5 : 1 }}
+                disabled={!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia}
+                style={{ opacity: (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) ? 0.5 : 1 }}
               >
                 <Icon name="check" size={14} /> Guardar Cambios
               </button>
@@ -941,14 +902,28 @@ export default function Administracion() {
               <button
                 className="btn btn-secondary"
                 onClick={() => setUsuarioAEliminar(null)}
-                style={{ flex: 1, padding: '8px 16px' }}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '6px'
+                }}
               >
-                Cancelar
+                No, cancelar
               </button>
               <button
-                className="btn btn-primary"
+                className="btn"
                 onClick={confirmEliminarUsuario}
-                style={{ flex: 1, padding: '8px 16px', background: 'var(--red)', borderColor: 'var(--red)' }}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  background: 'var(--red)',
+                  color: 'white',
+                  border: 'none',
+                  boxShadow: '0 2px 6px rgba(192, 57, 43, 0.2)'
+                }}
               >
                 Sí, eliminar
               </button>
