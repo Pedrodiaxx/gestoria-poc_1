@@ -10,9 +10,23 @@ import {
 } from '../data/mockData';
 
 export function HojasRuta() {
-  const { session = {}, clientes = [] } = useAppContext();
+  const { session = {}, clientes = [], usuarios = [] } = useAppContext();
   
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
+
+  const resolveUser = (id) => {
+    if (!id) return null;
+    const found = (usuarios || []).find(u => String(u?.id) === String(id) || u?.email === id || String(u?.idNumerico) === String(id));
+    if (found) {
+      return {
+        id: found.id,
+        nombre: found.nombre,
+        avatar: found.avatar || (found.nombre ? found.nombre.slice(0, 2).toUpperCase() : 'U'),
+        color: found.color || 'var(--blue)'
+      };
+    }
+    return EQUIPO.find(e => String(e?.id) === String(id)) || null;
+  };
 
   const isClient = session?.rol === 'cliente';
   const clientTramitesList = isClient
@@ -46,7 +60,7 @@ export function HojasRuta() {
   const col = COLOR_MAP[tipo?.color] || '#1A5276';
   const bgCol = BG_MAP[tipo?.color] || '#EAF2F8';
   const cli = getCliente(selectedTramite?.clienteId);
-  const equipo = EQUIPO.find(e => e?.id === selectedTramite?.asignadoA);
+  const equipo = resolveUser(selectedTramite?.asignadoA);
   const pasosList = tipo?.pasos || [];
   const totalPasos = pasosList.length || 1;
   const pct = Math.round((pasoActual / totalPasos) * 100);

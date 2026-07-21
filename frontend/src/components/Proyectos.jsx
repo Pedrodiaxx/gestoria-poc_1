@@ -73,6 +73,30 @@ const calcBudgetTotal = (b) => {
   return directos;
 };
 
+// Helper para resolver usuario real desde Control de Usuarios (DbContext) con fallback
+const resolveUser = (id, usuariosList = []) => {
+  if (!id) return null;
+  const found = (usuariosList || []).find(u => String(u?.id) === String(id) || u?.email === id || String(u?.idNumerico) === String(id));
+  if (found) {
+    return {
+      id: found.id,
+      nombre: found.nombre,
+      avatar: found.avatar || (found.nombre ? found.nombre.slice(0, 2).toUpperCase() : 'U'),
+      color: found.color || 'var(--blue)',
+      rol: found.rol
+    };
+  }
+  const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
+  if (mockFound) return mockFound;
+  return { id, nombre: id, avatar: 'U', color: 'var(--blue)' };
+};
+
+const getTeamMembers = (usuariosList = []) => {
+  const staff = (usuariosList || []).filter(u => u?.rol !== 'cliente');
+  if (staff.length > 0) return staff;
+  return (usuariosList && usuariosList.length > 0) ? usuariosList : EQUIPO;
+};
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export function Proyectos() {
   return (
@@ -92,7 +116,8 @@ function ProyectosContent() {
     presupuestos = [],
     setPreselectedProjectId,
     setProyectos,
-    session
+    session,
+    usuarios = []
   } = useAppContext();
 
   const [q, setQ] = useState('');
@@ -438,12 +463,13 @@ function ProyectosContent() {
 function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, montoReal, session }) {
   if (!p) return null;
 
+  const { usuarios = [] } = useAppContext();
   const cli = (clientes || []).find(c => c?.id === p?.clienteId);
   const tipo = TRAMITES_TIPOS[p?.tipo];
   const col = COLOR_MAP[tipo?.color] || '#777';
   const bgCol = BG_MAP[tipo?.color] || '#f5f5f5';
   const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
-  const equipo = EQUIPO.find(e => e?.id === p?.responsable);
+  const equipo = resolveUser(p?.responsable, usuarios);
 
   const avance = p?.avance || 0;
 
@@ -564,7 +590,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
 function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, session }) {
-  const { proyectos = [], updateProyecto, tareas = [] } = useAppContext();
+  const { proyectos = [], updateProyecto, tareas = [], usuarios = [] } = useAppContext();
 
   // Guard previas si no existe initialProyecto
   if (!initialProyecto) {
@@ -600,7 +626,10 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const tipo = TRAMITES_TIPOS[p?.tipo];
   const col = COLOR_MAP[tipo?.color] || '#777';
   const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
-  const equipo = EQUIPO.find(e => e?.id === p?.responsable);
+  
+  // Resolver usuario real de la lista de Control de Usuarios
+  const equipo = resolveUser(p?.responsable, usuarios);
+  const teamMembers = getTeamMembers(usuarios);
 
   // Helper para calculo seguro del presupuesto
   const safeGetBudgetTotal = getBudgetTotal || calcBudgetTotal;
@@ -623,7 +652,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const [editNombre, setEditNombre] = useState(p?.nombre || '');
   const [editEstatus, setEditEstatus] = useState(p?.estatus || 'pendiente');
   const [editPrioridad, setEditPrioridad] = useState(p?.prioridad || 'media');
-  const [editResponsable, setEditResponsable] = useState(p?.responsable || (EQUIPO[0]?.id || 'u1'));
+  const [editResponsable, setEditResponsable] = useState(p?.responsable || (teamMembers[0]?.id || 'u1'));
   const [editUbicacion, setEditUbicacion] = useState(p?.ubicacion || '');
   const [editAlcance, setEditAlcance] = useState(p?.alcance || '');
   const [editDescripcion, setEditDescripcion] = useState(p?.descripcion || '');
@@ -640,7 +669,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
     setEditNombre(p?.nombre || '');
     setEditEstatus(p?.estatus || 'pendiente');
     setEditPrioridad(p?.prioridad || 'media');
-    setEditResponsable(p?.responsable || (EQUIPO[0]?.id || 'u1'));
+    setEditResponsable(p?.responsable || (teamMembers[0]?.id || 'u1'));
     setEditUbicacion(p?.ubicacion || '');
     setEditAlcance(p?.alcance || '');
     setEditDescripcion(p?.descripcion || '');
@@ -780,7 +809,11 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
                 <label className="form-label">Responsable del Trámite</label>
                 <select className="form-control" value={editResponsable} onChange={e => setEditResponsable(e.target.value)}>
-                  {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  {teamMembers.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.nombre} {e.rol ? `(${e.rol})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1134,6 +1167,9 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
 
 // ─── MODAL NUEVO PROYECTO COMPONENT ───────────────────────────────────────────
 function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }) {
+  const { usuarios = [] } = useAppContext();
+  const teamMembers = getTeamMembers(usuarios);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('licencia-const');
@@ -1141,7 +1177,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
   const [prioridad, setPrioridad] = useState('media');
   const [estatus, setEstatus] = useState('pendiente');
   const [avance, setAvance] = useState(0);
-  const [responsable, setResponsable] = useState(EQUIPO[0]?.id || 'u1');
+  const [responsable, setResponsable] = useState(teamMembers[0]?.id || 'u1');
   const [descripcion, setDescripcion] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [alcance, setAlcance] = useState('');
@@ -1276,7 +1312,11 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
           <div className="form-group">
             <label className="form-label">Responsable del Trámite</label>
             <select className="form-control" value={responsable} onChange={e => setResponsable(e.target.value)} disabled={isSubmitting}>
-              {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              {teamMembers.map(e => (
+                <option key={e.id} value={e.id}>
+                  {e.nombre} {e.rol ? `(${e.rol})` : ''}
+                </option>
+              ))}
             </select>
           </div>
 
