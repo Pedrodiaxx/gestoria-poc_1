@@ -39,6 +39,7 @@ builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<PresupuestoService>();
 builder.Services.AddScoped<TareaService>();
 builder.Services.AddScoped<ConceptoService>();
+builder.Services.AddScoped<SequenceResetService>();
 
 var app = builder.Build();
 
@@ -53,6 +54,18 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"Error al sembrar la base de datos: {ex.Message}");
+    }
+
+    // Reajustar secuencias de PostgreSQL al MAX(Id) actual de cada tabla
+    try
+    {
+        var seqService = services.GetRequiredService<SequenceResetService>();
+        await seqService.ResetAllSequencesAsync();
+        Console.WriteLine("[Startup] Secuencias de PostgreSQL reajustadas correctamente.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Error al reajustar secuencias: {ex.Message}");
     }
 }
 

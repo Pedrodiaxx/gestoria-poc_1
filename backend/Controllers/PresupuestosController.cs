@@ -9,10 +9,12 @@ namespace Backend.Controllers
     public class PresupuestosController : ControllerBase
     {
         private readonly PresupuestoService _service;
+        private readonly SequenceResetService _sequenceReset;
 
-        public PresupuestosController(PresupuestoService service)
+        public PresupuestosController(PresupuestoService service, SequenceResetService sequenceReset)
         {
             _service = service;
+            _sequenceReset = sequenceReset;
         }
 
         [HttpGet]
@@ -48,6 +50,8 @@ namespace Backend.Controllers
             {
                 return NotFound("Presupuesto no encontrado.");
             }
+
+            await _sequenceReset.ResetSequenceAsync("Presupuestos");
             return NoContent();
         }
     }

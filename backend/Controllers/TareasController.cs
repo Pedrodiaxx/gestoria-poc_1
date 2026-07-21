@@ -9,10 +9,12 @@ namespace Backend.Controllers
     public class TareasController : ControllerBase
     {
         private readonly TareaService _service;
+        private readonly SequenceResetService _sequenceReset;
 
-        public TareasController(TareaService service)
+        public TareasController(TareaService service, SequenceResetService sequenceReset)
         {
             _service = service;
+            _sequenceReset = sequenceReset;
         }
 
         [HttpGet]
@@ -44,7 +46,10 @@ namespace Backend.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var res = await _service.DeleteTareaAsync(id);
-            return res ? NoContent() : NotFound();
+            if (!res) return NotFound();
+
+            await _sequenceReset.ResetSequenceAsync("TareasDiarias");
+            return NoContent();
         }
     }
 }

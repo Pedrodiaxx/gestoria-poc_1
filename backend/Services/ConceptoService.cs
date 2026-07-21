@@ -24,6 +24,11 @@ namespace Backend.Services
             return await _repo.AddAsync(nuevoConcepto);
         }
 
+        public async Task<bool> DeleteAsync(int id)
+        {
+            return await _repo.DeleteAsync(id);
+        }
+
         // ──────────────────────────────────────
         // Mapeo simple a DTO de catálogo
         // ──────────────────────────────────────
