@@ -10,12 +10,13 @@ import {
 } from '../data/mockData';
 
 export function HojasRuta() {
-  const { session, clientes } = useAppContext();
+  const { session = {}, clientes = [] } = useAppContext();
   
-  const getCliente = (id) => clientes.find(c => c.id === id);
+  const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
-  const clientTramitesList = session.rol === 'cliente'
-    ? TRAMITES_MOCK.filter(t => t.clienteId === session.clienteId)
+  const isClient = session?.rol === 'cliente';
+  const clientTramitesList = isClient
+    ? TRAMITES_MOCK.filter(t => t?.clienteId === session?.clienteId)
     : TRAMITES_MOCK;
 
   const [selectedTramite, setSelectedTramite] = useState(clientTramitesList[0] || null);
@@ -23,29 +24,35 @@ export function HojasRuta() {
 
   const seleccionar = (t) => {
     setSelectedTramite(t);
-    setPasoActual(t.pasoActual);
+    setPasoActual(t?.pasoActual || 0);
   };
 
   if (!selectedTramite) {
     return (
       <div>
         <div className="page-header">
-          <div className="page-title">{session.rol === 'cliente' ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
-          <div className="page-subtitle">{session.rol === 'cliente' ? 'No tienes ningún trámite en proceso actualmente.' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
+          <div className="page-title">{isClient ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
+          <div className="page-subtitle">{isClient ? 'No tienes ningún trámite en proceso actualmente.' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-3)' }}>
+          <Icon name="map" size={32} style={{ opacity: 0.5, marginBottom: 12 }} />
+          <div>No hay hojas de ruta disponibles en este momento.</div>
         </div>
       </div>
     );
   }
 
-  const tipo = TRAMITES_TIPOS[selectedTramite.tipo];
-  const col = COLOR_MAP[tipo.color];
-  const bgCol = BG_MAP[tipo.color];
-  const cli = getCliente(selectedTramite.clienteId);
-  const equipo = EQUIPO.find(e => e.id === selectedTramite.asignadoA);
-  const pct = Math.round((pasoActual / tipo.pasos.length) * 100);
+  const tipo = TRAMITES_TIPOS[selectedTramite?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', icono: '📋', pasos: [] };
+  const col = COLOR_MAP[tipo?.color] || '#1A5276';
+  const bgCol = BG_MAP[tipo?.color] || '#EAF2F8';
+  const cli = getCliente(selectedTramite?.clienteId);
+  const equipo = EQUIPO.find(e => e?.id === selectedTramite?.asignadoA);
+  const pasosList = tipo?.pasos || [];
+  const totalPasos = pasosList.length || 1;
+  const pct = Math.round((pasoActual / totalPasos) * 100);
 
   const avanzar = () => {
-    if (pasoActual < tipo.pasos.length) setPasoActual(p => p + 1);
+    if (pasoActual < totalPasos) setPasoActual(p => p + 1);
   };
 
   const retroceder = () => {
@@ -55,20 +62,21 @@ export function HojasRuta() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">{session.rol === 'cliente' ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
-        <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el avance de tus gestiones de construcción' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
+        <div className="page-title">{isClient ? 'Mis Trámites' : 'Hojas de Ruta por Trámite'}</div>
+        <div className="page-subtitle">{isClient ? 'Consulta el avance de tus gestiones de construcción' : 'Seguimiento de requisitos y pasos predefinidos para cada gestión'}</div>
       </div>
 
       <div className="cotizacion-form-layout">
         <div>
           {clientTramitesList.map(t => {
-            const tp = TRAMITES_TIPOS[t.tipo];
-            const c = COLOR_MAP[tp.color];
-            const bg = BG_MAP[tp.color];
-            const pct2 = Math.round((t.pasoActual / tp.pasos.length) * 100);
-            const isActive = selectedTramite.id === t.id;
+            const tp = TRAMITES_TIPOS[t?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', pasos: [] };
+            const c = COLOR_MAP[tp?.color] || '#1A5276';
+            const bg = BG_MAP[tp?.color] || '#EAF2F8';
+            const tPasosLen = tp?.pasos?.length || 1;
+            const pct2 = Math.round(((t?.pasoActual || 0) / tPasosLen) * 100);
+            const isActive = selectedTramite?.id === t?.id;
             return (
-              <div key={t.id} onClick={() => seleccionar(t)} style={{
+              <div key={t?.id || Math.random()} onClick={() => seleccionar(t)} style={{
                 background: isActive ? bg : 'var(--surface)',
                 border: `1px solid ${isActive ? c : 'var(--border)'}`,
                 borderRadius: 'var(--radius-md)',
@@ -79,17 +87,17 @@ export function HojasRuta() {
                 boxShadow: isActive ? `0 0 0 2px ${c}22` : 'var(--shadow-sm)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600, color: c }}>{t.id}</span>
-                  <span className={`badge badge-${t.prioridad === 'alta' ? 'red' : t.prioridad === 'media' ? 'amber' : 'gray'}`} style={{ fontSize: 10 }}>
-                    {t.prioridad}
+                  <span style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600, color: c }}>{t?.id}</span>
+                  <span className={`badge badge-${t?.prioridad === 'alta' ? 'red' : t?.prioridad === 'media' ? 'amber' : 'gray'}`} style={{ fontSize: 10 }}>
+                    {t?.prioridad || 'media'}
                   </span>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{tp.nombre}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>{getCliente(t.clienteId)?.nombre}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{tp?.nombre || 'Gestión'}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>{getCliente(t?.clienteId)?.nombre || 'Sin cliente'}</div>
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${pct2}%`, background: c }} />
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>{t.pasoActual}/{tp.pasos.length} pasos · {pct2}%</div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>{t?.pasoActual || 0}/{tPasosLen} pasos · {pct2}%</div>
               </div>
             );
           })}
@@ -99,17 +107,17 @@ export function HojasRuta() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <span style={{ fontSize: 20 }}>{tipo.icono}</span>
+                <span style={{ fontSize: 20 }}>{tipo?.icono || '📋'}</span>
                 <div>
-                  <div style={{ fontSize: 17, fontWeight: 600 }}>{tipo.nombre}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Folio: {selectedTramite.folio}</div>
+                  <div style={{ fontSize: 17, fontWeight: 600 }}>{tipo?.nombre || 'Trámite'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Folio: {selectedTramite?.folio || 'N/A'}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                <span className="badge badge-blue">{cli?.nombre}</span>
+                <span className="badge badge-blue">{cli?.nombre || 'Cliente General'}</span>
                 {equipo && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface2)', padding: '3px 8px', borderRadius: 20, fontSize: 11 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: '50%', background: equipo.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700 }}>{equipo.avatar}</span>
+                    <span style={{ width: 18, height: 18, borderRadius: '50%', background: equipo.color || 'var(--blue)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700 }}>{equipo.avatar || 'U'}</span>
                     {equipo.nombre}
                   </span>
                 )}
@@ -124,9 +132,9 @@ export function HojasRuta() {
           <div className="progress-bar" style={{ height: 8, marginBottom: 6 }}>
             <div className="progress-fill" style={{ width: `${pct}%`, background: col, transition: 'width 0.3s' }} />
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 24 }}>Paso {pasoActual} de {tipo.pasos.length}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 24 }}>Paso {pasoActual} de {totalPasos}</div>
 
-          {selectedTramite.notas && (
+          {(selectedTramite?.notas || selectedTramite?.notes) && (
             <div className="alert alert-amber" style={{ marginBottom: 20 }}>
               <Icon name="alert" size={14} style={{ flexShrink: 0 }} />
               <span>{selectedTramite.notes || selectedTramite.notas}</span>
@@ -134,7 +142,7 @@ export function HojasRuta() {
           )}
 
           <div style={{ marginBottom: 20 }}>
-            {tipo.pasos.map((paso, i) => {
+            {pasosList.map((paso, i) => {
               const idx = i + 1;
               const hecho = idx < pasoActual;
               const actual = idx === pasoActual;
@@ -164,13 +172,13 @@ export function HojasRuta() {
             })}
           </div>
 
-          {session.rol !== 'cliente' ? (
+          {!isClient ? (
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-secondary" onClick={retroceder} disabled={pasoActual === 0} style={{ opacity: pasoActual === 0 ? 0.4 : 1 }}>
                 ← Paso anterior
               </button>
-              <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= tipo.pasos.length} style={{ opacity: pasoActual >= tipo.pasos.length ? 0.4 : 1 }}>
-                {pasoActual >= tipo.pasos.length ? 'Trámite completado' : 'Siguiente paso →'}
+              <button className="btn btn-primary" onClick={avanzar} disabled={pasoActual >= totalPasos} style={{ opacity: pasoActual >= totalPasos ? 0.4 : 1 }}>
+                {pasoActual >= totalPasos ? 'Trámite completado' : 'Siguiente paso →'}
               </button>
             </div>
           ) : (
