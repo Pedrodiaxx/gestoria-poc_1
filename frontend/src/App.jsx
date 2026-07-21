@@ -52,7 +52,7 @@ export default function App() {
       const allowed = session.modulos && session.modulos.length > 0
         ? session.modulos
         : getDefaultModulos(session.rol);
-      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'];
+      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes', 'tramites'];
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard';
         setActive(nextActive);
