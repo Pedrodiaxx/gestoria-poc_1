@@ -23,5 +23,15 @@ namespace Backend.Repositories
             await _db.SaveChangesAsync();
             return concepto;
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var concepto = await _db.Conceptos.FirstOrDefaultAsync(c => c.Id == id);
+            if (concepto == null) return false;
+
+            _db.Conceptos.Remove(concepto);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

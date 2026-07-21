@@ -8,11 +8,35 @@ const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 const todayStr = fmt(hoy);
 
+const resolveUser = (id, usuariosList = []) => {
+  if (!id) return null;
+  const found = (usuariosList || []).find(u => String(u?.id) === String(id) || u?.email === id || String(u?.idNumerico) === String(id));
+  if (found) {
+    return {
+      id: found.id,
+      nombre: found.nombre,
+      avatar: found.avatar || (found.nombre ? found.nombre.slice(0, 2).toUpperCase() : 'U'),
+      color: found.color || 'var(--blue)'
+    };
+  }
+  const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
+  if (mockFound) return mockFound;
+  return { id, nombre: id, avatar: 'U', color: 'var(--blue)' };
+};
+
+const getTeamMembers = (usuariosList = []) => {
+  const staff = (usuariosList || []).filter(u => u?.rol !== 'cliente');
+  if (staff.length > 0) return staff;
+  return (usuariosList && usuariosList.length > 0) ? usuariosList : EQUIPO;
+};
+
 export default function TareasDiarias() {
-  const { tareas, setTareas } = useAppContext();
+  const { tareas = [], setTareas, usuarios = [] } = useAppContext();
+  const teamMembers = getTeamMembers(usuarios);
+
   const [filtroUser, setFiltroUser] = useState('todos');
   const [showNueva, setShowNueva] = useState(false);
-  const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
+  const [nueva, setNueva] = useState({ titulo: '', tramiteId: 'TRM-001', asignadoA: teamMembers[0]?.id || 'u1', prioridad: 'media', fecha: fmt(hoy) });
 
   // Hook: carga de tareas delegada a la capa de servicios
   const { crearTarea, actualizarTarea } = useTareas(setTareas);
@@ -42,7 +66,7 @@ export default function TareasDiarias() {
     }
   };
 
-  const filtered = tareas.filter(t => filtroUser === 'todos' || t.asignadoA === filtroUser);
+  const filtered = tareas.filter(t => filtroUser === 'todos' || String(t.asignadoA) === String(filtroUser));
 
   // Clasificación de columnas controlada 100% por el servidor (propiedad Columna)
   const col1 = filtered.filter(t => t.columna === 'hoy');
@@ -57,7 +81,7 @@ export default function TareasDiarias() {
       prioridad: nueva.prioridad || 'media',
       hecho: false,
       fecha: nueva.fecha ? new Date(nueva.fecha).toISOString() : new Date().toISOString(),
-      asignadoA: nueva.asignadoA || 'u1'
+      asignadoA: nueva.asignadoA || teamMembers[0]?.id || 'u1'
     };
 
     try {
@@ -66,7 +90,7 @@ export default function TareasDiarias() {
 
       setTareas(prev => [...prev, tareaMasticadaPorElBackend]);
       setShowNueva(false);
-      setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: 'u1', prioridad: 'media', fecha: fmt(hoy) });
+      setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: teamMembers[0]?.id || 'u1', prioridad: 'media', fecha: fmt(hoy) });
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
       alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
@@ -76,7 +100,7 @@ export default function TareasDiarias() {
   const PrioColors = { alta: 'badge-red', media: 'badge-amber', baja: 'badge-gray' };
 
   const TCard = ({ t }) => {
-    const eq = EQUIPO.find(e => e.id === t.asignadoA);
+    const eq = resolveUser(t.asignadoA, usuarios);
     return (
       <div className="task-card" onClick={() => toggle(t.id)} style={{ opacity: t.hecho ? 0.65 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -94,7 +118,7 @@ export default function TareasDiarias() {
               <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)' }}>{t.tramiteId || t.proyectoId}</span>
               {eq && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 16, height: 16, borderRadius: '50%', background: eq.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{eq.avatar}</span>
+                  <span style={{ width: 16, height: 16, borderRadius: '50%', background: eq.color || 'var(--blue)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{eq.avatar || 'U'}</span>
                   <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{eq.nombre}</span>
                 </span>
               )}
@@ -125,7 +149,7 @@ export default function TareasDiarias() {
         <div style={{ display: 'flex', gap: 10 }}>
           <select className="form-control" style={{ width: 'auto' }} value={filtroUser} onChange={e => setFiltroUser(e.target.value)}>
             <option value="todos">Todo el equipo</option>
-            {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            {teamMembers.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
           </select>
           <button className="btn btn-primary" onClick={() => setShowNueva(true)}>
             <Icon name="plus" size={14} /> Nueva Tarea
@@ -189,7 +213,7 @@ export default function TareasDiarias() {
               <div className="form-group">
                 <label className="form-label">Asignar a</label>
                 <select className="form-control" value={nueva.asignadoA} onChange={e => setNueva(n => ({ ...n, asignadoA: e.target.value }))}>
-                  {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  {teamMembers.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </div>
               <div className="form-group">

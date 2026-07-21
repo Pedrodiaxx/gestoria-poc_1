@@ -9,10 +9,12 @@ namespace Backend.Controllers
     public class PresupuestosController : ControllerBase
     {
         private readonly PresupuestoService _service;
+        private readonly SequenceResetService _sequenceReset;
 
-        public PresupuestosController(PresupuestoService service)
+        public PresupuestosController(PresupuestoService service, SequenceResetService sequenceReset)
         {
             _service = service;
+            _sequenceReset = sequenceReset;
         }
 
         [HttpGet]
@@ -41,13 +43,15 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeletePresupuesto(int id)
         {
             var result = await _service.DeleteAsync(id);
             if (!result)
             {
                 return NotFound("Presupuesto no encontrado.");
             }
+
+            await _sequenceReset.ResetSequenceAsync("Presupuestos");
             return NoContent();
         }
     }

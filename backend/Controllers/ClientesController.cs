@@ -9,10 +9,12 @@ namespace Backend.Controllers
     public class ClientesController : ControllerBase
     {
         private readonly ClienteService _service;
+        private readonly SequenceResetService _sequenceReset;
 
-        public ClientesController(ClienteService service)
+        public ClientesController(ClienteService service, SequenceResetService sequenceReset)
         {
             _service = service;
+            _sequenceReset = sequenceReset;
         }
 
         [HttpGet]
@@ -44,7 +46,10 @@ namespace Backend.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var res = await _service.DeleteClienteAsync(id);
-            return res ? NoContent() : NotFound();
+            if (!res) return NotFound();
+
+            await _sequenceReset.ResetSequenceAsync("Clientes");
+            return NoContent();
         }
     }
 }

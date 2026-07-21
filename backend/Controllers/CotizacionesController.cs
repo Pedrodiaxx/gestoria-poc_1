@@ -9,10 +9,12 @@ namespace Backend.Controllers
     public class CotizacionesController : ControllerBase
     {
         private readonly CotizacionService _service;
+        private readonly SequenceResetService _sequenceReset;
 
-        public CotizacionesController(CotizacionService service)
+        public CotizacionesController(CotizacionService service, SequenceResetService sequenceReset)
         {
             _service = service;
+            _sequenceReset = sequenceReset;
         }
 
         [HttpGet]
@@ -33,7 +35,10 @@ namespace Backend.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var res = await _service.DeleteCotizacionAsync(id);
-            return res ? NoContent() : NotFound();
+            if (!res) return NotFound();
+
+            await _sequenceReset.ResetSequenceAsync("Cotizaciones");
+            return NoContent();
         }
     }
 }

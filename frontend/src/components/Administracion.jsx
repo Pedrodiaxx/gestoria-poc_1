@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { Catalogo } from './Catalogo';
 import { getDefaultModulos, AVAILABLE_MODULES } from '../data/mockData';
 import { filterUsersQuery } from '../core/cqrs/queries/userQueries';
+import { generateSecurePassword, validatePasswordSecurity } from '../utils/securityUtils';
 
 export default function Administracion() {
   const {
@@ -45,6 +47,54 @@ export default function Administracion() {
   const [newRoleLabel, setNewRoleLabel] = useState('');
   const [showAddRoleInputEdit, setShowAddRoleInputEdit] = useState(false);
   const [newRoleLabelEdit, setNewRoleLabelEdit] = useState('');
+
+  // Password Security Helpers
+  const handleCopyPassword = (pass) => {
+    if (!pass) return;
+    navigator.clipboard.writeText(pass);
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: '¡Contraseña copiada!',
+      showConfirmButton: false,
+      timer: 1800,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+  };
+
+  const handleGeneratePasswordAdd = () => {
+    const generated = generateSecurePassword(10);
+    setNuevoUsuario(prev => ({ ...prev, contrasenia: generated }));
+    setShowNuevoPassword(true);
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: '🎲 Contraseña segura de 10 caracteres generada',
+      showConfirmButton: false,
+      timer: 1800,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+  };
+
+  const handleGeneratePasswordEdit = () => {
+    const generated = generateSecurePassword(10);
+    setEditandoUsuario(prev => ({ ...prev, contrasenia: generated }));
+    setShowEditPassword(true);
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: '🎲 Nueva contraseña segura de 10 caracteres generada',
+      showConfirmButton: false,
+      timer: 1800,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+  };
 
   const handleCreateRole = () => {
     const label = newRoleLabel.trim();
@@ -97,6 +147,13 @@ export default function Administracion() {
 
   const handleAddUsuario = () => {
     if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) return;
+
+    const passCheck = validatePasswordSecurity(nuevoUsuario.contrasenia);
+    if (!passCheck.isValid) {
+      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
+      return;
+    }
+
     const emailClean = nuevoUsuario.email.trim().toLowerCase();
 
     if (usuarios.some(u => u.email.toLowerCase() === emailClean)) {
@@ -138,6 +195,13 @@ export default function Administracion() {
 
   const handleSaveEditUsuario = () => {
     if (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) return;
+
+    const passCheck = validatePasswordSecurity(editandoUsuario.contrasenia);
+    if (!passCheck.isValid) {
+      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
+      return;
+    }
+
     const emailClean = editandoUsuario.email.trim().toLowerCase();
 
     if (usuarios.some(u => u.email.toLowerCase() === emailClean && u.id !== editandoUsuario.id)) {
@@ -199,129 +263,153 @@ export default function Administracion() {
 
   return (
     <div>
-      <div className="page-header flex items-center justify-between">
-        <div>
-          <div className="page-title">Módulo Administrativo</div>
-          <div className="page-subtitle">Administración de catálogo de trámites y control de usuarios</div>
-        </div>
+      <div className="page-header">
+        <div className="page-title">Módulo Administrativo</div>
+        <div className="page-subtitle">Administración de catálogo de trámites y control de usuarios</div>
       </div>
 
       {/* Tabs */}
-      <div className="tabs mb-4">
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
-          className={`tab-btn ${adminTab === 'conceptos' ? 'active' : ''}`}
+          className={`btn ${adminTab === 'conceptos' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setAdminTab('conceptos')}
         >
           Catálogo Trámites
         </button>
-
-        {session.rol === 'admin' && (
-          <button
-            className={`tab-btn ${adminTab === 'usuarios' ? 'active' : ''}`}
-            onClick={() => setAdminTab('usuarios')}
-          >
-            Control de Usuarios
-          </button>
-        )}
+        <button
+          className={`btn ${adminTab === 'usuarios' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setAdminTab('usuarios')}
+        >
+          Control de Usuarios
+        </button>
       </div>
 
-      {/* Subview Conceptos */}
-      {adminTab === 'conceptos' && (
+      {adminTab === 'conceptos' ? (
+        <Catalogo conceptos={conceptos} setConceptos={setConceptos} />
+      ) : (
+        /* VISTA DE CONTROL DE USUARIOS */
         <div>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>Servicios / Trámites Disponibles</div>
-              <button className="btn btn-secondary btn-sm" onClick={() => setActive('catalogo')}>
-                Ver en módulo de Catálogo →
-              </button>
-            </div>
-            <Catalogo conceptos={conceptos} setConceptos={setConceptos} />
-          </div>
-        </div>
-      )}
-
-      {/* Subview Usuarios */}
-      {adminTab === 'usuarios' && session.rol === 'admin' && (
-        <div className="card" style={{ animation: 'slideUpLogin 0.5s ease-out' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div className="search-wrap" style={{ maxWidth: 380, flex: 1 }}>
+          {/* Header & Search */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div className="search-wrap" style={{ flex: 1, minWidth: 260, maxWidth: 400 }}>
               <Icon name="search" size={14} />
               <input
                 className="form-control search-input"
-                placeholder="Buscar usuarios por nombre, correo o rol…"
+                placeholder="Buscar usuarios por nombre, correo o rol..."
                 value={qUsuarios}
                 onChange={e => setQUsuarios(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={() => setShowAddUsuarioModal(true)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor') });
+                setShowAddUsuarioModal(true);
+              }}
+            >
               <Icon name="plus" size={14} /> Registrar Usuario
             </button>
           </div>
 
-          <div className="table-wrap">
-            <table>
+          {/* Tabla de Usuarios */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
-                  <th>Usuario</th>
-                  <th>Correo Electrónico</th>
-                  <th>Contraseña</th>
-                  <th>Rol</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                <tr style={{ background: 'var(--surface2)' }}>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>USUARIO</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CORREO ELECTRÓNICO</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CONTRASEÑA</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ROL</th>
+                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsuarios.map(u => (
-                  <tr key={u.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="sidebar-user-avatar" style={{ background: u.color, width: 28, height: 28, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%', fontWeight: 'bold' }}>
-                          {u.avatar}
+                {filteredUsuarios.map(u => {
+                  const rolLabel = getRolLabel(u.rol);
+                  const isMainAdmin = u.email.toLowerCase() === 'gabrielcoc@gmail.com';
+                  return (
+                    <tr
+                      key={u.id}
+                      style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = ''}
+                    >
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: u.color || 'var(--blue)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#fff', fontSize: 12, fontWeight: 700
+                          }}>
+                            {u.avatar || 'U'}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
+                          </div>
                         </div>
-                        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
-                      </div>
-                    </td>
-                    <td style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>{u.email}</td>
-                    <td style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 13, userSelect: 'all' }}>
-                          {visiblePasswords[u.id] ? u.contrasenia : '••••••••'}
+                      </td>
+
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-2)' }}>
+                        {u.email}
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>
+                            {visiblePasswords[u.id] ? u.contrasenia : '••••••••'}
+                          </span>
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => togglePasswordVisibility(u.id)}
+                            style={{ padding: 4, minWidth: 'auto', borderRadius: '50%', color: 'var(--text-3)' }}
+                            title={visiblePasswords[u.id] ? "Ocultar contraseña" : "Mostrar contraseña"}
+                          >
+                            <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={14} />
+                          </button>
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <span className={`badge ${u.rol === 'admin' ? 'badge-blue' : u.rol === 'cliente' ? 'badge-gray' : 'badge-amber'}`}>
+                          {rolLabel}
                         </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => togglePasswordVisibility(u.id)}
-                          style={{ padding: '2px 4px', display: 'inline-flex', alignItems: 'center', color: 'var(--text-3)', height: 'auto', border: 'none', background: 'none' }}
-                          title={visiblePasswords[u.id] ? "Ocultar Contraseña" : "Mostrar Contraseña"}
-                        >
-                          <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={13} />
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`badge ${u.rol === 'admin' ? 'badge-green' : (u.rol === 'empleado' || u.rol === 'gestor') ? 'badge-blue' : u.rol === 'cliente' ? 'badge-purple' : 'badge-gray'}`}>
-                        {getRolLabel(u.rol)}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => handleEditClick(u)} title="Editar">
-                          <Icon name="edit" size={12} />
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleEliminarUsuario(u)}
-                          disabled={u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id}
-                          title="Eliminar"
-                          style={{ opacity: (u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id) ? 0.3 : 1, cursor: (u.email.toLowerCase() === 'gabrielcoc@gmail.com' || u.id === session.id) ? 'not-allowed' : 'pointer' }}
-                        >
-                          <Icon name="trash" size={12} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => handleEditClick(u)}
+                            style={{ padding: 6, minWidth: 'auto', borderRadius: 4 }}
+                            title="Editar usuario"
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+
+                          {!isMainAdmin && u.id !== session.id && (
+                            <button
+                              className="btn btn-ghost"
+                              onClick={() => handleEliminarUsuario(u)}
+                              style={{ padding: 6, minWidth: 'auto', borderRadius: 4, color: 'var(--red)' }}
+                              title="Eliminar usuario"
+                            >
+                              <Icon name="trash" size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+
+            {filteredUsuarios.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
+                No se encontraron usuarios coincidentes.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -355,35 +443,64 @@ export default function Administracion() {
 
             <div className="form-group">
               <label className="form-label">Contraseña *</label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
                   type={showNuevoPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={nuevoUsuario.contrasenia}
                   onChange={e => setNuevoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
-                  style={{ paddingRight: 40 }}
+                  style={{ paddingRight: 80 }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowNuevoPassword(!showNuevoPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: 8,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    color: 'var(--text-3)',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  title={showNuevoPassword ? "Ocultar" : "Mostrar"}
-                >
-                  <Icon name={showNuevoPassword ? "eyeoff" : "eye"} size={16} />
-                </button>
+                <div style={{ position: 'absolute', right: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* Botón rojo generador estilo Password Manager (HBO/Bitwarden) */}
+                  <button
+                    type="button"
+                    onClick={handleGeneratePasswordAdd}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      background: 'var(--red)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: -0.5,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.1s, opacity 0.1s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    title="Generar contraseña aleatoria y segura"
+                  >
+                    •••|
+                  </button>
+
+                  {nuevoUsuario.contrasenia && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPassword(nuevoUsuario.contrasenia)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                      title="Copiar contraseña al portapapeles"
+                    >
+                      <Icon name="copy" size={15} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowNuevoPassword(!showNuevoPassword)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                    title={showNuevoPassword ? "Ocultar" : "Mostrar"}
+                  >
+                    <Icon name={showNuevoPassword ? "eyeoff" : "eye"} size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -541,35 +658,64 @@ export default function Administracion() {
 
             <div className="form-group">
               <label className="form-label">Contraseña *</label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
                   type={showEditPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={editandoUsuario.contrasenia}
                   onChange={e => setEditandoUsuario(n => ({ ...n, contrasenia: e.target.value }))}
-                  style={{ paddingRight: 40 }}
+                  style={{ paddingRight: 80 }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowEditPassword(!showEditPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: 8,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    color: 'var(--text-3)',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  title={showEditPassword ? "Ocultar" : "Mostrar"}
-                >
-                  <Icon name={showEditPassword ? "eyeoff" : "eye"} size={16} />
-                </button>
+                <div style={{ position: 'absolute', right: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* Botón rojo generador estilo Password Manager (HBO/Bitwarden) */}
+                  <button
+                    type="button"
+                    onClick={handleGeneratePasswordEdit}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      background: 'var(--red)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: -0.5,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.1s, opacity 0.1s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    title="Generar contraseña aleatoria y segura"
+                  >
+                    •••|
+                  </button>
+
+                  {editandoUsuario.contrasenia && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPassword(editandoUsuario.contrasenia)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                      title="Copiar contraseña al portapapeles"
+                    >
+                      <Icon name="copy" size={15} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}
+                    title={showEditPassword ? "Ocultar" : "Mostrar"}
+                  >
+                    <Icon name={showEditPassword ? "eyeoff" : "eye"} size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 

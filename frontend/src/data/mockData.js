@@ -592,11 +592,12 @@ export const AVAILABLE_MODULES = [
   { id: 'catalogo', label: 'Catálogo' },
   { id: 'cotizaciones', label: 'Cotizaciones' },
   { id: 'proyectos', label: 'Proyectos' },
+  { id: 'tramites', label: 'Hojas de Ruta' },
   { id: 'clientes', label: 'Clientes' },
 ]
 
 export const getDefaultModulos = (rol) => {
-  if (rol === 'admin') return ['presupuestos', 'administracion', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tareas']
-  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tareas']
-  return ['presupuestos', 'cotizaciones']
+  if (rol === 'admin') return ['presupuestos', 'administracion', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tramites', 'tareas']
+  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tramites', 'tareas']
+  return ['presupuestos', 'cotizaciones', 'tramites']
 }

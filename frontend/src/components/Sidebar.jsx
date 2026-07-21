@@ -34,9 +34,10 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'receipt' },
     { id: 'catalogo', label: 'Catálogo', icon: 'file' },
     { id: 'proyectos', label: 'Proyectos', icon: 'map' },
+    { id: 'tramites', label: 'Hojas de Ruta', icon: 'map' },
     { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
   ]).filter(item => {
-    if (session.rol === 'cliente' && item.id === 'tramites') return true;
+    if (item.id === 'tramites') return true;
     return allowed.includes(item.id);
   });
 

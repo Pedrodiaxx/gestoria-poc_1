@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
+import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { useProyectos } from '../hooks/useProyectos';
@@ -18,16 +19,106 @@ const ESTATUS_CONFIG = {
   'pausado': { label: 'Pausado', color: '#9C9A94', badge: 'badge-gray' },
 };
 
+// ─── ERROR BOUNDARY COMPONENT ────────────────────────────────────────────────
+class ProyectosErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error capturado en ProyectosErrorBoundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          padding: '40px 24px', textAlign: 'center', background: 'var(--surface)',
+          borderRadius: 'var(--radius-lg)', margin: '20px auto', maxWidth: '600px',
+          border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)'
+        }}>
+          <Icon name="alert-circle" size={40} style={{ color: 'var(--amber)', marginBottom: 16 }} />
+          <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: 'var(--text)' }}>
+            Ocurrió un problema al mostrar los proyectos
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 20 }}>
+            Se detectó un error inesperado al renderizar el módulo. Los datos están seguros.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => this.setState({ hasError: false, error: null })}
+          >
+            Reintentar y cargar de nuevo
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Helper para calcular total de presupuesto de forma segura
+const calcBudgetTotal = (b) => {
+  if (!b) return 0;
+  if (typeof b.totalDirecto === 'number' && typeof b.totalIndirecto === 'number') {
+    return b.totalDirecto + b.totalIndirecto;
+  }
+  const conceptos = b.conceptos || [];
+  const directos = conceptos.reduce((s, c) => s + (parseFloat(c.pagoDerechos || 0) + parseFloat(c.honorarios || 0) + parseFloat(c.extra || 0)), 0);
+  return directos;
+};
+
+// Helper para resolver usuario real desde Control de Usuarios (DbContext) con fallback
+const resolveUser = (id, usuariosList = []) => {
+  if (!id) return null;
+  const found = (usuariosList || []).find(u => String(u?.id) === String(id) || u?.email === id || String(u?.idNumerico) === String(id));
+  if (found) {
+    return {
+      id: found.id,
+      nombre: found.nombre,
+      avatar: found.avatar || (found.nombre ? found.nombre.slice(0, 2).toUpperCase() : 'U'),
+      color: found.color || 'var(--blue)',
+      rol: found.rol
+    };
+  }
+  const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
+  if (mockFound) return mockFound;
+  return { id, nombre: id, avatar: 'U', color: 'var(--blue)' };
+};
+
+const getTeamMembers = (usuariosList = []) => {
+  const staff = (usuariosList || []).filter(u => u?.rol !== 'cliente');
+  if (staff.length > 0) return staff;
+  return (usuariosList && usuariosList.length > 0) ? usuariosList : EQUIPO;
+};
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export function Proyectos() {
+  return (
+    <ProyectosErrorBoundary>
+      <ProyectosContent />
+    </ProyectosErrorBoundary>
+  );
+}
+
+function ProyectosContent() {
   const {
-    clientes,
+    clientes = [],
     setActive,
-    proyectos,
+    proyectos = [],
     addProyecto,
-    presupuestos,
+    deleteProyecto,
+    presupuestos = [],
     setPreselectedProjectId,
+    setPreselectedBudgetId,
     setProyectos,
-    session
+    session,
+    usuarios = []
   } = useAppContext();
 
   const [q, setQ] = useState('');
@@ -35,34 +126,92 @@ export function Proyectos() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [vista, setVista] = useState('grid'); // 'grid' | 'lista'
 
-  // Hook: carga y creación de proyectos delegada a la capa de servicios
-  const { crearProyecto } = useProyectos(setProyectos, session);
+  // Hook: carga, creación y eliminación de proyectos delegada a la capa de servicios
+  const { crearProyecto, eliminarProyecto } = useProyectos(setProyectos, session);
 
   // Modal / Drawer state
   const [proyectoDetalle, setProyectoDetalle] = useState(null);
   const [mostrarNuevoProyecto, setMostrarNuevoProyecto] = useState(false);
 
-  const getCliente = (id) => clientes.find(c => c.id === id);
+  const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
-  const filtered = proyectos.filter(p => {
+  const safeProyectos = Array.isArray(proyectos) ? proyectos : [];
+
+  const filtered = safeProyectos.filter(p => {
+    if (!p) return false;
     const cli = getCliente(p.clienteId);
+    const nombre = p.nombre || '';
+    const idStr = p.id ? String(p.id) : '';
+    const cliNombre = cli?.nombre || '';
+    const desc = p.descripcion || '';
+
     const matchQ = q === '' ||
-      p.nombre.toLowerCase().includes(q.toLowerCase()) ||
-      p.id.toLowerCase().includes(q.toLowerCase()) ||
-      cli?.nombre.toLowerCase().includes(q.toLowerCase()) ||
-      p.descripcion?.toLowerCase().includes(q.toLowerCase());
+      nombre.toLowerCase().includes(q.toLowerCase()) ||
+      idStr.toLowerCase().includes(q.toLowerCase()) ||
+      cliNombre.toLowerCase().includes(q.toLowerCase()) ||
+      desc.toLowerCase().includes(q.toLowerCase());
+
     const matchEstatus = filtroEstatus === 'todos' || p.estatus === filtroEstatus;
     const matchTipo = filtroTipo === 'todos' || p.tipo === filtroTipo;
     return matchQ && matchEstatus && matchTipo;
   });
 
-  // Stats (monto ya procesado en el servidor)
-  const total = proyectos.length;
-  const enProceso = proyectos.filter(p => p.estatus === 'en-proceso').length;
-  const completados = proyectos.filter(p => p.estatus === 'completado').length;
-  const montoTotal = proyectos.reduce((s, p) => s + (p.monto || 0), 0);
+  const handleEliminarProyecto = async (id, idNumerico) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#C0392B',
+      cancelButtonColor: '#7F8C8D',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
 
-  const tiposUnicos = [...new Set(proyectos.map(p => p.tipo))];
+    if (!result.isConfirmed) return;
+
+    try {
+      const targetId = idNumerico || id;
+      if (eliminarProyecto) {
+        await eliminarProyecto(id, idNumerico);
+      } else if (deleteProyecto) {
+        await deleteProyecto(id, idNumerico);
+      } else {
+        setProyectos(prev => prev.filter(p => p.id !== id && p.idNumerico !== targetId));
+      }
+
+      if (proyectoDetalle && (proyectoDetalle.id === id || proyectoDetalle.idNumerico === targetId)) {
+        setProyectoDetalle(null);
+      }
+
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'El proyecto ha sido eliminado con éxito.',
+        icon: 'success',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    } catch (error) {
+      console.error("Error al eliminar proyecto:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un problema al eliminar el proyecto en el servidor.',
+        icon: 'error',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    }
+  };
+
+  // Stats (monto ya procesado en el servidor)
+  const total = safeProyectos.length;
+  const enProceso = safeProyectos.filter(p => p?.estatus === 'en-proceso').length;
+  const completados = safeProyectos.filter(p => p?.estatus === 'completado').length;
+  const montoTotal = safeProyectos.reduce((s, p) => s + (p?.monto || 0), 0);
+
+  const tiposUnicos = [...new Set(safeProyectos.map(p => p?.tipo).filter(Boolean))];
 
   return (
     <div>
@@ -76,7 +225,7 @@ export function Proyectos() {
           <button
             className="btn btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={() => setActive('tramites')}
+            onClick={() => setActive && setActive('tramites')}
           >
             <Icon name="map" size={14} /> Ver Hojas de Ruta
           </button>
@@ -179,16 +328,18 @@ export function Proyectos() {
       {/* Grid / Lista */}
       {vista === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-            {filtered.map(p => (
-              <ProyectoCard
-                key={p.id}
-                proyecto={p}
-                clientes={clientes}
-                setActive={setActive}
-                onClick={() => setProyectoDetalle(p)}
-                montoReal={p.monto || 0}
-              />
-            ))}
+          {filtered.map(p => (
+            <ProyectoCard
+              key={p.id || p.idNumerico || Math.random()}
+              proyecto={p}
+              clientes={clientes}
+              setActive={setActive}
+              onClick={() => setProyectoDetalle(p)}
+              onEliminar={handleEliminarProyecto}
+              montoReal={p.monto || 0}
+              session={session}
+            />
+          ))}
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -201,31 +352,32 @@ export function Proyectos() {
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Estatus</th>
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Avance</th>
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Monto</th>
+                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(p => {
-                const cli = clientes.find(c => c.id === p.clienteId);
-                const tipo = TRAMITES_TIPOS[p.tipo];
+                const cli = (clientes || []).find(c => c?.id === p?.clienteId);
+                const tipo = TRAMITES_TIPOS[p?.tipo];
                 const col = COLOR_MAP[tipo?.color] || '#777';
-                const est = ESTATUS_CONFIG[p.estatus] || { label: p.estatus, badge: 'badge-gray' };
-                const monto = p.monto || 0;
+                const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
+                const monto = p?.monto || 0;
                 return (
                   <tr
-                    key={p.id}
+                    key={p.id || p.idNumerico || Math.random()}
                     style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s', cursor: 'pointer' }}
                     onClick={() => setProyectoDetalle(p)}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}
                   >
                     <td style={{ padding: '10px 14px' }}>
-                      <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: col, fontWeight: 600 }}>{p.id}</div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginTop: 2 }}>{p.nombre}</div>
+                      <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: col, fontWeight: 600 }}>{p.id || 'PRY-???'}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginTop: 2 }}>{p.nombre || 'Sin nombre'}</div>
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-2)' }}>{cli?.nombre || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ fontSize: 11, background: BG_MAP[tipo?.color] || '#eee', color: col, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>
-                        {tipo?.icono} {tipo?.nombre}
+                        {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
@@ -233,12 +385,27 @@ export function Proyectos() {
                     </td>
                     <td style={{ padding: '10px 14px', minWidth: 120 }}>
                       <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${p.avance}%`, background: col }} />
+                        <div className="progress-fill" style={{ width: `${p.avance || 0}%`, background: col }} />
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>{p.avance}%</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>{p.avance || 0}%</div>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                       {money(monto)}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                      {session?.rol !== 'cliente' && (
+                        <button
+                          className="btn btn-ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEliminarProyecto(p.id, p.idNumerico);
+                          }}
+                          style={{ padding: 6, minWidth: 'auto', color: 'var(--red)', borderRadius: 4 }}
+                          title="Eliminar Proyecto"
+                        >
+                          <Icon name="trash" size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -265,13 +432,21 @@ export function Proyectos() {
           proyecto={proyectoDetalle}
           clientes={clientes}
           presupuestos={presupuestos}
-          getBudgetTotal={getBudgetTotal}
+          getBudgetTotal={calcBudgetTotal}
           onClose={() => setProyectoDetalle(null)}
+          onEliminar={handleEliminarProyecto}
           onCrearPresupuesto={(pid) => {
-            setPreselectedProjectId(pid);
-            setActive('presupuestos');
+            setPreselectedProjectId && setPreselectedProjectId(pid);
+            setActive && setActive('presupuestos');
             setProyectoDetalle(null);
           }}
+          onVerPresupuesto={(budgetId) => {
+            if (!budgetId) return;
+            setPreselectedBudgetId && setPreselectedBudgetId(budgetId);
+            setActive && setActive('presupuestos');
+            setProyectoDetalle(null);
+          }}
+          session={session}
         />
       )}
 
@@ -280,7 +455,7 @@ export function Proyectos() {
         <ModalNuevoProyecto
           onClose={() => setMostrarNuevoProyecto(false)}
           onGuardar={(nuevo) => {
-            addProyecto(nuevo);
+            addProyecto && addProyecto(nuevo);
             setMostrarNuevoProyecto(false);
           }}
           clientes={clientes}
@@ -292,13 +467,18 @@ export function Proyectos() {
 }
 
 // ─── PROYECTO CARD COMPONENT ──────────────────────────────────────────────────
-function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) {
-  const cli = clientes.find(c => c.id === p.clienteId);
-  const tipo = TRAMITES_TIPOS[p.tipo];
+function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, montoReal, session }) {
+  if (!p) return null;
+
+  const { usuarios = [] } = useAppContext();
+  const cli = (clientes || []).find(c => c?.id === p?.clienteId);
+  const tipo = TRAMITES_TIPOS[p?.tipo];
   const col = COLOR_MAP[tipo?.color] || '#777';
   const bgCol = BG_MAP[tipo?.color] || '#f5f5f5';
-  const est = ESTATUS_CONFIG[p.estatus] || { label: p.estatus, badge: 'badge-gray' };
-  const equipo = EQUIPO.find(e => e.id === p.responsable);
+  const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
+  const equipo = resolveUser(p?.responsable, usuarios);
+
+  const avance = p?.avance || 0;
 
   return (
     <div
@@ -318,10 +498,25 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div>
-            <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: col, fontWeight: 700, letterSpacing: 0.5 }}>{p.id}</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginTop: 4, lineHeight: 1.3 }}>{p.nombre}</div>
+            <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: col, fontWeight: 700, letterSpacing: 0.5 }}>{p.id || 'PRY-???'}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginTop: 4, lineHeight: 1.3 }}>{p.nombre || 'Sin nombre'}</div>
           </div>
-          <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0, marginLeft: 8 }}>{p.estatusLabel || est.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0 }}>{p.estatusLabel || est.label}</span>
+            {session?.rol !== 'cliente' && (
+              <button
+                className="btn btn-ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEliminar && onEliminar(p.id, p.idNumerico);
+                }}
+                style={{ padding: 4, minWidth: 'auto', color: 'var(--red)', borderRadius: 4 }}
+                title="Eliminar Proyecto"
+              >
+                <Icon name="trash" size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -333,7 +528,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
             borderRadius: 10,
             fontWeight: 500
           }}>
-            {tipo?.icono} {tipo?.nombre}
+            {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
           </span>
           {cli && (
             <span style={{
@@ -351,9 +546,13 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
 
       {/* Card Body */}
       <div style={{ padding: '12px 16px' }}>
-        {p.descripcion && (
+        {p.descripcion ? (
           <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginBottom: 14, height: '36px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {p.descripcion}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic', marginBottom: 14, height: '36px' }}>
+            Sin descripción registrada.
           </div>
         )}
 
@@ -361,31 +560,33 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Avance del proyecto</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: col, fontFamily: 'DM Mono' }}>{p.avance}%</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: col, fontFamily: 'DM Mono' }}>{avance}%</span>
           </div>
           <div className="progress-bar" style={{ height: 6 }}>
-            <div className="progress-fill" style={{ width: `${p.avance}%`, background: col, transition: 'width 0.4s ease' }} />
+            <div className="progress-fill" style={{ width: `${avance}%`, background: col, transition: 'width 0.4s ease' }} />
           </div>
         </div>
 
         {/* Footer info */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text-2)' }}>{money(montoReal)}</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-2)' }}>{money(montoReal || p?.monto || 0)}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {equipo && (
+            {equipo ? (
               <div style={{
                 width: 22, height: 22, borderRadius: '50%',
-                background: equipo.color,
+                background: equipo.color || 'var(--blue)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontSize: 9, fontWeight: 700
               }} title={`Responsable: ${equipo.nombre}`}>
-                {equipo.avatar}
+                {equipo.avatar || 'U'}
               </div>
+            ) : (
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontStyle: 'italic' }}>Sin asignado</span>
             )}
             <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
-              {p.fechaEstimada ? `Est: ${p.fechaEstimada}` : ''}
+              {p?.fechaEstimada ? `Est: ${p.fechaEstimada}` : ''}
             </span>
           </div>
         </div>
@@ -395,56 +596,97 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, montoReal }) 
 }
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
-function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuestos, getBudgetTotal, onClose, onCrearPresupuesto }) {
-  const { proyectos, updateProyecto } = useAppContext();
-  const p = proyectos.find(proj => proj.id === initialProyecto.id) || initialProyecto;
+function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, onVerPresupuesto, session }) {
+  const { proyectos = [], updateProyecto, tareas = [], usuarios = [] } = useAppContext();
 
-  const cli = clientes.find(c => c.id === p.clienteId);
-  const tipo = TRAMITES_TIPOS[p.tipo];
+  // Guard previas si no existe initialProyecto
+  if (!initialProyecto) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, left: 0,
+        background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+        display: 'flex', justifyContent: 'flex-end',
+        backdropFilter: 'blur(3px)'
+      }} onClick={onClose}>
+        <div style={{
+          width: '100%', maxWidth: '640px', background: 'var(--surface)',
+          height: '100%', display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', alignItems: 'center', padding: 32
+        }} onClick={e => e.stopPropagation()}>
+          <Icon name="alert-circle" size={32} style={{ color: 'var(--amber)', marginBottom: 12 }} />
+          <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px', color: 'var(--text)' }}>
+            Cargando información del proyecto...
+          </h4>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 20 }}>
+            No se encontraron los datos para desplegar los detalles.
+          </p>
+          <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
+    );
+  }
+
+  const safeProyectos = Array.isArray(proyectos) ? proyectos : [];
+  const p = safeProyectos.find(proj => proj?.id === initialProyecto?.id || proj?.idNumerico === initialProyecto?.idNumerico) || initialProyecto;
+
+  const cli = (clientes || []).find(c => c?.id === p?.clienteId);
+  const tipo = TRAMITES_TIPOS[p?.tipo];
   const col = COLOR_MAP[tipo?.color] || '#777';
-  const est = ESTATUS_CONFIG[p.estatus] || { label: p.estatus, badge: 'badge-gray' };
-  const equipo = EQUIPO.find(e => e.id === p.responsable);
+  const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
+  
+  // Resolver usuario real de la lista de Control de Usuarios
+  const equipo = resolveUser(p?.responsable, usuarios);
+  const teamMembers = getTeamMembers(usuarios);
 
-  // Budgets linked to this project, sorted by version/date
-  const asociados = presupuestos.filter(b => b.proyectoId === p.id);
-  const baseline = asociados.find(b => b.isBaseline);
+  // Helper para calculo seguro del presupuesto
+  const safeGetBudgetTotal = getBudgetTotal || calcBudgetTotal;
 
-  // Group budgets by version code to sort or display cost history
+  // Presupuestos vinculados
+  const safePresupuestos = Array.isArray(presupuestos) ? presupuestos : [];
+  const asociados = safePresupuestos.filter(b => b?.proyectoId === p?.id || (b?.proyectoId && p?.idNumerico && b?.proyectoId === p?.idNumerico));
+  const baseline = asociados.find(b => b?.isBaseline);
+
+  // Tareas asociadas al proyecto o asignadas
+  const safeTareas = Array.isArray(tareas) ? tareas : [];
+  const tareasAsociadas = safeTareas.filter(t => t?.proyectoId === p?.id || (p?.idNumerico && t?.proyectoId === p?.idNumerico));
+
+  // Ordenar presupuestos por versión
   const sortedBudgets = [...asociados].sort((a, b) => {
-    return (a.version || '').localeCompare(b.version || '');
+    return (a?.version || '').localeCompare(b?.version || '');
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editNombre, setEditNombre] = useState(p.nombre);
-  const [editEstatus, setEditEstatus] = useState(p.estatus);
-  const [editPrioridad, setEditPrioridad] = useState(p.prioridad);
-  const [editResponsable, setEditResponsable] = useState(p.responsable);
-  const [editUbicacion, setEditUbicacion] = useState(p.ubicacion || '');
-  const [editAlcance, setEditAlcance] = useState(p.alcance || '');
-  const [editDescripcion, setEditDescripcion] = useState(p.descripcion || '');
-  const [editUsoPrincipal, setEditUsoPrincipal] = useState(p.usoPrincipal || '');
-  const [editUsoComplementario, setEditUsoComplementario] = useState(p.usoComplementario || '');
-  const [editImpactoPrincipal, setEditImpactoPrincipal] = useState(p.impactoPrincipal || '');
-  const [editImpactoComplementario, setEditImpactoComplementario] = useState(p.impactoComplementario || '');
-  const [editVialidadPrincipal, setEditVialidadPrincipal] = useState(p.vialidadPrincipal || '');
-  const [editVialidadComplementaria, setEditVialidadComplementaria] = useState(p.vialidadComplementaria || '');
-  const [editDireccionesComp, setEditDireccionesComp] = useState(p.direccionesComplementarias || []);
+  const [editNombre, setEditNombre] = useState(p?.nombre || '');
+  const [editEstatus, setEditEstatus] = useState(p?.estatus || 'pendiente');
+  const [editPrioridad, setEditPrioridad] = useState(p?.prioridad || 'media');
+  const [editResponsable, setEditResponsable] = useState(p?.responsable || (teamMembers[0]?.id || 'u1'));
+  const [editUbicacion, setEditUbicacion] = useState(p?.ubicacion || '');
+  const [editAlcance, setEditAlcance] = useState(p?.alcance || '');
+  const [editDescripcion, setEditDescripcion] = useState(p?.descripcion || '');
+  const [editUsoPrincipal, setEditUsoPrincipal] = useState(p?.usoPrincipal || '');
+  const [editUsoComplementario, setEditUsoComplementario] = useState(p?.usoComplementario || '');
+  const [editImpactoPrincipal, setEditImpactoPrincipal] = useState(p?.impactoPrincipal || '');
+  const [editImpactoComplementario, setEditImpactoComplementario] = useState(p?.impactoComplementario || '');
+  const [editVialidadPrincipal, setEditVialidadPrincipal] = useState(p?.vialidadPrincipal || '');
+  const [editVialidadComplementaria, setEditVialidadComplementaria] = useState(p?.vialidadComplementaria || '');
+  const [editDireccionesComp, setEditDireccionesComp] = useState(p?.direccionesComplementarias || []);
 
   useEffect(() => {
-    setEditNombre(p.nombre);
-    setEditEstatus(p.estatus);
-    setEditPrioridad(p.prioridad);
-    setEditResponsable(p.responsable);
-    setEditUbicacion(p.ubicacion || '');
-    setEditAlcance(p.alcance || '');
-    setEditDescripcion(p.descripcion || '');
-    setEditUsoPrincipal(p.usoPrincipal || '');
-    setEditUsoComplementario(p.usoComplementario || '');
-    setEditImpactoPrincipal(p.impactoPrincipal || '');
-    setEditImpactoComplementario(p.impactoComplementario || '');
-    setEditVialidadPrincipal(p.vialidadPrincipal || '');
-    setEditVialidadComplementaria(p.vialidadComplementaria || '');
-    setEditDireccionesComp(p.direccionesComplementarias || []);
+    if (!p) return;
+    setEditNombre(p?.nombre || '');
+    setEditEstatus(p?.estatus || 'pendiente');
+    setEditPrioridad(p?.prioridad || 'media');
+    setEditResponsable(p?.responsable || (teamMembers[0]?.id || 'u1'));
+    setEditUbicacion(p?.ubicacion || '');
+    setEditAlcance(p?.alcance || '');
+    setEditDescripcion(p?.descripcion || '');
+    setEditUsoPrincipal(p?.usoPrincipal || '');
+    setEditUsoComplementario(p?.usoComplementario || '');
+    setEditImpactoPrincipal(p?.impactoPrincipal || '');
+    setEditImpactoComplementario(p?.impactoComplementario || '');
+    setEditVialidadPrincipal(p?.vialidadPrincipal || '');
+    setEditVialidadComplementaria(p?.vialidadComplementaria || '');
+    setEditDireccionesComp(p?.direccionesComplementarias || []);
   }, [p]);
 
   const handleSaveEdit = () => {
@@ -464,9 +706,9 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
       impactoComplementario: editImpactoComplementario,
       vialidadPrincipal: editVialidadPrincipal,
       vialidadComplementaria: editVialidadComplementaria,
-      direccionesComplementarias: editDireccionesComp.filter(d => d.trim() !== '')
+      direccionesComplementarias: editDireccionesComp.filter(d => d && typeof d === 'string' && d.trim() !== '')
     };
-    updateProyecto(updated);
+    updateProyecto && updateProyecto(updated);
     setIsEditing(false);
   };
 
@@ -491,8 +733,8 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
           <div style={{ flex: 1, marginRight: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'DM Mono', fontSize: 11, background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, color: col, fontWeight: 700 }}>{p.id}</span>
-              {!isEditing && <span className={`badge ${p.estatusBadge || est.badge}`}>{p.estatusLabel || est.label}</span>}
+              <span style={{ fontFamily: 'DM Mono', fontSize: 11, background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, color: col, fontWeight: 700 }}>{p?.id || 'PRY-???'}</span>
+              {!isEditing && <span className={`badge ${p?.estatusBadge || est.badge}`}>{p?.estatusLabel || est.label}</span>}
             </div>
             {isEditing ? (
               <input
@@ -503,7 +745,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                 placeholder="Nombre del Proyecto"
               />
             ) : (
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{p.nombre}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{p?.nombre || 'Proyecto sin nombre'}</h2>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -518,6 +760,16 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
               </>
             ) : (
               <>
+                {session?.rol !== 'cliente' && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => onEliminar && onEliminar(p?.id, p?.idNumerico)}
+                    style={{ padding: 6, borderRadius: '50%', minWidth: 'auto', color: 'var(--red)' }}
+                    title="Eliminar Proyecto"
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
+                )}
                 <button
                   className="btn btn-ghost"
                   onClick={() => setIsEditing(true)}
@@ -564,7 +816,11 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
                 <label className="form-label">Responsable del Trámite</label>
                 <select className="form-control" value={editResponsable} onChange={e => setEditResponsable(e.target.value)}>
-                  {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  {teamMembers.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.nombre} {e.rol ? `(${e.rol})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -660,48 +916,48 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
             <div className="form-grid-2" style={{ marginBottom: 24 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Cliente</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{cli?.nombre || 'Sin cliente'}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{cli?.nombre || 'Sin cliente asignado'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Responsable</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {equipo && (
+                  {equipo ? (
                     <div style={{
-                      width: 20, height: 20, borderRadius: '50%', background: equipo.color,
+                      width: 20, height: 20, borderRadius: '50%', background: equipo.color || 'var(--blue)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700
                     }}>
-                      {equipo.avatar}
+                      {equipo.avatar || 'U'}
                     </div>
-                  )}
+                  ) : null}
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{equipo?.nombre || 'Sin asignar'}</span>
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Tipo de Gestión</div>
                 <span style={{ fontSize: 11, background: BG_MAP[tipo?.color] || '#eee', color: col, padding: '3px 8px', borderRadius: 10, fontWeight: 600, display: 'inline-block' }}>
-                  {tipo?.icono} {tipo?.nombre}
+                  {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
                 </span>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Prioridad</div>
-                <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize', color: p.prioridad === 'alta' ? 'var(--red)' : p.prioridad === 'media' ? 'var(--amber)' : 'var(--text-3)' }}>
-                  ⚡ {p.prioridad}
+                <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize', color: p?.prioridad === 'alta' ? 'var(--red)' : p?.prioridad === 'media' ? 'var(--amber)' : 'var(--text-3)' }}>
+                  ⚡ {p?.prioridad || 'Media'}
                 </span>
               </div>
 
               {/* Ubicación */}
               <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Dirección Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.ubicacion || 'No especificada'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p?.ubicacion || 'Sin ubicación registrada'}</div>
               </div>
 
-              {p.direccionesComplementarias && p.direccionesComplementarias.length > 0 && (
+              {p?.direccionesComplementarias && p.direccionesComplementarias.length > 0 && (
                 <div style={{ gridColumn: '1/-1' }}>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Direcciones Complementarias</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {p.direccionesComplementarias.map((dir, idx) => (
                       <div key={idx} style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--surface2)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Comp. {idx + 1}:</span> {dir}
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Comp. {idx + 1}:</span> {dir || 'N/A'}
                       </div>
                     ))}
                   </div>
@@ -710,35 +966,35 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
 
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Uso Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.usoPrincipal || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoPrincipal || 'No especificado'}</div>
               </div>
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Uso Complementario</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.usoComplementario || 'Ninguno'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoComplementario || 'Ninguno'}</div>
               </div>
 
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Impacto Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.impactoPrincipal || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.impactoPrincipal || 'No especificado'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Impacto Complementario</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.impactoComplementario || 'Ninguno'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.impactoComplementario || 'Ninguno'}</div>
               </div>
 
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Vialidad Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.vialidadPrincipal || 'No especificada'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.vialidadPrincipal || 'No especificada'}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Vialidad Complementaria</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p.vialidadComplementaria || 'Ninguna'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.vialidadComplementaria || 'Ninguna'}</div>
               </div>
 
               <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Alcance del Proyecto</div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, background: 'var(--surface2)', padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                  {p.alcance || p.descripcion || 'Sin descripción detallada del alcance.'}
+                  {p?.alcance || p?.descripcion || 'Sin descripción o alcance detallado para este proyecto.'}
                 </div>
               </div>
             </div>
@@ -747,10 +1003,10 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
             <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Avance General</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: col, fontFamily: 'DM Mono' }}>{p.avance}%</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: col, fontFamily: 'DM Mono' }}>{p?.avance || 0}%</span>
               </div>
               <div className="progress-bar" style={{ height: 8 }}>
-                <div className="progress-fill" style={{ width: `${p.avance}%`, background: col }} />
+                <div className="progress-fill" style={{ width: `${p?.avance || 0}%`, background: col }} />
               </div>
             </div>
 
@@ -769,13 +1025,22 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                 </span>
               </div>
               {baseline ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  onClick={() => onVerPresupuesto && onVerPresupuesto(baseline.id || baseline.idNumerico)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 8px', borderRadius: 'var(--radius-sm)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                  title="Haz clic para ver el detalle de este presupuesto de Línea Base"
+                >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{baseline.titulo}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Versión {baseline.version} · Aprobado el {baseline.fecha}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {baseline.titulo || 'Presupuesto Línea Base'}
+                      <span style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 500 }}>Ver →</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Versión {baseline.version || '1.0'} · Aprobado el {baseline.fecha || 'N/A'}</div>
                   </div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)', fontFamily: 'DM Mono' }}>
-                    {money(getBudgetTotal(baseline))}
+                    {money(safeGetBudgetTotal(baseline))}
                   </div>
                 </div>
               ) : (
@@ -792,46 +1057,64 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                 <button
                   className="btn btn-sm btn-ghost"
                   style={{ fontSize: 11, padding: '4px 8px', color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
-                  onClick={() => onCrearPresupuesto(p.id)}
+                  onClick={() => onCrearPresupuesto && onCrearPresupuesto(p?.id)}
                 >
                   <Icon name="plus" size={12} /> Nuevo
                 </button>
               </div>
 
               {sortedBudgets.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px 0', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-3)', fontSize: 12 }}>
-                  No hay presupuestos para este proyecto. Pulsa "Nuevo" para crear uno.
+                <div style={{ textAlign: 'center', padding: '24px 16px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface2)', color: 'var(--text-3)', fontSize: 12 }}>
+                  <Icon name="file-text" size={20} style={{ marginBottom: 6, opacity: 0.5, display: 'block', margin: '0 auto 6px' }} />
+                  Sin presupuestos registrados para este proyecto.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {sortedBudgets.map(b => {
-                    const total = getBudgetTotal(b);
-                    const isApproved = b.estado === 'Aprobado';
+                    const totalB = safeGetBudgetTotal(b);
                     return (
                       <div
-                        key={b.id}
+                        key={b.id || Math.random()}
+                        onClick={() => onVerPresupuesto && onVerPresupuesto(b.id || b.idNumerico)}
                         style={{
                           border: b.isBaseline ? '1px solid var(--accent)' : '1px solid var(--border)',
                           background: b.isBaseline ? 'rgba(76,166,106,0.02)' : 'var(--surface)',
                           borderRadius: 'var(--radius-md)', padding: 12,
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          position: 'relative'
+                          position: 'relative',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = 'var(--blue)';
+                          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = b.isBaseline ? 'var(--accent)' : 'var(--border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        title="Haz clic para ver el detalle de esta versión de presupuesto"
                       >
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{b.version}</span>
-                            <span style={{ fontSize: 10, background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, color: 'var(--text-3)', fontFamily: 'DM Mono' }}>{b.id}</span>
-                            <span className={`badge ${b.estadoBadge || 'badge-amber'}`} style={{ fontSize: 10 }}>{b.estadoLabel || b.estado}</span>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{b.version || 'v1.0'}</span>
+                            <span style={{ fontSize: 10, background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, color: 'var(--text-3)', fontFamily: 'DM Mono' }}>{b.id || 'PRES-???'}</span>
+                            <span className={`badge ${b.estadoBadge || 'badge-amber'}`} style={{ fontSize: 10 }}>{b.estadoLabel || b.estado || 'Borrador'}</span>
                             {b.isBaseline && <span className="badge badge-green" style={{ fontSize: 9, padding: '1px 4px' }}>Línea Base</span>}
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 500 }}>{b.titulo}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>Creado el {b.fecha}</div>
+                          <div style={{ fontSize: 13, fontWeight: 500 }}>{b.titulo || 'Presupuesto'}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>Creado el {b.fecha || 'N/A'}</div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontFamily: 'DM Mono', fontSize: 14, fontWeight: 700, color: b.isBaseline ? 'var(--accent)' : 'var(--text-2)' }}>
-                            {money(total)}
+                        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div>
+                            <div style={{ fontFamily: 'DM Mono', fontSize: 14, fontWeight: 700, color: b.isBaseline ? 'var(--accent)' : 'var(--text-2)' }}>
+                              {money(totalB)}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 500, marginTop: 2 }}>
+                              Ver detalle →
+                            </div>
                           </div>
+                          <Icon name="chevron-right" size={14} style={{ color: 'var(--text-3)' }} />
                         </div>
                       </div>
                     );
@@ -840,17 +1123,49 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
               )}
             </div>
 
-            {/* Cost Evolution Line Graph (Visual Progression) */}
+            {/* Tareas Diarias Asociadas */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Tareas Diarias Asociadas</span>
+              </div>
+
+              {tareasAsociadas.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px 16px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface2)', color: 'var(--text-3)', fontSize: 12 }}>
+                  <Icon name="check-square" size={20} style={{ marginBottom: 6, opacity: 0.5, display: 'block', margin: '0 auto 6px' }} />
+                  No hay tareas asociadas a este proyecto aún.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tareasAsociadas.map(t => (
+                    <div key={t.id || Math.random()} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                      <Icon name={t.hecho ? "check-circle" : "circle"} size={14} style={{ color: t.hecho ? 'var(--green)' : 'var(--text-3)' }} />
+                      <span style={{ fontSize: 12, color: t.hecho ? 'var(--text-3)' : 'var(--text)', textDecoration: t.hecho ? 'line-through' : 'none', flex: 1 }}>
+                        {t.titulo || 'Tarea sin título'}
+                      </span>
+                      <span className={`badge ${t.hecho ? 'badge-green' : 'badge-amber'}`} style={{ fontSize: 9 }}>
+                        {t.hecho ? 'Completada' : 'Pendiente'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Cost Evolution Line Graph */}
             {sortedBudgets.length > 1 && (
               <div style={{ marginBottom: 24, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 16 }}>Evolución del Costo</span>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px', position: 'relative' }}>
-                  {/* Connecting Line */}
                   <div style={{ position: 'absolute', height: 2, background: 'var(--border)', top: 12, left: '10%', right: '10%', zIndex: 1 }} />
                   {sortedBudgets.map((b, idx) => {
-                    const total = getBudgetTotal(b);
+                    const totalB = safeGetBudgetTotal(b);
                     return (
-                      <div key={b.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+                      <div
+                        key={b.id || idx}
+                        onClick={() => onVerPresupuesto && onVerPresupuesto(b.id || b.idNumerico)}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, cursor: 'pointer' }}
+                        title={`Ver detalle de versión ${b.version || 'v1.0'}`}
+                      >
                         <div style={{
                           width: 24, height: 24, borderRadius: '50%',
                           background: b.isBaseline ? 'var(--accent)' : 'var(--surface)',
@@ -861,8 +1176,8 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
                         }}>
                           {idx + 1}
                         </div>
-                        <span style={{ fontSize: 11, fontFamily: 'DM Mono', fontWeight: 700, marginTop: 6, color: 'var(--text)' }}>{b.version}</span>
-                        <span style={{ fontSize: 10, fontFamily: 'DM Mono', color: b.isBaseline ? 'var(--accent)' : 'var(--text-3)', marginTop: 2 }}>{money(total)}</span>
+                        <span style={{ fontSize: 11, fontFamily: 'DM Mono', fontWeight: 700, marginTop: 6, color: 'var(--text)' }}>{b.version || 'v1.0'}</span>
+                        <span style={{ fontSize: 10, fontFamily: 'DM Mono', color: b.isBaseline ? 'var(--accent)' : 'var(--text-3)', marginTop: 2 }}>{money(totalB)}</span>
                       </div>
                     );
                   })}
@@ -877,25 +1192,36 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes, presupuesto
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
         }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spin {
+          animation: spin 1s linear infinite;
+        }
       `}</style>
     </div>
   );
 }
 
 // ─── MODAL NUEVO PROYECTO COMPONENT ───────────────────────────────────────────
-function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
+function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }) {
+  const { usuarios = [] } = useAppContext();
+  const teamMembers = getTeamMembers(usuarios);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('licencia-const');
   const [clienteId, setClienteId] = useState('');
   const [prioridad, setPrioridad] = useState('media');
   const [estatus, setEstatus] = useState('pendiente');
   const [avance, setAvance] = useState(0);
-  const [responsable, setResponsable] = useState(EQUIPO[0]?.id || 'u1');
+  const [responsable, setResponsable] = useState(teamMembers[0]?.id || 'u1');
   const [descripcion, setDescripcion] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [alcance, setAlcance] = useState('');
 
-  // Nuevos Campos
+  // Campos complementarios
   const [usoPrincipal, setUsoPrincipal] = useState('');
   const [usoComplementario, setUsoComplementario] = useState('');
   const [impactoPrincipal, setImpactoPrincipal] = useState('');
@@ -921,7 +1247,9 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
   };
 
   const handleSave = async () => {
-    if (!nombre) return;
+    if (!nombre || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const datosParaBackend = {
       nombre,
@@ -949,12 +1277,17 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
         impactoComplementario,
         vialidadPrincipal,
         vialidadComplementaria,
-        direccionesComplementarias: direccionesComplementarias.filter(d => d.trim() !== '')
+        direccionesComplementarias: direccionesComplementarias.filter(d => d && typeof d === 'string' && d.trim() !== '')
       };
-      onGuardar(nuevo);
+
+      if (onGuardar) {
+        onGuardar(nuevo);
+      }
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
-      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+      alert("No se pudo conectar con el servidor. Revisa la consola o tu conexión de red.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -964,7 +1297,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
       background: 'rgba(0,0,0,0.5)', zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(3px)'
-    }} onClick={onClose}>
+    }} onClick={() => !isSubmitting && onClose && onClose()}>
       <div
         className="card"
         style={{
@@ -976,7 +1309,12 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Nuevo Proyecto de Gestión</h3>
-          <button className="btn btn-ghost" onClick={onClose} style={{ padding: 4, minWidth: 'auto', borderRadius: '50%' }}>
+          <button
+            className="btn btn-ghost"
+            onClick={() => !isSubmitting && onClose && onClose()}
+            disabled={isSubmitting}
+            style={{ padding: 4, minWidth: 'auto', borderRadius: '50%' }}
+          >
             <Icon name="x" size={16} />
           </button>
         </div>
@@ -984,12 +1322,18 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
         <div className="form-grid-2" style={{ marginBottom: 16 }}>
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
             <label className="form-label">Nombre del Proyecto *</label>
-            <input className="form-control" placeholder="Ej: Condominio Los Encinos - Fase II" value={nombre} onChange={e => setNombre(e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Ej: Condominio Los Encinos - Fase II"
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              disabled={isSubmitting}
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">Tipo de Gestión</label>
-            <select className="form-control" value={tipo} onChange={e => setTipo(e.target.value)}>
+            <select className="form-control" value={tipo} onChange={e => setTipo(e.target.value)} disabled={isSubmitting}>
               {Object.entries(TRAMITES_TIPOS).map(([key, val]) => (
                 <option key={key} value={key}>{val.nombre}</option>
               ))}
@@ -998,22 +1342,26 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
 
           <div className="form-group">
             <label className="form-label">Cliente Asociado</label>
-            <select className="form-control" value={clienteId} onChange={e => setClienteId(e.target.value)}>
+            <select className="form-control" value={clienteId} onChange={e => setClienteId(e.target.value)} disabled={isSubmitting}>
               <option value="">— Seleccionar cliente —</option>
-              {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {(clientes || []).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
 
           <div className="form-group">
             <label className="form-label">Responsable del Trámite</label>
-            <select className="form-control" value={responsable} onChange={e => setResponsable(e.target.value)}>
-              {EQUIPO.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            <select className="form-control" value={responsable} onChange={e => setResponsable(e.target.value)} disabled={isSubmitting}>
+              {teamMembers.map(e => (
+                <option key={e.id} value={e.id}>
+                  {e.nombre} {e.rol ? `(${e.rol})` : ''}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="form-group">
             <label className="form-label">Estatus del Trámite</label>
-            <select className="form-control" value={estatus} onChange={e => setEstatus(e.target.value)}>
+            <select className="form-control" value={estatus} onChange={e => setEstatus(e.target.value)} disabled={isSubmitting}>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En Proceso</option>
               <option value="completado">Completado</option>
@@ -1023,7 +1371,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
 
           <div className="form-group">
             <label className="form-label">Prioridad</label>
-            <select className="form-control" value={prioridad} onChange={e => setPrioridad(e.target.value)}>
+            <select className="form-control" value={prioridad} onChange={e => setPrioridad(e.target.value)} disabled={isSubmitting}>
               <option value="baja">Baja</option>
               <option value="media">Media</option>
               <option value="alta">Alta</option>
@@ -1032,13 +1380,13 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
 
           <div className="form-group">
             <label className="form-label">Avance Inicial (%)</label>
-            <input className="form-control" type="number" min="0" max="100" value={avance} onChange={e => setAvance(e.target.value)} />
+            <input className="form-control" type="number" min="0" max="100" value={avance} onChange={e => setAvance(e.target.value)} disabled={isSubmitting} />
           </div>
 
           {/* Ubicación e Info Territorial */}
           <div className="form-group" style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 6 }}>
             <label className="form-label">Dirección Principal (Ubicación) *</label>
-            <input className="form-control" placeholder="Ej: Av. Juárez #204, Col. Centro" value={ubicacion} onChange={e => setUbicacion(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Av. Juárez #204, Col. Centro" value={ubicacion} onChange={e => setUbicacion(e.target.value)} disabled={isSubmitting} />
           </div>
 
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
@@ -1049,6 +1397,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
                   type="button"
                   className="btn btn-sm btn-ghost"
                   onClick={handleAddDireccionComp}
+                  disabled={isSubmitting}
                   style={{ padding: '2px 8px', fontSize: 11, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
                 >
                   <Icon name="plus" size={10} /> Agregar
@@ -1064,11 +1413,13 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
                   placeholder={`Ej: Entrada de Proveedores`}
                   value={dir}
                   onChange={e => handleUpdateDireccionComp(idx, e.target.value)}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   className="btn btn-sm btn-ghost"
                   onClick={() => handleRemoveDireccionComp(idx)}
+                  disabled={isSubmitting}
                   style={{ padding: 6, minWidth: 'auto', color: 'var(--red)' }}
                 >
                   <Icon name="x" size={12} />
@@ -1079,46 +1430,62 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes, crearProyecto }) {
 
           <div className="form-group">
             <label className="form-label">Uso Principal</label>
-            <input className="form-control" placeholder="Ej: Habitacional" value={usoPrincipal} onChange={e => setUsoPrincipal(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Habitacional" value={usoPrincipal} onChange={e => setUsoPrincipal(e.target.value)} disabled={isSubmitting} />
           </div>
           <div className="form-group">
             <label className="form-label">Uso Complementario</label>
-            <input className="form-control" placeholder="Ej: Comercial" value={usoComplementario} onChange={e => setUsoComplementario(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Comercial" value={usoComplementario} onChange={e => setUsoComplementario(e.target.value)} disabled={isSubmitting} />
           </div>
 
           <div className="form-group">
             <label className="form-label">Impacto Principal</label>
-            <input className="form-control" placeholder="Ej: Urbano" value={impactoPrincipal} onChange={e => setImpactoPrincipal(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Urbano" value={impactoPrincipal} onChange={e => setImpactoPrincipal(e.target.value)} disabled={isSubmitting} />
           </div>
           <div className="form-group">
             <label className="form-label">Impacto Complementario</label>
-            <input className="form-control" placeholder="Ej: Ambiental" value={impactoComplementario} onChange={e => setImpactoComplementario(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Ambiental" value={impactoComplementario} onChange={e => setImpactoComplementario(e.target.value)} disabled={isSubmitting} />
           </div>
 
           <div className="form-group">
             <label className="form-label">Vialidad Principal</label>
-            <input className="form-control" placeholder="Ej: Av. Juárez" value={vialidadPrincipal} onChange={e => setVialidadPrincipal(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Av. Juárez" value={vialidadPrincipal} onChange={e => setVialidadPrincipal(e.target.value)} disabled={isSubmitting} />
           </div>
           <div className="form-group">
             <label className="form-label">Vialidad Complementaria</label>
-            <input className="form-control" placeholder="Ej: Calle 5" value={vialidadComplementaria} onChange={e => setVialidadComplementaria(e.target.value)} />
+            <input className="form-control" placeholder="Ej: Calle 5" value={vialidadComplementaria} onChange={e => setVialidadComplementaria(e.target.value)} disabled={isSubmitting} />
           </div>
 
           {/* Detalles final */}
           <div className="form-group" style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
             <label className="form-label">Alcance y Descripción Detallada</label>
-            <textarea className="form-control" rows={3} placeholder="Define el alcance del proyecto..." value={alcance} onChange={e => setAlcance(e.target.value)} />
+            <textarea className="form-control" rows={3} placeholder="Define el alcance del proyecto..." value={alcance} onChange={e => setAlcance(e.target.value)} disabled={isSubmitting} />
           </div>
 
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
             <label className="form-label">Resumen de Descripción Corta</label>
-            <input className="form-control" placeholder="Resumen breve para listados..." value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+            <input className="form-control" placeholder="Resumen breve para listados..." value={descripcion} onChange={e => setDescripcion(e.target.value)} disabled={isSubmitting} />
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={!nombre} style={{ opacity: !nombre ? 0.5 : 1 }}>Crear Proyecto</button>
+          <button className="btn btn-secondary" onClick={() => !isSubmitting && onClose && onClose()} disabled={isSubmitting}>
+            Cancelar
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleSave}
+            disabled={!nombre || isSubmitting}
+            style={{ opacity: (!nombre || isSubmitting) ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            {isSubmitting ? (
+              <>
+                <Icon name="clock" size={14} className="spin" />
+                <span>Guardando...</span>
+              </>
+            ) : (
+              'Crear Proyecto'
+            )}
+          </button>
         </div>
       </div>
     </div>

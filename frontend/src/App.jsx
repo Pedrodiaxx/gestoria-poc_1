@@ -49,9 +49,11 @@ export default function App() {
   // Route Guard / Tab permission protection
   useEffect(() => {
     if (session) {
-      const allowed = session.modulos && session.modulos.length > 0
+      const userModulos = session.modulos && session.modulos.length > 0
         ? session.modulos
         : getDefaultModulos(session.rol);
+      // Hojas de Ruta ('tramites') está siempre disponible para todos los usuarios autenticados
+      const allowed = [...userModulos, 'tramites'];
       const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'];
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard';

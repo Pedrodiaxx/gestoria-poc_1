@@ -37,3 +37,11 @@ export async function updateProyecto(id, datos) {
   if (!response.ok) throw new Error('Error al actualizar proyecto en el servidor');
   return response.json();
 }
+
+export async function deleteProyecto(id) {
+  const response = await fetch(`${API_BASE_URL}/api/proyectos/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Error al eliminar proyecto en el servidor');
+  return true;
+}

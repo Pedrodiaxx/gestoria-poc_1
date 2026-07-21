@@ -62,7 +62,35 @@ namespace Backend.Controllers
             var user = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == emailClean);
 
-            if (user == null || user.Contrasenia != request.Contrasenia.Trim())
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Credenciales inválidas. Revisa el correo y contraseña." });
+            }
+
+            bool isPasswordValid = false;
+            if (user.Contrasenia.StartsWith("$2a$") || user.Contrasenia.StartsWith("$2b$") || user.Contrasenia.StartsWith("$2y$"))
+            {
+                try
+                {
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Contrasenia.Trim(), user.Contrasenia);
+                }
+                catch
+                {
+                    isPasswordValid = false;
+                }
+            }
+            else
+            {
+                // Fallback para usuarios legacy en texto plano + auto-migración a BCrypt
+                isPasswordValid = (user.Contrasenia == request.Contrasenia.Trim());
+                if (isPasswordValid)
+                {
+                    user.Contrasenia = BCrypt.Net.BCrypt.HashPassword(request.Contrasenia.Trim());
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (!isPasswordValid)
             {
                 return Unauthorized(new { message = "Credenciales inválidas. Revisa el correo y contraseña." });
             }
@@ -89,12 +117,42 @@ namespace Backend.Controllers
             return Ok(MapToDTO(user));
         }
 
+        private (bool isValid, string errorMessage) ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                return (false, "La contraseña no puede estar vacía.");
+
+            if (password.Length > 10)
+                return (false, "La contraseña no debe exceder los 10 caracteres.");
+
+            if (password.Length < 6)
+                return (false, "La contraseña debe tener al menos 6 caracteres.");
+
+            bool hasUpper = password.Any(char.IsUpper);
+            bool hasLower = password.Any(char.IsLower);
+            bool hasDigit = password.Any(char.IsDigit);
+            bool hasSymbol = password.Any(c => !char.IsLetterOrDigit(c));
+
+            if (!hasUpper || !hasLower || !hasDigit || !hasSymbol)
+            {
+                return (false, "La contraseña no cumple con las políticas de seguridad: Debe incluir al menos una mayúscula (A-Z), una minúscula (a-z), un número (0-9) y un símbolo (!@#$%^&*...).");
+            }
+
+            return (true, string.Empty);
+        }
+
         [HttpPost("usuarios")]
         public async Task<IActionResult> CreateUsuario([FromBody] UsuarioDTO dto)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Contrasenia))
             {
                 return BadRequest("Datos inválidos.");
+            }
+
+            var (passValid, passError) = ValidatePassword(dto.Contrasenia);
+            if (!passValid)
+            {
+                return BadRequest(passError);
             }
 
             var emailClean = dto.Email.Trim().ToLower();
@@ -109,7 +167,7 @@ namespace Backend.Controllers
                 Id = string.IsNullOrWhiteSpace(dto.Id) ? $"usr-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" : dto.Id,
                 Nombre = dto.Nombre,
                 Email = emailClean,
-                Contrasenia = dto.Contrasenia.Trim(),
+                Contrasenia = BCrypt.Net.BCrypt.HashPassword(dto.Contrasenia.Trim()),
                 Rol = dto.Rol,
                 ModulosJson = JsonSerializer.Serialize(dto.Modulos ?? new List<string>()),
                 Avatar = dto.Avatar,
@@ -139,7 +197,21 @@ namespace Backend.Controllers
 
             user.Nombre = dto.Nombre;
             user.Email = dto.Email.Trim().ToLower();
-            user.Contrasenia = dto.Contrasenia.Trim();
+
+            // Si la contraseña cambió o no es hash BCrypt, validar y encriptar
+            if (!string.IsNullOrWhiteSpace(dto.Contrasenia) &&
+                !dto.Contrasenia.StartsWith("$2a$") &&
+                !dto.Contrasenia.StartsWith("$2b$") &&
+                !dto.Contrasenia.StartsWith("$2y$"))
+            {
+                var (passValid, passError) = ValidatePassword(dto.Contrasenia);
+                if (!passValid)
+                {
+                    return BadRequest(passError);
+                }
+                user.Contrasenia = BCrypt.Net.BCrypt.HashPassword(dto.Contrasenia.Trim());
+            }
+
             user.Rol = dto.Rol;
             user.ModulosJson = JsonSerializer.Serialize(dto.Modulos ?? new List<string>());
             user.Avatar = dto.Avatar;
