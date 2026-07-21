@@ -122,8 +122,11 @@ namespace Backend.Controllers
             if (string.IsNullOrWhiteSpace(password))
                 return (false, "La contraseña no puede estar vacía.");
 
-            if (password.Length < 8)
-                return (false, "La contraseña debe tener al menos 8 caracteres.");
+            if (password.Length > 10)
+                return (false, "La contraseña no debe exceder los 10 caracteres.");
+
+            if (password.Length < 6)
+                return (false, "La contraseña debe tener al menos 6 caracteres.");
 
             bool hasUpper = password.Any(char.IsUpper);
             bool hasLower = password.Any(char.IsLower);

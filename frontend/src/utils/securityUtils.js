@@ -3,17 +3,18 @@
  */
 
 /**
- * Genera una contraseña segura que cumple con todas las políticas de seguridad:
- * - 12+ caracteres
+ * Genera una contraseña segura de máximo 10 caracteres que cumple con todas las políticas:
+ * - Exactamente 10 caracteres (o longitud personalizada <= 10)
  * - Al menos una mayúscula (A-Z)
  * - Al menos una minúscula (a-z)
  * - Al menos un número (0-9)
  * - Al menos un símbolo (!@#$%^&*()_+-=[]{}|;:,.<>?)
  *
- * @param {number} length Longitud deseada (por defecto 12)
+ * @param {number} length Longitud deseada (por defecto 10, máximo 10)
  * @returns {string} Contraseña segura aleatoria
  */
-export function generateSecurePassword(length = 12) {
+export function generateSecurePassword(length = 10) {
+  const targetLength = Math.min(10, Math.max(6, length));
   const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lowercase = "abcdefghijklmnopqrstuvwxyz";
   const numbers = "0123456789";
@@ -28,8 +29,8 @@ export function generateSecurePassword(length = 12) {
     symbols[Math.floor(Math.random() * symbols.length)],
   ];
 
-  // Rellenar los caracteres restantes
-  for (let i = passwordChars.length; i < length; i++) {
+  // Rellenar los caracteres restantes hasta alcanzar targetLength (máximo 10)
+  for (let i = passwordChars.length; i < targetLength; i++) {
     passwordChars.push(allChars[Math.floor(Math.random() * allChars.length)]);
   }
 
@@ -43,26 +44,26 @@ export function generateSecurePassword(length = 12) {
 }
 
 /**
- * Valida los requisitos de seguridad de una contraseña.
+ * Valida los requisitos de seguridad de una contraseña (máximo 10 caracteres).
  *
  * @param {string} password Contraseña a evaluar
  * @returns {object} Resultado de la validación
  */
 export function validatePasswordSecurity(password = '') {
   const pass = password || '';
-  const hasMinLength = pass.length >= 8;
-  const isRecommendedLength = pass.length >= 12;
+  const hasMinLength = pass.length >= 6;
+  const isWithinMaxLength = pass.length <= 10;
   const hasUpper = /[A-Z]/.test(pass);
   const hasLower = /[a-z]/.test(pass);
   const hasNumber = /[0-9]/.test(pass);
   const hasSymbol = /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(pass);
 
-  const isValid = hasMinLength && hasUpper && hasLower && hasNumber && hasSymbol;
+  const isValid = hasMinLength && isWithinMaxLength && hasUpper && hasLower && hasNumber && hasSymbol;
 
   return {
     isValid,
     hasMinLength,
-    isRecommendedLength,
+    isWithinMaxLength,
     hasUpper,
     hasLower,
     hasNumber,

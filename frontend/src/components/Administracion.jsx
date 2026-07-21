@@ -65,14 +65,14 @@ export default function Administracion() {
   };
 
   const handleGeneratePasswordAdd = () => {
-    const generated = generateSecurePassword(12);
+    const generated = generateSecurePassword(10);
     setNuevoUsuario(prev => ({ ...prev, contrasenia: generated }));
     setShowNuevoPassword(true);
     Swal.fire({
       toast: true,
       position: 'top-end',
       icon: 'info',
-      title: '🎲 Contraseña segura generada',
+      title: '🎲 Contraseña segura de 10 caracteres generada',
       showConfirmButton: false,
       timer: 1800,
       background: 'var(--surface)',
@@ -81,14 +81,14 @@ export default function Administracion() {
   };
 
   const handleGeneratePasswordEdit = () => {
-    const generated = generateSecurePassword(12);
+    const generated = generateSecurePassword(10);
     setEditandoUsuario(prev => ({ ...prev, contrasenia: generated }));
     setShowEditPassword(true);
     Swal.fire({
       toast: true,
       position: 'top-end',
       icon: 'info',
-      title: '🎲 Nueva contraseña segura generada',
+      title: '🎲 Nueva contraseña segura de 10 caracteres generada',
       showConfirmButton: false,
       timer: 1800,
       background: 'var(--surface)',
