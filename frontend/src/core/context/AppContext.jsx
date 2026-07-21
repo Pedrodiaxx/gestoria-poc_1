@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
+import {
   addClientCommand, deleteClientCommand, updateClientFieldCommand,
-  addQuoteCommand, addConceptCommand 
+  addQuoteCommand, addConceptCommand
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
 import { fetchClientes, updateCliente } from '../../services/clientesService';
@@ -23,7 +23,7 @@ export const useAppContext = () => {
   return context;
 };
 
-export const AppContextProvider = ({ 
+export const AppContextProvider = ({
   children,
   clientRepository,
   userRepository,
@@ -35,24 +35,36 @@ export const AppContextProvider = ({
   taskRepository,
   initialActiveTab = 'home'
 }) => {
-  // ── Hash-based navigation: sync active tab with URL for browser back/forward ──
+  // ── Persistent navigation: survive F5, back/forward, and direct URL access ──
   const [active, setActiveRaw] = useState(() => {
+    // Priority: 1) sessionStorage (survives F5), 2) URL hash, 3) default
+    const persisted = sessionStorage.getItem('giu_active_tab');
     const hash = window.location.hash.replace('#', '');
-    return hash || initialActiveTab;
+    return persisted || hash || initialActiveTab;
   });
 
-  // Wrapper: every time we change tab programmatically, push to browser history
+  // Wrapper: persist to sessionStorage + push to browser history on every tab change
   const setActive = (tab) => {
     if (tab === active) return;
     setActiveRaw(tab);
+    sessionStorage.setItem('giu_active_tab', tab);
     window.history.pushState(null, '', `#${tab}`);
   };
+
+  // Sync URL hash on initial load so the address bar reflects the restored tab
+  useEffect(() => {
+    const currentHash = window.location.hash.replace('#', '');
+    if (currentHash !== active) {
+      window.history.replaceState(null, '', `#${active}`);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for browser back/forward button
   useEffect(() => {
     const onPopState = () => {
       const hash = window.location.hash.replace('#', '') || 'home';
       setActiveRaw(hash);
+      sessionStorage.setItem('giu_active_tab', hash);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -75,6 +87,7 @@ export const AppContextProvider = ({
             changed = true;
           }
         }
+
       }
       if (changed) {
         sessionStorage.setItem('giu_session', JSON.stringify(parsed));
@@ -97,11 +110,11 @@ export const AppContextProvider = ({
     const verificarSesionActiva = async () => {
       const savedSession = sessionStorage.getItem('giu_session');
       if (!savedSession) return;
-      
+
       try {
         const parsedSession = JSON.parse(savedSession);
         if (!parsedSession || !parsedSession.id) return;
-        
+
         // Consultar los datos frescos del usuario al backend
         const freshUser = await fetchUsuarioPorId(parsedSession.id);
         if (freshUser) {
@@ -111,7 +124,7 @@ export const AppContextProvider = ({
             ...freshUser,
             clienteId: clienteIdVal
           };
-          
+
           // Mapear los módulos
           const userWithModulos = {
             ...userWithClient,
@@ -119,7 +132,7 @@ export const AppContextProvider = ({
               ? userWithClient.modulos
               : getDefaultModulos(userWithClient.rol)
           };
-          
+
           // Actualizar estado y almacenamiento
           setSession(userWithModulos);
           sessionStorage.setItem('giu_session', JSON.stringify(userWithModulos));
@@ -128,7 +141,7 @@ export const AppContextProvider = ({
         console.error("Error al validar sesión activa con el servidor:", err);
       }
     };
-    
+
     verificarSesionActiva();
   }, []);
 
@@ -244,7 +257,7 @@ export const AppContextProvider = ({
 
   const addQuote = (nueva) => addQuoteCommand(setCotizaciones, nueva);
   const addConcept = (nuevo) => addConceptCommand(setConceptos, nuevo);
-  
+
   const addProyecto = (nuevo) => {
     setProyectos(prev => [nuevo, ...prev]);
   };
@@ -323,6 +336,7 @@ export const AppContextProvider = ({
 
   const handleLogout = () => {
     setSession(null);
+    sessionStorage.removeItem('giu_active_tab');
     setActive('home');
   };
 
@@ -352,7 +366,7 @@ export const AppContextProvider = ({
       setTareas,
       preselectedProjectId,
       setPreselectedProjectId,
-      
+
       // Commands
       addClient,
       deleteClient,
