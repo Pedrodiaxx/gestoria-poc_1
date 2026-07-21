@@ -1225,6 +1225,7 @@ export function Presupuestos() {
     conceptos,
     proyectos,
     updateProyecto,
+    deleteProyecto,
     presupuestos,
     setPresupuestos,
     preselectedProjectId,
@@ -1555,6 +1556,47 @@ export function Presupuestos() {
     }
   };
 
+  const handleEliminarProyecto = async (id, idNumerico) => {
+    const targetId = idNumerico || id;
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#C0392B',
+      cancelButtonColor: '#7F8C8D',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      await deleteProyecto(id, idNumerico);
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'El proyecto ha sido eliminado con éxito.',
+        icon: 'success',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    } catch (error) {
+      console.error("Error al eliminar proyecto:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un error al eliminar el proyecto en el servidor.',
+        icon: 'error',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    }
+  };
+
   if (tab === 'nuevo') {
     return (
       <FormNuevoPresupuesto
@@ -1667,6 +1709,32 @@ export function Presupuestos() {
                           {money(calcBudgetTotal(baselineBudget))}
                         </div>
                       </div>
+                    )}
+                    {associatedBudgets.length === 0 && session.rol !== 'cliente' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEliminarProyecto(proj.id, proj.idNumerico);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--red)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s',
+                          marginRight: '8px'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(192, 57, 43, 0.1)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                        title="Eliminar Proyecto"
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
                     )}
                     <Icon name="chevdown" size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : '', transition: 'transform 0.2s', color: 'var(--text-3)' }} />
                   </div>

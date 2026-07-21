@@ -5,7 +5,7 @@ import {
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
 import { fetchClientes, updateCliente } from '../../services/clientesService';
-import { fetchProyectos, updateProyecto as updateProyectoService } from '../../services/proyectosService';
+import { fetchProyectos, updateProyecto as updateProyectoService, deleteProyecto as deleteProyectoService } from '../../services/proyectosService';
 import { fetchPresupuestos } from '../../services/presupuestosService';
 import { fetchCotizaciones } from '../../services/cotizacionesService';
 import { fetchTareas } from '../../services/tareasService';
@@ -282,6 +282,19 @@ export const AppContextProvider = ({
     }
   };
 
+  const deleteProyecto = async (id, idNumerico) => {
+    const targetId = idNumerico || id;
+    try {
+      await deleteProyectoService(targetId);
+      setProyectos(prev => prev.filter(p => p.id !== id && p.idNumerico !== targetId));
+      return true;
+    } catch (err) {
+      console.error("Error al eliminar proyecto en el backend:", err);
+      throw err;
+    }
+  };
+
+
   const linkClientAccount = (user, currentClientesList = clientes) => {
     if (user.rol !== 'cliente') return user;
 
@@ -378,6 +391,7 @@ export const AppContextProvider = ({
       addConcept,
       addProyecto,
       updateProyecto,
+      deleteProyecto,
       handleLogin,
       handleLogout
     }}>

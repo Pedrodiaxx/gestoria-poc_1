@@ -39,5 +39,16 @@ namespace Backend.Controllers
             var dto = await _service.UpdateAsync(proyecto);
             return Ok(dto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProyecto(int id)
+        {
+            var result = await _service.DeleteAsync(id);
+            if (!result)
+            {
+                return NotFound("Proyecto no encontrado.");
+            }
+            return NoContent();
+        }
     }
 }

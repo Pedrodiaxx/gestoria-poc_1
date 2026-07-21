@@ -97,5 +97,10 @@ namespace Backend.Services
                 TotalPresupuestos = presAsociados.Count
             };
         }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            return await _proyectoRepo.DeleteAsync(id);
+        }
     }
 }
