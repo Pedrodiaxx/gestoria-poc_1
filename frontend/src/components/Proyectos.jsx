@@ -115,6 +115,7 @@ function ProyectosContent() {
     deleteProyecto,
     presupuestos = [],
     setPreselectedProjectId,
+    setPreselectedBudgetId,
     setProyectos,
     session,
     usuarios = []
@@ -439,6 +440,12 @@ function ProyectosContent() {
             setActive && setActive('presupuestos');
             setProyectoDetalle(null);
           }}
+          onVerPresupuesto={(budgetId) => {
+            if (!budgetId) return;
+            setPreselectedBudgetId && setPreselectedBudgetId(budgetId);
+            setActive && setActive('presupuestos');
+            setProyectoDetalle(null);
+          }}
           session={session}
         />
       )}
@@ -589,7 +596,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
 }
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
-function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, session }) {
+function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, onVerPresupuesto, session }) {
   const { proyectos = [], updateProyecto, tareas = [], usuarios = [] } = useAppContext();
 
   // Guard previas si no existe initialProyecto
@@ -1018,9 +1025,18 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 </span>
               </div>
               {baseline ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  onClick={() => onVerPresupuesto && onVerPresupuesto(baseline.id || baseline.idNumerico)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 8px', borderRadius: 'var(--radius-sm)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                  title="Haz clic para ver el detalle de este presupuesto de Línea Base"
+                >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{baseline.titulo || 'Presupuesto Línea Base'}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {baseline.titulo || 'Presupuesto Línea Base'}
+                      <span style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 500 }}>Ver →</span>
+                    </div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Versión {baseline.version || '1.0'} · Aprobado el {baseline.fecha || 'N/A'}</div>
                   </div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)', fontFamily: 'DM Mono' }}>
@@ -1059,13 +1075,25 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                     return (
                       <div
                         key={b.id || Math.random()}
+                        onClick={() => onVerPresupuesto && onVerPresupuesto(b.id || b.idNumerico)}
                         style={{
                           border: b.isBaseline ? '1px solid var(--accent)' : '1px solid var(--border)',
                           background: b.isBaseline ? 'rgba(76,166,106,0.02)' : 'var(--surface)',
                           borderRadius: 'var(--radius-md)', padding: 12,
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          position: 'relative'
+                          position: 'relative',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = 'var(--blue)';
+                          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = b.isBaseline ? 'var(--accent)' : 'var(--border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        title="Haz clic para ver el detalle de esta versión de presupuesto"
                       >
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -1077,10 +1105,16 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                           <div style={{ fontSize: 13, fontWeight: 500 }}>{b.titulo || 'Presupuesto'}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>Creado el {b.fecha || 'N/A'}</div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontFamily: 'DM Mono', fontSize: 14, fontWeight: 700, color: b.isBaseline ? 'var(--accent)' : 'var(--text-2)' }}>
-                            {money(totalB)}
+                        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div>
+                            <div style={{ fontFamily: 'DM Mono', fontSize: 14, fontWeight: 700, color: b.isBaseline ? 'var(--accent)' : 'var(--text-2)' }}>
+                              {money(totalB)}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 500, marginTop: 2 }}>
+                              Ver detalle →
+                            </div>
                           </div>
+                          <Icon name="chevron-right" size={14} style={{ color: 'var(--text-3)' }} />
                         </div>
                       </div>
                     );
@@ -1126,7 +1160,12 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                   {sortedBudgets.map((b, idx) => {
                     const totalB = safeGetBudgetTotal(b);
                     return (
-                      <div key={b.id || idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+                      <div
+                        key={b.id || idx}
+                        onClick={() => onVerPresupuesto && onVerPresupuesto(b.id || b.idNumerico)}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, cursor: 'pointer' }}
+                        title={`Ver detalle de versión ${b.version || 'v1.0'}`}
+                      >
                         <div style={{
                           width: 24, height: 24, borderRadius: '50%',
                           background: b.isBaseline ? 'var(--accent)' : 'var(--surface)',

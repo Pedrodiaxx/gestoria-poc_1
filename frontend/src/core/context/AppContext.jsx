@@ -70,6 +70,7 @@ export const AppContextProvider = ({
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
   const [preselectedProjectId, setPreselectedProjectId] = useState(null);
+  const [preselectedBudgetId, setPreselectedBudgetId] = useState(null);
   const [session, setSession] = useState(() => {
     const saved = sessionStorage.getItem('giu_session');
     if (saved) {
@@ -379,6 +380,8 @@ export const AppContextProvider = ({
       setTareas,
       preselectedProjectId,
       setPreselectedProjectId,
+      preselectedBudgetId,
+      setPreselectedBudgetId,
 
       // Commands
       addClient,

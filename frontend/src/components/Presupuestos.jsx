@@ -1230,6 +1230,8 @@ export function Presupuestos() {
     setPresupuestos,
     preselectedProjectId,
     setPreselectedProjectId,
+    preselectedBudgetId,
+    setPreselectedBudgetId,
     tareas,
     setTareas
   } = useAppContext();
@@ -1243,14 +1245,17 @@ export function Presupuestos() {
   const { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto } = usePresupuestos(setPresupuestos, session);
   const { crearTarea } = useTareas(setTareas);
 
-  // Automatically open creation tab if preselectedProjectId is active
+  // Automatically open view or creation tab if preselected state is set
   useEffect(() => {
-    if (preselectedProjectId) {
+    if (preselectedBudgetId) {
+      setViendoId(preselectedBudgetId);
+      setTab('ver');
+    } else if (preselectedProjectId) {
       setTab('nuevo');
     }
-  }, [preselectedProjectId]);
+  }, [preselectedBudgetId, preselectedProjectId]);
 
-  const verPres = presupuestos.find(p => p.id === viendoId);
+  const verPres = presupuestos.find(p => p.id === viendoId || p.idNumerico === viendoId || String(p.id) === String(viendoId));
 
   const guardarNuevo = async (p) => {
     try {
@@ -1613,7 +1618,7 @@ export function Presupuestos() {
     return (
       <VistaPresupuesto
         p={verPres}
-        onCerrar={() => setTab('agrupado')}
+        onCerrar={() => { setTab('agrupado'); setPreselectedBudgetId && setPreselectedBudgetId(null); }}
         clientes={clientes}
         proyectos={proyectos}
         onAjustar={handleAjustar}
