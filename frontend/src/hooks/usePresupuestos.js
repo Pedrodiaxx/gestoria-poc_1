@@ -1,27 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { fetchPresupuestos, createPresupuesto, updatePresupuesto, deletePresupuesto } from '../services/presupuestosService';
 
 export function usePresupuestos(setPresupuestos, currentSession) {
-  useEffect(() => {
+  const sincronizarPresupuestos = useCallback(async () => {
     if (!setPresupuestos) return;
-    const cargarPresupuestos = async () => {
-      try {
-        const queryParams = {};
-        if (currentSession?.clienteId) queryParams.clienteId = currentSession.clienteId;
-        if (currentSession?.rol) queryParams.rol = currentSession.rol;
+    try {
+      const queryParams = {};
+      if (currentSession?.clienteId) queryParams.clienteId = currentSession.clienteId;
+      if (currentSession?.rol) queryParams.rol = currentSession.rol;
 
-        const datosApi = await fetchPresupuestos(queryParams);
-        if (datosApi && datosApi.length > 0) {
-          setPresupuestos(datosApi);
-        } else {
-          setPresupuestos(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los presupuestos:", error);
+      const datosApi = await fetchPresupuestos(queryParams);
+      if (datosApi && datosApi.length > 0) {
+        setPresupuestos(datosApi);
+      } else {
+        setPresupuestos(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
       }
-    };
-    cargarPresupuestos();
+    } catch (error) {
+      console.error("No se pudieron sincronizar los presupuestos:", error);
+    }
   }, [setPresupuestos, currentSession]);
+
+  useEffect(() => {
+    sincronizarPresupuestos();
+  }, [sincronizarPresupuestos]);
 
   const crearPresupuesto = async (datosParaBackend) => {
     try {
@@ -49,9 +50,7 @@ export function usePresupuestos(setPresupuestos, currentSession) {
   const eliminarPresupuesto = async (id) => {
     try {
       await deletePresupuesto(id);
-      if (setPresupuestos) {
-        setPresupuestos(prev => prev.filter(b => b.idNumerico !== id && b.id !== id));
-      }
+      await sincronizarPresupuestos();
       return true;
     } catch (error) {
       console.error("Error al eliminar presupuesto:", error);
@@ -59,5 +58,5 @@ export function usePresupuestos(setPresupuestos, currentSession) {
     }
   };
 
-  return { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto };
+  return { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto, sincronizarPresupuestos };
 }

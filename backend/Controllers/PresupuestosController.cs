@@ -41,7 +41,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeletePresupuesto(int id)
         {
             var result = await _service.DeleteAsync(id);
             if (!result)

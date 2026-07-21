@@ -1517,7 +1517,7 @@ export function Presupuestos() {
     
     const result = await Swal.fire({
       title: '¿Estás seguro?',
-      text: "Deseas eliminar este presupuesto permanentemente. Esta acción no se puede deshacer.",
+      text: "¿Estás seguro de que deseas eliminar esta versión del presupuesto? Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#C0392B',
@@ -1677,7 +1677,7 @@ export function Presupuestos() {
                   <div style={{ padding: '8px 16px 16px' }}>
                     {associatedBudgets.length === 0 ? (
                       <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 12, fontStyle: 'italic' }}>
-                        No hay ningún presupuesto creado para este proyecto. Haz clic en "Nuevo Presupuesto" arriba para crear uno.
+                        No hay ningún presupuesto creado para este proyecto.
                       </div>
                     ) : (
                       <div style={{ overflowX: 'auto' }}>
