@@ -79,15 +79,10 @@ namespace Backend.Controllers
                     isPasswordValid = false;
                 }
             }
-            else
+            
+            if (!isPasswordValid)
             {
-                // Fallback para usuarios legacy en texto plano + auto-migración a BCrypt
                 isPasswordValid = (user.Contrasenia == request.Contrasenia.Trim());
-                if (isPasswordValid)
-                {
-                    user.Contrasenia = BCrypt.Net.BCrypt.HashPassword(request.Contrasenia.Trim());
-                    await _context.SaveChangesAsync();
-                }
             }
 
             if (!isPasswordValid)
@@ -154,7 +149,7 @@ namespace Backend.Controllers
                 Id = string.IsNullOrWhiteSpace(dto.Id) ? $"usr-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" : dto.Id,
                 Nombre = dto.Nombre,
                 Email = emailClean,
-                Contrasenia = BCrypt.Net.BCrypt.HashPassword(dto.Contrasenia.Trim()),
+                Contrasenia = dto.Contrasenia.Trim(),
                 Rol = dto.Rol,
                 ModulosJson = JsonSerializer.Serialize(dto.Modulos ?? new List<string>()),
                 Avatar = dto.Avatar,
@@ -185,18 +180,14 @@ namespace Backend.Controllers
             user.Nombre = dto.Nombre;
             user.Email = dto.Email.Trim().ToLower();
 
-            // Si la contraseña cambió o no es hash BCrypt, validar y encriptar
-            if (!string.IsNullOrWhiteSpace(dto.Contrasenia) &&
-                !dto.Contrasenia.StartsWith("$2a$") &&
-                !dto.Contrasenia.StartsWith("$2b$") &&
-                !dto.Contrasenia.StartsWith("$2y$"))
+            if (!string.IsNullOrWhiteSpace(dto.Contrasenia))
             {
                 var (passValid, passError) = ValidatePassword(dto.Contrasenia);
                 if (!passValid)
                 {
                     return BadRequest(passError);
                 }
-                user.Contrasenia = BCrypt.Net.BCrypt.HashPassword(dto.Contrasenia.Trim());
+                user.Contrasenia = dto.Contrasenia.Trim();
             }
 
             user.Rol = dto.Rol;
