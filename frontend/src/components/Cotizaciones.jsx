@@ -171,7 +171,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                             <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.descripcion}</div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 13, fontWeight: 600 }}>{money(r.precio)}</span>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(r.precio)}</span>
                             {yaAgregado
                               ? <span className="badge badge-green" style={{ fontSize: 10 }}>✓ Agregado</span>
                               : <button className="btn btn-primary btn-sm"><Icon name="plus" size={12} /></button>
@@ -204,9 +204,9 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                         const c = getConcepto(li.clave);
                         return (
                           <tr key={li.clave} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-                            <td style={{ padding: '10px 12px' }}><span className="mono" style={{ fontSize: 11, background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
+                            <td style={{ padding: '10px 12px' }}><span className="mono tabular-nums" style={{ fontSize: 11, background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
                             <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12 }}>{c?.descripcion}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>{money(c?.precio || 0)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 13, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(c?.precio || 0)}</td>
                             <td style={{ padding: '10px 8px' }}>
                               <button onClick={() => quitarConcepto(li.clave)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, borderRadius: 4, display: 'flex' }}
                                 onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.background = 'var(--red-light)' }}
@@ -237,13 +237,13 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                     return (
                       <div key={li.clave} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0', borderBottom: '1px solid var(--border)', gap: 8 }}>
                         <span style={{ color: 'var(--text-2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c?.descripcion}</span>
-                        <span style={{ fontFamily: 'DM Mono', fontWeight: 600, flexShrink: 0 }}>{money(c?.precio || 0)}</span>
+                        <span style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', flexShrink: 0, color: 'var(--text-2)' }}>{money(c?.precio || 0)}</span>
                       </div>
                     );
                   })}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 10, borderTop: '2px solid var(--text)', fontWeight: 700, fontSize: 17 }}>
-                    <span>Total</span>
-                    <span style={{ fontFamily: 'DM Mono', color: 'var(--accent)' }}>{money(totalNuevo)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border-strong)', fontWeight: 600, fontSize: 16 }}>
+                    <span style={{ color: 'var(--text)', fontWeight: 600 }}>Total</span>
+                    <span style={{ fontFamily: 'DM Mono', fontWeight: 600, fontSize: 16, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--accent)' }}>{money(totalNuevo)}</span>
                   </div>
                 </>
               )}
@@ -334,7 +334,7 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.clienteContacto}</div>
                       </td>
                       <td style={{ padding: '12px 16px', color: 'var(--text-2)', fontSize: 12 }}>{c.fecha}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 14 }}>{money(c.total)}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 13, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(c.total)}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <span className={`badge ${c.estatusBadge}`}>
                           {c.estatusLabel}
@@ -359,14 +359,14 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                               <tbody>
                                 {(c.conceptos || []).map((li, i) => (
                                     <tr key={li.clave || i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-                                      <td style={{ padding: '8px 12px' }}><span className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
+                                      <td style={{ padding: '8px 12px' }}><span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
                                       <td style={{ padding: '8px 12px', color: 'var(--text-2)' }}>{li.descripcion}</td>
-                                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600 }}>{money(li.precioUnitario || 0)}</td>
+                                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(li.precioUnitario || 0)}</td>
                                     </tr>
                                 ))}
-                                <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface2)' }}>
-                                  <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 700 }}>Total</td>
-                                  <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 15, color: 'var(--accent)' }}>{money(c.total)}</td>
+                                <tr style={{ borderTop: '1px solid var(--border-strong)', background: 'var(--surface2)' }}>
+                                  <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 600, fontSize: 12, color: 'var(--text)' }}>Total</td>
+                                  <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 14, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--accent)' }}>{money(c.total)}</td>
                                 </tr>
                               </tbody>
                             </table>

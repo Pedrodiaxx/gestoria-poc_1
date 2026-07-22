@@ -40,6 +40,16 @@ body {
   line-height: 1.5;
 }
 
+/* Tabular numbers and typography utilities */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.font-semibold, .fw-600 {
+  font-weight: 600;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
