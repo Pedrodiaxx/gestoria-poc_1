@@ -148,9 +148,8 @@ export default function Administracion() {
   const handleAddUsuario = () => {
     if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) return;
 
-    const passCheck = validatePasswordSecurity(nuevoUsuario.contrasenia);
-    if (!passCheck.isValid) {
-      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
+    if (nuevoUsuario.contrasenia.length < 4) {
+      alert('La contraseña debe tener al menos 4 caracteres.');
       return;
     }
 
@@ -196,9 +195,12 @@ export default function Administracion() {
   const handleSaveEditUsuario = () => {
     if (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) return;
 
-    const passCheck = validatePasswordSecurity(editandoUsuario.contrasenia);
-    if (!passCheck.isValid) {
-      alert('La contraseña debe tener al menos 8 caracteres, mayúsculas, minúsculas, números y símbolos.');
+    const isHash = editandoUsuario.contrasenia.startsWith('$2a$') ||
+                   editandoUsuario.contrasenia.startsWith('$2b$') ||
+                   editandoUsuario.contrasenia.startsWith('$2y$');
+
+    if (!isHash && editandoUsuario.contrasenia.length < 4) {
+      alert('La contraseña debe tener al menos 4 caracteres.');
       return;
     }
 
@@ -219,6 +221,7 @@ export default function Administracion() {
       ...editandoUsuario,
       nombre: editandoUsuario.nombre.trim(),
       email: emailClean,
+      contrasenia: editandoUsuario.contrasenia,
       rol,
       modulos,
       avatar
