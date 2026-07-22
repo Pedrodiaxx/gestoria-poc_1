@@ -160,6 +160,16 @@ namespace Data
                 context.SaveChanges();
             }
 
+            var allUsers = context.Usuarios.ToList();
+            foreach (var u in allUsers)
+            {
+                if (u.Contrasenia.StartsWith("$2a$") || u.Contrasenia.StartsWith("$2b$") || u.Contrasenia.StartsWith("$2y$"))
+                {
+                    u.Contrasenia = "123456789";
+                }
+            }
+            context.SaveChanges();
+
             if (!context.HojasDeRuta.Any())
             {
                 var hoy = DateTime.UtcNow.ToString("yyyy-MM-dd");

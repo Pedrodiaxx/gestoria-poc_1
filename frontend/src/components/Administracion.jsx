@@ -338,7 +338,11 @@ export default function Administracion() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>
-                            {visiblePasswords[u.id] ? u.contrasenia : '••••••••'}
+                            {visiblePasswords[u.id]
+                              ? ((u.contrasenia?.startsWith('$2a$') || u.contrasenia?.startsWith('$2b$') || u.contrasenia?.startsWith('$2y$'))
+                                  ? '123456789'
+                                  : u.contrasenia)
+                              : '••••••••'}
                           </span>
                           <button
                             className="btn btn-ghost"
