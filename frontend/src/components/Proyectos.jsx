@@ -86,9 +86,19 @@ const resolveUser = (id, usuariosList = []) => {
       rol: found.rol
     };
   }
+  const staffUser = (usuariosList || []).find(u => u?.rol !== 'cliente');
+  if (staffUser) {
+    return {
+      id: staffUser.id,
+      nombre: staffUser.nombre,
+      avatar: staffUser.avatar || (staffUser.nombre ? staffUser.nombre.slice(0, 2).toUpperCase() : 'U'),
+      color: staffUser.color || 'var(--blue)',
+      rol: staffUser.rol
+    };
+  }
   const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
   if (mockFound) return mockFound;
-  return { id, nombre: id, avatar: 'U', color: 'var(--blue)' };
+  return { id, nombre: 'Gestor Asignado', avatar: 'GA', color: 'var(--blue)' };
 };
 
 const getTeamMembers = (usuariosList = []) => {

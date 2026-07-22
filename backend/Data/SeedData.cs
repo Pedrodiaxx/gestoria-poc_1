@@ -137,17 +137,24 @@ namespace Data
 
             context.SaveChanges();
 
-            if (!context.Usuarios.Any(u => u.Rol == "admin"))
+            var adminUser = context.Usuarios.FirstOrDefault(u => u.Id == "usr-admin-1" || u.Email == "gabrielcoc@gmail.com");
+            if (adminUser != null)
+            {
+                adminUser.Contrasenia = BCrypt.Net.BCrypt.HashPassword("123456789");
+                adminUser.Nombre = "Gabriel";
+                context.SaveChanges();
+            }
+            else
             {
                 context.Usuarios.Add(new Usuario
                 {
                     Id = "usr-admin-1",
-                    Nombre = "Gabriel Cervera",
+                    Nombre = "Gabriel",
                     Email = "gabrielcoc@gmail.com",
-                    Contrasenia = "123456789",
+                    Contrasenia = BCrypt.Net.BCrypt.HashPassword("123456789"),
                     Rol = "admin",
                     ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"cotizaciones\",\"proyectos\",\"clientes\"]",
-                    Avatar = "GC",
+                    Avatar = "G",
                     Color = "#2A5F3F"
                 });
                 context.SaveChanges();

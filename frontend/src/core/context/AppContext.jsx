@@ -237,12 +237,23 @@ export const AppContextProvider = ({
     try {
       const actualizado = await updateUsuario(updatedUser.id, updatedUser);
       setUsuarios(prev => prev.map(u => u.id === updatedUser.id ? actualizado : u));
-      if (session && session.id === updatedUser.id) {
-        setSession(actualizado);
+
+      if (session && (String(session.id) === String(updatedUser.id) || session.email?.toLowerCase() === updatedUser.email?.toLowerCase())) {
+        const newSession = {
+          ...session,
+          ...actualizado,
+          modulos: (actualizado.modulos && actualizado.modulos.length > 0)
+            ? actualizado.modulos
+            : getDefaultModulos(actualizado.rol)
+        };
+        setSession(newSession);
+        sessionStorage.setItem('giu_session', JSON.stringify(newSession));
       }
+      return actualizado;
     } catch (err) {
       console.error("Error al guardar edición de usuario en backend:", err);
       alert(err.message || "Error al guardar edición de usuario");
+      throw err;
     }
   };
 

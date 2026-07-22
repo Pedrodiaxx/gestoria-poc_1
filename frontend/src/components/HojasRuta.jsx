@@ -26,7 +26,18 @@ export function HojasRuta() {
         color: found.color || 'var(--blue)'
       };
     }
-    return EQUIPO.find(e => String(e?.id) === String(id)) || null;
+    const staffUser = (usuarios || []).find(u => u?.rol !== 'cliente');
+    if (staffUser) {
+      return {
+        id: staffUser.id,
+        nombre: staffUser.nombre,
+        avatar: staffUser.avatar || (staffUser.nombre ? staffUser.nombre.slice(0, 2).toUpperCase() : 'U'),
+        color: staffUser.color || 'var(--blue)'
+      };
+    }
+    const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
+    if (mockFound) return mockFound;
+    return { id, nombre: 'Gestor Asignado', avatar: 'GA', color: 'var(--blue)' };
   };
 
   const isClient = session?.rol === 'cliente';

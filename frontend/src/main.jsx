@@ -14,11 +14,11 @@ import {
 const DEFAULT_USERS = [
   {
     id: 'usr-admin-1',
-    nombre: 'Gabriel (Admin)',
-    email: 'Gabrielcoc@gmail.com',
+    nombre: 'Gabriel',
+    email: 'gabrielcoc@gmail.com',
     contrasenia: '123456789',
     rol: 'admin',
-    modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones'],
+    modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'],
     avatar: 'G',
     color: '#2A5F3F'
   },
