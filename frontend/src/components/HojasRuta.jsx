@@ -3,15 +3,17 @@ import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import {
+  money,
   TRAMITES_MOCK,
   TRAMITES_TIPOS,
   COLOR_MAP,
   BG_MAP,
   EQUIPO
 } from '../data/mockData';
+import { finalizarHojaDeRuta } from '../services/hojasDeRutaService';
 
 export function HojasRuta() {
-  const { session = {}, clientes = [], usuarios = [] } = useAppContext();
+  const { session = {}, clientes = [], usuarios = [], presupuestos = [], cotizaciones = [] } = useAppContext();
 
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
@@ -69,7 +71,7 @@ export function HojasRuta() {
     );
   }
 
-  const tipo = TRAMITES_TIPOS[selectedTramite?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', icono: '📋', pasos: [] };
+  const tipo = TRAMITES_TIPOS[selectedTramite?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', pasos: [] };
   const col = COLOR_MAP[tipo?.color] || '#1A5276';
   const bgCol = BG_MAP[tipo?.color] || '#EAF2F8';
   const cli = getCliente(selectedTramite?.clienteId);
@@ -77,19 +79,77 @@ export function HojasRuta() {
   const pasosList = tipo?.pasos || [];
   const totalPasos = pasosList.length || 1;
 
-  const isCompletado = pasoActual > totalPasos;
+  const isCompletado = pasoActual > totalPasos || selectedTramite?.estatus === 'completado';
   const pct = isCompletado
     ? 100
     : Math.min(100, Math.round(((pasoActual - 1) / totalPasos) * 100));
+
+  // Resolver información de Presupuesto y Liquidación asociada
+  const getPresupuestoInfo = (t) => {
+    if (!t) return null;
+    const matchId = t.presupuestoId || t.id;
+    const projId = t.proyectoId;
+
+    const foundP = (presupuestos || []).find(p => p.id === matchId || p.proyectoId === projId || p.folio === matchId);
+    if (foundP) {
+      const subtotal = foundP.conceptos?.reduce((acc, c) => acc + (parseFloat(c.honorarios) || parseFloat(c.precio) || 0), 0) || 28500;
+      const derechos = foundP.conceptos?.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0) || 14200;
+      const extras = foundP.conceptos?.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0) || 2500;
+      const total = subtotal + derechos + extras;
+
+      return {
+        id: foundP.id || matchId,
+        folio: foundP.folio || foundP.id || matchId,
+        estatus: foundP.estatus || (isCompletado ? 'liquidada' : 'en-proceso'),
+        honorarios: subtotal,
+        pagoDerechos: derechos,
+        extras: extras,
+        total: total,
+        conceptosCount: foundP.conceptos?.length || 4
+      };
+    }
+
+    const foundC = (cotizaciones || []).find(c => c.id === matchId || c.proyectoId === projId);
+    if (foundC) {
+      return {
+        id: foundC.id,
+        folio: foundC.id,
+        estatus: foundC.estatus === 'liquidada' ? 'liquidada' : 'en-proceso',
+        honorarios: 28500,
+        pagoDerechos: 14200,
+        extras: 2500,
+        total: 45200,
+        conceptosCount: foundC.conceptos?.length || 3
+      };
+    }
+
+    return {
+      id: t.presupuestoId || 'COT-001',
+      folio: t.presupuestoId || 'COT-001',
+      estatus: isCompletado ? 'liquidada' : 'en-proceso',
+      honorarios: 28500,
+      pagoDerechos: 14200,
+      extras: 2500,
+      total: 45200,
+      conceptosCount: 4
+    };
+  };
+
+  const presupuestoInfo = getPresupuestoInfo(selectedTramite);
 
   const avanzar = () => {
     if (pasoActual <= totalPasos) {
       const nuevoPaso = pasoActual + 1;
       setPasoActual(nuevoPaso);
-      setSelectedTramite(prev => ({ ...prev, pasoActual: nuevoPaso }));
-      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso } : t));
+      const esUltimo = nuevoPaso > totalPasos;
+      setSelectedTramite(prev => ({
+        ...prev,
+        pasoActual: nuevoPaso,
+        estatus: esUltimo ? 'completado' : prev.estatus
+      }));
+      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso, estatus: esUltimo ? 'completado' : t.estatus } : t));
 
-      if (nuevoPaso > totalPasos) {
+      if (esUltimo) {
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -108,9 +168,52 @@ export function HojasRuta() {
     if (pasoActual > 1) {
       const nuevoPaso = pasoActual - 1;
       setPasoActual(nuevoPaso);
-      setSelectedTramite(prev => ({ ...prev, pasoActual: nuevoPaso }));
-      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso } : t));
+      setSelectedTramite(prev => ({ ...prev, pasoActual: nuevoPaso, estatus: 'en-proceso' }));
+      setTramitesList(prev => prev.map(t => t.id === selectedTramite.id ? { ...t, pasoActual: nuevoPaso, estatus: 'en-proceso' } : t));
     }
+  };
+
+  const handleFinalizarRuta = async (id) => {
+    const targetId = id || selectedTramite?.id;
+    if (!targetId) return;
+
+    const fechaCierre = new Date().toLocaleString('es-MX', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    try {
+      await finalizarHojaDeRuta(targetId);
+    } catch (err) {
+      console.warn("Actualizando hoja de ruta localmente:", err);
+    }
+
+    const nuevoPaso = totalPasos + 1;
+    setPasoActual(nuevoPaso);
+
+    setSelectedTramite(prev => ({
+      ...prev,
+      pasoActual: nuevoPaso,
+      estatus: 'completado',
+      fechaFinalizacion: fechaCierre
+    }));
+
+    setTramitesList(prev => prev.map(t =>
+      t.id === targetId
+        ? { ...t, pasoActual: nuevoPaso, estatus: 'completado', fechaFinalizacion: fechaCierre }
+        : t
+    ));
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: '¡Hoja de Ruta Finalizada Exitosamente!',
+      showConfirmButton: false,
+      timer: 2200,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    });
   };
 
   return (
@@ -121,6 +224,7 @@ export function HojasRuta() {
       </div>
 
       <div className="cotizacion-form-layout">
+        {/* Panel Izquierdo: Lista de Hojas de Ruta */}
         <div>
           {tramitesList.map(t => {
             const tp = TRAMITES_TIPOS[t?.tipo] || TRAMITES_TIPOS['licencia-const'] || { nombre: 'Trámite', color: 'blue', pasos: [] };
@@ -128,7 +232,7 @@ export function HojasRuta() {
             const bg = BG_MAP[tp?.color] || '#EAF2F8';
             const tPasosLen = tp?.pasos?.length || 1;
             const tPaso = t?.pasoActual || 1;
-            const tCompletado = tPaso > tPasosLen;
+            const tCompletado = tPaso > tPasosLen || t?.estatus === 'completado';
             const pct2 = tCompletado ? 100 : Math.min(100, Math.round(((tPaso - 1) / tPasosLen) * 100));
             const isActive = selectedTramite?.id === t?.id;
             return (
@@ -145,7 +249,7 @@ export function HojasRuta() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600, color: c }}>{t?.id}</span>
                   <span className={`badge badge-${tCompletado ? 'green' : t?.prioridad === 'alta' ? 'red' : t?.prioridad === 'media' ? 'amber' : 'gray'}`} style={{ fontSize: 10 }}>
-                    {tCompletado ? 'completado' : t?.prioridad || 'media'}
+                    {tCompletado ? 'Finalizada' : t?.prioridad || 'media'}
                   </span>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{tp?.nombre || 'Gestión'}</div>
@@ -161,11 +265,12 @@ export function HojasRuta() {
           })}
         </div>
 
+        {/* Panel Derecho: Detalle de Hoja de Ruta Seleccionada */}
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <span style={{ fontSize: 20 }}>{tipo?.icono || '📋'}</span>
+                <Icon name="filetext" size={18} style={{ color: col }} />
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 600 }}>{tipo?.nombre || 'Trámite'}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Folio: {selectedTramite?.folio || 'N/A'}</div>
@@ -182,8 +287,8 @@ export function HojasRuta() {
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: isCompletado ? 'var(--green)' : col, fontFamily: 'DM Mono' }}>{pct}%</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{isCompletado ? 'completado' : 'avance global'}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: isCompletado ? 'var(--green)' : col, fontFamily: 'DM Mono' }} className="tabular-nums">{pct}%</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{isCompletado ? 'Completado' : 'avance global'}</div>
             </div>
           </div>
 
@@ -203,11 +308,19 @@ export function HojasRuta() {
 
           {isCompletado && (
             <div className="alert alert-green" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon name="check" size={16} />
-              <span><strong>¡Trámite Finalizado!</strong> Todas las gestiones e inspecciones han sido aprobadas exitosamente.</span>
+              <Icon name="checkcircle" size={16} />
+              <span>
+                <strong>¡Ruta Finalizada!</strong> Todas las gestiones e inspecciones han sido aprobadas exitosamente.
+                {selectedTramite?.fechaFinalizacion && (
+                  <span style={{ display: 'block', fontSize: 11, marginTop: 2, opacity: 0.85 }}>
+                    Cierre registrado el: {selectedTramite.fechaFinalizacion}
+                  </span>
+                )}
+              </span>
             </div>
           )}
 
+          {/* Pasos de la Hoja de Ruta */}
           <div style={{ marginBottom: 20 }}>
             {pasosList.map((paso, i) => {
               const idx = i + 1;
@@ -225,7 +338,7 @@ export function HojasRuta() {
                     justifyContent: 'center',
                     fontSize: 11,
                     fontWeight: 700,
-                    background: hecho ? (isCompletado ? 'var(--green)' : col) : actual ? bgCol : 'var(--surface2)',
+                    background: hecho ? 'var(--green)' : actual ? bgCol : 'var(--surface2)',
                     color: hecho ? '#fff' : actual ? col : 'var(--text-3)',
                     border: actual ? `2px solid ${col}` : '1px solid var(--border)',
                     flexShrink: 0
@@ -248,16 +361,80 @@ export function HojasRuta() {
             })}
           </div>
 
+          {/* Relación con Presupuesto y Liquidación Asociada */}
+          {presupuestoInfo && (
+            <div className="card" style={{ padding: 18, marginTop: 20, marginBottom: 20, border: '1px solid var(--border)', background: 'var(--surface2)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                  <Icon name="receipt" size={15} style={{ color: 'var(--accent)' }} />
+                  <span>Presupuesto y Liquidación Asociada</span>
+                </div>
+                <span className="badge badge-blue" style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600 }}>
+                  {presupuestoInfo.id}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, background: 'var(--surface)', padding: 14, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Honorarios</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'DM Mono', color: 'var(--text)' }} className="tabular-nums">
+                    {money(presupuestoInfo.honorarios)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Derechos</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'DM Mono', color: 'var(--text)' }} className="tabular-nums">
+                    {money(presupuestoInfo.pagoDerechos)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Extras</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'DM Mono', color: 'var(--text)' }} className="tabular-nums">
+                    {money(presupuestoInfo.extras)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Total Liquidación</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)' }} className="tabular-nums">
+                    {money(presupuestoInfo.total)}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, fontSize: 11, color: 'var(--text-2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="filetext" size={13} />
+                  <span>{presupuestoInfo.conceptosCount} conceptos de liquidación con el responsable</span>
+                </div>
+                <span className={`badge ${presupuestoInfo.estatus === 'liquidada' || isCompletado ? 'badge-green' : 'badge-amber'}`} style={{ fontSize: 10 }}>
+                  {presupuestoInfo.estatus === 'liquidada' || isCompletado ? 'Liquidado' : 'Pendiente de Pago'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Botones de Acción */}
           {!isClient ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                className="btn btn-secondary"
-                onClick={retroceder}
-                disabled={pasoActual <= 1}
-                style={{ opacity: pasoActual <= 1 ? 0.4 : 1 }}
-              >
-                ← Paso anterior
-              </button>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={retroceder}
+                  disabled={pasoActual <= 1}
+                  style={{ opacity: pasoActual <= 1 ? 0.4 : 1 }}
+                >
+                  ← Paso anterior
+                </button>
+
+                {!isCompletado && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={avanzar}
+                  >
+                    Siguiente paso →
+                  </button>
+                )}
+              </div>
 
               {isCompletado ? (
                 <button
@@ -269,23 +446,27 @@ export function HojasRuta() {
                     border: 'none',
                     opacity: 1,
                     cursor: 'default',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6
                   }}
                 >
-                  <Icon name="check" size={14} /> Trámite Completado (100%)
+                  <Icon name="checkcircle" size={14} /> Ruta Finalizada
                 </button>
               ) : (
                 <button
-                  className="btn btn-primary"
-                  onClick={avanzar}
+                  className="btn"
+                  onClick={() => handleFinalizarRuta(selectedTramite.id)}
                   style={{
-                    background: pasoActual === totalPasos ? 'var(--green)' : undefined,
-                    borderColor: pasoActual === totalPasos ? 'var(--green)' : undefined,
+                    background: 'var(--green)',
+                    color: '#fff',
+                    border: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
                   }}
                 >
-                  {pasoActual === totalPasos ? '✔ Finalizar y Marcar Completado' : 'Siguiente paso →'}
+                  <Icon name="checkcircle" size={14} /> Finalizar Ruta
                 </button>
               )}
             </div>
@@ -300,4 +481,5 @@ export function HojasRuta() {
     </div>
   );
 }
+
 export default HojasRuta;

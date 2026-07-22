@@ -159,6 +159,76 @@ namespace Data
                 });
                 context.SaveChanges();
             }
+
+            if (!context.HojasDeRuta.Any())
+            {
+                var hoy = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                context.HojasDeRuta.AddRange(new System.Collections.Generic.List<HojaDeRuta>
+                {
+                    new HojaDeRuta
+                    {
+                        Id = "TRM-001",
+                        Tipo = "licencia-const",
+                        ClienteId = 1,
+                        ProyectoId = "PRY-001",
+                        Folio = "QRO/LC/2024-0489",
+                        PresupuestoId = "COT-001",
+                        AsignadoA = "usr-admin-1",
+                        Prioridad = "alta",
+                        FechaInicio = hoy,
+                        PasoActual = 6,
+                        Estatus = "en-proceso",
+                        Notas = "Residencial Los Álamos — Expediente ingresado en Obras Públicas. Pendiente firma de DRO."
+                    },
+                    new HojaDeRuta
+                    {
+                        Id = "TRM-002",
+                        Tipo = "uso-suelo",
+                        ClienteId = 2,
+                        ProyectoId = "PRY-002",
+                        Folio = "QRO/US/2024-0302",
+                        PresupuestoId = "COT-002",
+                        AsignadoA = "usr-gestor-1",
+                        Prioridad = "alta",
+                        FechaInicio = hoy,
+                        PasoActual = 4,
+                        Estatus = "en-proceso",
+                        Notas = "Parque logístico Juriquilla — Uso de suelo industrial. Pendiente pago de derechos en Tesorería."
+                    },
+                    new HojaDeRuta
+                    {
+                        Id = "TRM-003",
+                        Tipo = "licencia-const",
+                        ClienteId = 2,
+                        ProyectoId = "PRY-002",
+                        Folio = "QRO/LC/2024-0512",
+                        PresupuestoId = "COT-002",
+                        AsignadoA = "usr-gestor-1",
+                        Prioridad = "media",
+                        FechaInicio = hoy,
+                        PasoActual = 2,
+                        Estatus = "en-proceso",
+                        Notas = "Inicia en paralelo al uso de suelo. En espera de resolución favorable para continuar con planos estructurales."
+                    },
+                    new HojaDeRuta
+                    {
+                        Id = "TRM-004",
+                        Tipo = "proteccion-civil",
+                        ClienteId = 3,
+                        ProyectoId = "PRY-003",
+                        Folio = "QRO/PC/2024-0093",
+                        PresupuestoId = "COT-003",
+                        AsignadoA = "usr-gestor-2",
+                        Prioridad = "alta",
+                        FechaInicio = hoy,
+                        PasoActual = 7,
+                        Estatus = "completado",
+                        FechaFinalizacion = DateTime.UtcNow.ToString("o"),
+                        Notas = "Plaza Comercial San Juan del Río — Visto Bueno de Protección Civil entregado. Trámite completado."
+                    }
+                });
+                context.SaveChanges();
+            }
         }
     }
 }
