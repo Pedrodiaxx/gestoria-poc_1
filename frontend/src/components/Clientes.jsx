@@ -487,23 +487,7 @@ export function Clientes() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
-                  <span style={{ fontSize: 16 }}>📋</span> Registrar con Formulario
-                </div>
-                <div
-                  className="dropdown-item"
-                  onClick={handleQuickAddClient}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text-2)'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
+                  <Icon name="plus" size={14} /> Registrar con Formulario
                 </div>
                 <div
                   className="dropdown-item"
@@ -520,7 +504,7 @@ export function Clientes() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
-                  <span style={{ fontSize: 16 }}>📥</span> Importar desde Excel/CSV
+                  <Icon name="file" size={14} /> Importar desde Excel/CSV
                 </div>
                 <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
                 <div
@@ -853,14 +837,13 @@ export function Clientes() {
                           <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
-                              padding: '3px 8px',
-                              borderRadius: 20,
-                              fontSize: 10,
-                              fontWeight: 700,
-                              letterSpacing: '0.04em',
-                              background: c.personaTipo === 'fisica' ? 'rgba(108,99,255,0.12)' : 'rgba(0,134,192,0.1)',
-                              color: c.personaTipo === 'fisica' ? '#6c63ff' : '#0086C0',
-                              border: c.personaTipo === 'fisica' ? '1px solid rgba(108,99,255,0.3)' : '1px solid rgba(0,134,192,0.25)',
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: 10.5,
+                              fontWeight: 600,
+                              background: c.personaTipo === 'fisica' ? 'var(--surface2)' : 'var(--accent-light)',
+                              color: c.personaTipo === 'fisica' ? 'var(--text-2)' : 'var(--accent)',
+                              border: '1px solid var(--border)',
                               textTransform: 'uppercase',
                               cursor: 'pointer'
                             }}
@@ -927,12 +910,13 @@ export function Clientes() {
                             ) : (
                               <div
                                 onClick={() => setEditingCell({ id: c.id, field: 'email' })}
-                                style={{ cursor: 'pointer', color: c.email ? 'var(--blue)' : 'var(--text-3)', fontFamily: 'DM Mono', fontSize: '12.5px' }}
+                                style={{ cursor: 'pointer', color: c.email ? 'var(--text)' : 'var(--text-3)', fontFamily: 'DM Mono', fontSize: '12.5px' }}
                                 title="Haz clic para editar"
                               >
                                 {c.email ? (
-                                  <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>
-                                    📧 {c.email}
+                                  <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                                    <Icon name="mail" size={12} style={{ opacity: 0.6, marginRight: 5 }} />
+                                    {c.email}
                                   </a>
                                 ) : (
                                   <span style={{ fontStyle: 'italic' }}>+ Agregar correo</span>
@@ -968,8 +952,9 @@ export function Clientes() {
                                 title="Haz clic para editar"
                               >
                                 {c.tel ? (
-                                  <a href={`tel:${c.tel}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>
-                                    📞 {c.tel}
+                                  <a href={`tel:${c.tel}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                                    <Icon name="phone" size={12} style={{ opacity: 0.6, marginRight: 5 }} />
+                                    {c.tel}
                                   </a>
                                 ) : (
                                   <span style={{ fontStyle: 'italic' }}>+ Agregar tel</span>
@@ -1752,22 +1737,24 @@ export function Clientes() {
                 {/* Drop zone */}
                 <div
                   style={{
-                    border: `2px dashed ${importDragOver ? 'var(--accent)' : 'var(--border-strong)'}`,
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '32px 16px',
+                    border: `1px dashed ${importDragOver ? 'var(--accent)' : 'var(--border-strong)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    padding: '24px 16px',
                     textAlign: 'center',
-                    background: importDragOver ? 'var(--accent-light)' : 'var(--surface2)',
+                    background: importDragOver ? 'var(--accent-light)' : 'var(--surface)',
                     cursor: 'pointer',
                     marginBottom: 12,
-                    transition: 'all 0.2s'
+                    transition: 'all 0.15s ease'
                   }}
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={e => { e.preventDefault(); setImportDragOver(true); }}
                   onDragLeave={() => setImportDragOver(false)}
                   onDrop={handleFileDrop}
                 >
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Haz clic o arrastra un archivo aquí</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                    <Icon name="upload" size={20} style={{ color: importDragOver ? 'var(--accent)' : 'var(--text-3)' }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>Arrastra tus archivos aquí o haz clic para examinar</div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Formatos permitidos: .xlsx, .xls, .csv (Máx. 5MB)</div>
                   <input
                     ref={fileInputRef}
@@ -1791,11 +1778,13 @@ export function Clientes() {
             ) : (
               <div style={{ textAlign: 'center', padding: '16px 0' }}>
                 <div style={{
-                  width: 54, height: 54, borderRadius: '50%',
+                  width: 44, height: 44, borderRadius: '50%',
                   background: 'var(--accent-light)', color: 'var(--accent)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 24, margin: '0 auto 16px'
-                }}>✓</div>
+                  margin: '0 auto 14px'
+                }}>
+                  <Icon name="check" size={20} />
+                </div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>¡Importación Exitosa!</div>
                 <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 20 }}>
                   Se importaron correctamente <strong>{importedRows}</strong> registros de clientes.
