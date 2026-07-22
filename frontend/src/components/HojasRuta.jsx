@@ -153,10 +153,9 @@ export function HojasRuta() {
         Swal.fire({
           toast: true,
           position: 'top-end',
-          icon: 'success',
-          title: '🎉 ¡Trámite completado al 100%!',
+          title: 'Trámite finalizado correctamente',
           showConfirmButton: false,
-          timer: 2000,
+          timer: 1800,
           background: 'var(--surface)',
           color: 'var(--text)'
         });
@@ -207,10 +206,9 @@ export function HojasRuta() {
     Swal.fire({
       toast: true,
       position: 'top-end',
-      icon: 'success',
-      title: '¡Hoja de Ruta Finalizada Exitosamente!',
+      title: 'Hoja de Ruta finalizada correctamente',
       showConfirmButton: false,
-      timer: 2200,
+      timer: 1800,
       background: 'var(--surface)',
       color: 'var(--text)'
     });
@@ -307,13 +305,13 @@ export function HojasRuta() {
           )}
 
           {isCompletado && (
-            <div className="alert alert-green" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon name="checkcircle" size={16} />
+            <div className="alert alert-green" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+              <Icon name="check" size={14} />
               <span>
-                <strong>¡Ruta Finalizada!</strong> Todas las gestiones e inspecciones han sido aprobadas exitosamente.
+                <strong>Hoja de Ruta Finalizada</strong> — Gestiones e inspecciones concluidas exitosamente.
                 {selectedTramite?.fechaFinalizacion && (
-                  <span style={{ display: 'block', fontSize: 11, marginTop: 2, opacity: 0.85 }}>
-                    Cierre registrado el: {selectedTramite.fechaFinalizacion}
+                  <span style={{ display: 'block', fontSize: 11, marginTop: 2, color: 'var(--text-2)' }}>
+                    Fecha de cierre: {selectedTramite.fechaFinalizacion}
                   </span>
                 )}
               </span>
