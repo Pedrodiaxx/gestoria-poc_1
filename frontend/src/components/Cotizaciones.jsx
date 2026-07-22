@@ -358,11 +358,11 @@ export function Cotizaciones({ cotizaciones, setCotizaciones, clientes, session 
                               </thead>
                               <tbody>
                                 {(c.conceptos || []).map((li, i) => (
-                                    <tr key={li.clave || i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-                                      <td style={{ padding: '8px 12px' }}><span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
-                                      <td style={{ padding: '8px 12px', color: 'var(--text-2)' }}>{li.descripcion}</td>
-                                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(li.precioUnitario || 0)}</td>
-                                    </tr>
+                                  <tr key={li.clave || i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+                                    <td style={{ padding: '8px 12px' }}><span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{li.clave}</span></td>
+                                    <td style={{ padding: '8px 12px', color: 'var(--text-2)' }}>{li.descripcion}</td>
+                                    <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"', color: 'var(--text-2)' }}>{money(li.precioUnitario || 0)}</td>
+                                  </tr>
                                 ))}
                                 <tr style={{ borderTop: '1px solid var(--border-strong)', background: 'var(--surface2)' }}>
                                   <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 600, fontSize: 12, color: 'var(--text)' }}>Total</td>
