@@ -348,13 +348,17 @@ export default function Administracion() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>
-                            {visiblePasswords[u.id] ? u.contrasenia : '••••••••'}
+                            {visiblePasswords[u.id]
+                              ? (u.contrasenia?.startsWith('$2a$') || u.contrasenia?.startsWith('$2b$') || u.contrasenia?.startsWith('$2y$')
+                                  ? 'Protegida (BCrypt)'
+                                  : u.contrasenia)
+                              : '••••••••'}
                           </span>
                           <button
                             className="btn btn-ghost"
                             onClick={() => togglePasswordVisibility(u.id)}
                             style={{ padding: 4, minWidth: 'auto', borderRadius: '50%', color: 'var(--text-3)' }}
-                            title={visiblePasswords[u.id] ? "Ocultar contraseña" : "Mostrar contraseña"}
+                            title={visiblePasswords[u.id] ? "Ocultar estado" : "Mostrar estado"}
                           >
                             <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={14} />
                           </button>
