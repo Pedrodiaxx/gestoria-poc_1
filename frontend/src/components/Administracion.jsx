@@ -48,52 +48,38 @@ export default function Administracion() {
   const [showAddRoleInputEdit, setShowAddRoleInputEdit] = useState(false);
   const [newRoleLabelEdit, setNewRoleLabelEdit] = useState('');
 
-  // Password Security Helpers
+  // Password Security & Modal Helpers
+  const [generatedPassModal, setGeneratedPassModal] = useState({ show: false, pass: '' });
+  const [copiedPass, setCopiedPass] = useState(false);
+
   const handleCopyPassword = (pass) => {
     if (!pass) return;
     navigator.clipboard.writeText(pass);
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: '¡Contraseña copiada!',
-      showConfirmButton: false,
-      timer: 1800,
-      background: 'var(--surface)',
-      color: 'var(--text)'
-    });
+    setCopiedPass(false);
+    setGeneratedPassModal({ show: true, pass });
   };
 
   const handleGeneratePasswordAdd = () => {
     const generated = generateSecurePassword(10);
     setNuevoUsuario(prev => ({ ...prev, contrasenia: generated }));
     setShowNuevoPassword(true);
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'info',
-      title: '🎲 Contraseña segura de 10 caracteres generada',
-      showConfirmButton: false,
-      timer: 1800,
-      background: 'var(--surface)',
-      color: 'var(--text)'
-    });
+    setCopiedPass(false);
+    setGeneratedPassModal({ show: true, pass: generated });
   };
 
   const handleGeneratePasswordEdit = () => {
     const generated = generateSecurePassword(10);
     setEditandoUsuario(prev => ({ ...prev, contrasenia: generated }));
     setShowEditPassword(true);
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'info',
-      title: '🎲 Nueva contraseña segura de 10 caracteres generada',
-      showConfirmButton: false,
-      timer: 1800,
-      background: 'var(--surface)',
-      color: 'var(--text)'
-    });
+    setCopiedPass(false);
+    setGeneratedPassModal({ show: true, pass: generated });
+  };
+
+  const handleCopyGeneratedPassword = () => {
+    if (!generatedPassModal.pass) return;
+    navigator.clipboard.writeText(generatedPassModal.pass);
+    setCopiedPass(true);
+    setTimeout(() => setCopiedPass(false), 2000);
   };
 
   const handleCreateRole = () => {
@@ -135,12 +121,13 @@ export default function Administracion() {
   };
 
   const getRolLabel = (rolId) => {
-    const found = rolesList.find(r => r.id === rolId);
+    if (!rolId) return 'Sin Rol';
+    const found = (rolesList || []).find(r => r.id === rolId);
     if (found) return found.label;
     if (rolId === 'admin') return 'Administrador';
     if (rolId === 'empleado' || rolId === 'gestor') return 'Gestor';
     if (rolId === 'cliente') return 'Cliente';
-    return rolId.charAt(0).toUpperCase() + rolId.slice(1);
+    return String(rolId).charAt(0).toUpperCase() + String(rolId).slice(1);
   };
 
   const filteredUsuarios = filterUsersQuery(usuarios || [], qUsuarios, getRolLabel);
@@ -247,11 +234,12 @@ export default function Administracion() {
   };
 
   const handleEliminarUsuario = (u) => {
-    if (u.email.toLowerCase() === 'gabrielcoc@gmail.com') {
-      alert('No se puede eliminar el administrador principal.');
+    const adminCount = (usuarios || []).filter(x => x.rol === 'admin').length;
+    if (u.rol === 'admin' && adminCount <= 1) {
+      alert('No se puede eliminar el único administrador del sistema.');
       return;
     }
-    if (u.id === session.id) {
+    if (u.id === session.id || (session && session.email?.toLowerCase() === u.email?.toLowerCase())) {
       alert('No puedes eliminar tu propio usuario activo.');
       return;
     }
@@ -329,7 +317,7 @@ export default function Administracion() {
               <tbody>
                 {filteredUsuarios.map(u => {
                   const rolLabel = getRolLabel(u.rol);
-                  const isMainAdmin = u.email.toLowerCase() === 'gabrielcoc@gmail.com';
+                  const isLastAdmin = u.rol === 'admin' && (usuarios || []).filter(x => x.rol === 'admin').length <= 1;
                   return (
                     <tr
                       key={u.id}
@@ -390,7 +378,7 @@ export default function Administracion() {
                             <Icon name="edit" size={14} />
                           </button>
 
-                          {!isMainAdmin && u.id !== session.id && (
+                          {!isLastAdmin && u.id !== session.id && (
                             <button
                               className="btn btn-ghost"
                               onClick={() => handleEliminarUsuario(u)}
@@ -800,8 +788,8 @@ export default function Administracion() {
                     const mid = module.id;
                     const label = module.label;
                     const isChecked = editandoUsuario.modulos?.includes(mid);
-                    const isMainAdmin = editandoUsuario.email.toLowerCase() === 'gabrielcoc@gmail.com';
-                    const isDisabled = isMainAdmin && mid === 'administracion';
+                    const isLastAdmin = editandoUsuario.rol === 'admin' && (usuarios || []).filter(x => x.rol === 'admin').length <= 1;
+                    const isDisabled = isLastAdmin && mid === 'administracion';
                     return (
                       <div
                         key={mid}
@@ -929,6 +917,64 @@ export default function Administracion() {
                 }}
               >
                 Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sobrio de Contraseña Generada */}
+      {generatedPassModal.show && (
+        <div className="modal-overlay" onClick={() => setGeneratedPassModal({ show: false, pass: '' })}>
+          <div
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 400, padding: 24, animation: 'slideUpLogin 0.2s ease-out' }}
+          >
+            <div className="modal-title" style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+              Contraseña Generada
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.4 }}>
+              Se ha generado una contraseña segura de 10 caracteres que cumple con todas las políticas de seguridad:
+            </p>
+
+            <div
+              className="tabular-nums"
+              style={{
+                background: 'var(--surface2)',
+                border: '1px solid var(--border-strong)',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px 16px',
+                textAlign: 'center',
+                fontFamily: 'DM Mono',
+                fontSize: 18,
+                fontWeight: 600,
+                letterSpacing: '1px',
+                color: 'var(--text)',
+                marginBottom: 20,
+                userSelect: 'all'
+              }}
+            >
+              {generatedPassModal.pass}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setGeneratedPassModal({ show: false, pass: '' })}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleCopyGeneratedPassword}
+                style={{ minWidth: 150, justifyContent: 'center', gap: 6 }}
+              >
+                <Icon name={copiedPass ? "check" : "copy"} size={14} />
+                <span>{copiedPass ? '¡Copiada!' : 'Copiar Contraseña'}</span>
               </button>
             </div>
           </div>
