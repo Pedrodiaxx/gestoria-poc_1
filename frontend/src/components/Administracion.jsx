@@ -174,20 +174,20 @@ export default function Administracion() {
   const handleEditClick = (u) => {
     setEditandoUsuario({
       ...u,
+      contrasenia: '',
       modulos: u.modulos || getDefaultModulos(u.rol)
     });
+    setShowEditPassword(false);
     setShowEditUsuarioModal(true);
   };
 
-  const handleSaveEditUsuario = () => {
-    if (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) return;
+  const handleSaveEditUsuario = async () => {
+    if (!editandoUsuario || !editandoUsuario.nombre || !editandoUsuario.email) return;
 
-    const isHash = editandoUsuario.contrasenia.startsWith('$2a$') ||
-                   editandoUsuario.contrasenia.startsWith('$2b$') ||
-                   editandoUsuario.contrasenia.startsWith('$2y$');
+    const nuevaContrasenia = (editandoUsuario.contrasenia || '').trim();
 
-    if (!isHash && editandoUsuario.contrasenia.length < 4) {
-      alert('La contraseña debe tener al menos 4 caracteres.');
+    if (nuevaContrasenia && nuevaContrasenia.length < 4) {
+      alert('La nueva contraseña debe tener al menos 4 caracteres.');
       return;
     }
 
@@ -208,29 +208,19 @@ export default function Administracion() {
       ...editandoUsuario,
       nombre: editandoUsuario.nombre.trim(),
       email: emailClean,
-      contrasenia: editandoUsuario.contrasenia,
+      contrasenia: nuevaContrasenia,
       rol,
       modulos,
       avatar
     };
 
-    saveUserEdit(updatedUser);
-
-    if (session.id === editandoUsuario.id) {
-      const updatedSession = {
-        ...session,
-        nombre: editandoUsuario.nombre.trim(),
-        email: emailClean,
-        rol,
-        modulos,
-        avatar
-      };
-      sessionStorage.setItem('giu_session', JSON.stringify(updatedSession));
-      setSession(updatedSession);
+    try {
+      await saveUserEdit(updatedUser);
+      setShowEditUsuarioModal(false);
+      setEditandoUsuario(null);
+    } catch (err) {
+      console.error("Error al actualizar usuario:", err);
     }
-
-    setShowEditUsuarioModal(false);
-    setEditandoUsuario(null);
   };
 
   const handleEliminarUsuario = (u) => {
