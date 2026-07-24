@@ -75,20 +75,18 @@ body {
 }
 
 .sidebar-logo {
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 24px 20px 16px;
+  border-bottom: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex;
+  align-items: center;
 }
-.sidebar-logo .wordmark {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  color: #FFFFFF;
-}
-.sidebar-logo .tagline {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-  margin-top: 2px;
-  letter-spacing: 0.5px;
+.sidebar-logo img {
+  max-width: 160px;
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .sidebar-section-label {

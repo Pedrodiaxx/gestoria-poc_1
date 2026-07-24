@@ -354,9 +354,8 @@ export const AppContextProvider = ({
         : getDefaultModulos(linkedUser.rol)
     };
     setSession(linkedUserWithModulos);
-    const allowed = linkedUserWithModulos.modulos;
-    const defaultTab = allowed && allowed.length > 0 ? allowed[0] : 'home';
-    setActive(defaultTab);
+    // Tras iniciar sesión, la pantalla de aterrizaje SIEMPRE es la vista principal 'home' de GIU
+    setActive('home');
   };
 
   const handleLogout = () => {

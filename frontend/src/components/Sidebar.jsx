@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { getDefaultModulos } from '../data/mockData';
+import logoImg from '../logo.png';
 
 export function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const { active, setActive, session, handleLogout } = useAppContext();
@@ -54,9 +55,21 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
   return (
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-      <div className="sidebar-logo" onClick={() => { setActive('home'); if (setSidebarOpen) setSidebarOpen(false); }} style={{ cursor: 'pointer' }}>
-        <div className="wordmark">GIU</div>
-        <div className="tagline">Gestoría de Construcción</div>
+      <div
+        className="sidebar-logo"
+        onClick={() => { setActive('home'); if (setSidebarOpen) setSidebarOpen(false); }}
+        style={{
+          cursor: 'pointer',
+          padding: '24px 20px 16px 20px',
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none'
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: '1px', lineHeight: 1 }}>GIU</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>Gestoría de Construcción</span>
+        </div>
       </div>
       <div className="sidebar-section-label">Módulos</div>
       {dynamicNavItems.map(n => (

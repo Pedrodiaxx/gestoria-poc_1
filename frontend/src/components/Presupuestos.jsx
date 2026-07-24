@@ -5,9 +5,62 @@ import { money, EQUIPO } from '../data/mockData';
 import { usePresupuestos } from '../hooks/usePresupuestos';
 import { useTareas } from '../hooks/useTareas';
 import Swal from 'sweetalert2';
+import { descargarPresupuestoPDF } from '../utils/pdfExporter';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
+
+const parseConceptosFile = (file, onParsed) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    try {
+      if (file.name.endsWith('.json')) {
+        const parsed = JSON.parse(content);
+        const arr = Array.isArray(parsed) ? parsed : (parsed.conceptos || []);
+        const formatted = arr.map((c, idx) => ({
+          id: `conc-imp-${Date.now()}-${idx}`,
+          no: idx + 1,
+          etapa: c.etapa || "Uso de Suelo",
+          concepto: c.concepto || c.descripcion || "Servicio Importado",
+          unidad: c.unidad || "GESTIÓN",
+          honorarios: parseFloat(c.honorarios || c.precio || c.precioUnitario) || 0,
+          comentarios: c.comentarios || "",
+          pagoDerechos: parseFloat(c.pagoDerechos) || 0,
+          extra: parseFloat(c.extra) || 0,
+          empleadoAsignadoId: c.empleadoAsignadoId || ""
+        }));
+        onParsed(formatted);
+      } else {
+        const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+        const startIdx = lines[0].toLowerCase().includes('concepto') || lines[0].toLowerCase().includes('etapa') || lines[0].toLowerCase().includes('descripcion') ? 1 : 0;
+        const formatted = [];
+        for (let i = startIdx; i < lines.length; i++) {
+          const cols = lines[i].split(/[,;]/).map(s => s.trim().replace(/^["']|["']$/g, ''));
+          if (cols.length >= 1 && cols[0]) {
+            formatted.push({
+              id: `conc-csv-${Date.now()}-${i}`,
+              no: formatted.length + 1,
+              etapa: cols[0] && STAGES.includes(cols[0]) ? cols[0] : "Uso de Suelo",
+              concepto: cols[1] || cols[0] || "Servicio CSV",
+              unidad: cols[2] || "GESTIÓN",
+              honorarios: parseFloat(cols[3]) || 0,
+              comentarios: cols[4] || "",
+              pagoDerechos: parseFloat(cols[5]) || 0,
+              extra: parseFloat(cols[6]) || 0,
+              empleadoAsignadoId: ""
+            });
+          }
+        }
+        onParsed(formatted);
+      }
+    } catch (err) {
+      console.error("Error al importar archivo:", err);
+      alert("Error al leer el archivo. Asegúrate de que sea un JSON o CSV válido.");
+    }
+  };
+  reader.readAsText(file);
+};
 
 const STAGES = [
   "Uso de Suelo",
@@ -69,7 +122,7 @@ const getStageDurationKey = (stageName) => {
 };
 
 // ─── CATALOG FILTER & CONCEPT BUILDER COMPONENT ──────────────────────────────
-function ConceptBuilder({ catalog, onAddConcept, equipo }) {
+function ConceptBuilder({ catalog, onAddConcept, onImportConcepts, equipo }) {
   const [nuevaEtapa, setNuevaEtapa] = useState("Uso de Suelo");
   const [nuevoConcepto, setNuevoConcepto] = useState("");
   const [nuevaUnidad, setNuevaUnidad] = useState("GESTIÓN");
@@ -118,9 +171,24 @@ function ConceptBuilder({ catalog, onAddConcept, equipo }) {
 
   return (
     <div className="card" style={{ marginBottom: 20, padding: 20, border: '1px solid var(--border)', background: 'var(--surface2)' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
-        <Icon name="plus" size={16} style={{ color: 'var(--accent)' }} />
-        <span>Agregar Conceptos al Presupuesto</span>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="plus" size={16} style={{ color: 'var(--accent)' }} />
+          <span>Agregar Conceptos al Presupuesto</span>
+        </div>
+        {onImportConcepts && (
+          <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+            <Icon name="upload" size={14} /> Importar JSON/CSV
+            <input type="file" accept=".json,.csv" style={{ display: 'none' }} onChange={e => {
+              if (e.target.files && e.target.files[0]) {
+                parseConceptosFile(e.target.files[0], (imported) => {
+                  onImportConcepts(imported);
+                  e.target.value = '';
+                });
+              }
+            }} />
+          </label>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
@@ -265,6 +333,26 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   }, {});
   const otherItems = conceptos.filter(c => !STAGES.includes(c.etapa));
 
+  // Footnotes legend map for comments
+  const footnotesList = [];
+  const conceptNoteMap = {};
+  let noteCounter = 1;
+
+  conceptos.forEach((c, idx) => {
+    const com = (c.comentarios || c.observaciones || '').trim();
+    if (com && com !== '—' && com !== '-') {
+      const noteTag = `NOTA ${noteCounter}`;
+      conceptNoteMap[c.id || idx] = noteTag;
+      footnotesList.push({
+        tag: noteTag,
+        conceptoNo: c.no || (idx + 1),
+        conceptoNombre: c.concepto || c.descripcion || '',
+        texto: com
+      });
+      noteCounter++;
+    }
+  });
+
   const renderStageSection = (stageName, items) => {
     if (items.length === 0) return null;
 
@@ -282,7 +370,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
           </td>
         </tr>
 
-        {items.map((c) => {
+        {items.map((c, idx) => {
           if (editable) {
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
@@ -325,13 +413,20 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
             );
           } else {
             const assigned = EQUIPO.find(eq => eq.id === c.empleadoAsignadoId);
+            const noteTag = conceptNoteMap[c.id || idx];
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}>
                 <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: 'var(--text-3)' }}>{c.no}</td>
-                <td style={{ padding: '12px 10px', fontWeight: '500', fontSize: '13px' }}>{c.concepto}</td>
+                <td style={{ padding: '12px 10px', fontWeight: '600', fontSize: '13.5px', color: 'var(--text)' }}>{c.concepto}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'center' }}><span className="badge badge-gray">{c.unidad}</span></td>
-                <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '600' }}>{money(c.honorarios)}</td>
-                <td style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-2)', whiteSpace: 'pre-line' }}>{c.comentarios || '—'}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '700', fontSize: '13.5px' }}>{money(c.honorarios)}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                  {noteTag ? (
+                    <span className="badge badge-amber" style={{ fontWeight: 800 }}>{noteTag}</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-3)' }}>—</span>
+                  )}
+                </td>
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono' }}>{c.pagoDerechos > 0 ? money(c.pagoDerechos) : '$ -'}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono' }}>{c.extra > 0 ? money(c.extra) : '$ -'}</td>
                 <td style={{ padding: '12px 10px' }}>
@@ -357,9 +452,9 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
           <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', color: 'var(--accent)', fontSize: '12px' }}>
             {money(sumHono)}
           </td>
-          <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--amber)', fontWeight: '700' }}>
+          <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--amber)', fontWeight: '700', textAlign: 'center' }}>
             {editable ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                 <span style={{ fontSize: 11, fontWeight: 'bold' }}>DURACIÓN DE ETAPA:</span>
                 <input className="form-control" style={{ padding: '4px 8px', fontSize: '12px', width: 220 }} placeholder="Ej: 3 meses" value={infoAdicional[durationKey] || ''} onChange={e => onInfoAdicionalChange(durationKey, e.target.value)} />
               </div>
@@ -380,33 +475,53 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   };
 
   return (
-    <div style={{ overflowX: 'auto', marginBottom: 20, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)' }}>
-        <thead>
-          <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
-            <th style={{ padding: '12px 10px', textAlign: 'center', width: '4%' }}>No.</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '38%' }}>Concepto / Descripción</th>
-            <th style={{ padding: '12px 10px', textAlign: 'center', width: '8%' }}>Unidad</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Honorarios</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '20%' }}>Comentarios</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Derechos</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Extra</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '10%' }}>Asignación</th>
-            {editable && <th style={{ width: '4%' }}></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {STAGES.map(stage => renderStageSection(stage, conceptsByStage[stage]))}
-          {otherItems.length > 0 && renderStageSection("Otros", otherItems)}
-          {conceptos.length === 0 && (
-            <tr>
-              <td colSpan="9" style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontStyle: 'italic' }}>
-                No hay conceptos agregados a este presupuesto. Utiliza el buscador superior para agregar conceptos.
-              </td>
+    <div>
+      <div style={{ overflowX: 'auto', marginBottom: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)' }}>
+          <thead>
+            <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '4%' }}>No.</th>
+              <th style={{ padding: '12px 10px', textAlign: 'left', width: '38%' }}>Concepto / Descripción</th>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '8%' }}>Unidad</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Honorarios</th>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '12%' }}>Comentarios</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Derechos</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Extra</th>
+              <th style={{ padding: '12px 10px', textAlign: 'left', width: '8%' }}>Asignación</th>
+              {editable && <th style={{ width: '4%' }}></th>}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {STAGES.map(stage => renderStageSection(stage, conceptsByStage[stage]))}
+            {otherItems.length > 0 && renderStageSection("Otros", otherItems)}
+            {conceptos.length === 0 && (
+              <tr>
+                <td colSpan="9" style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontStyle: 'italic' }}>
+                  No hay conceptos agregados a este presupuesto. Utiliza el buscador superior para agregar conceptos.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend for concept notes */}
+      {footnotesList.length > 0 && !editable && (
+        <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid var(--border)', paddingBottom: 4, letterSpacing: '0.5px' }}>
+            Simbología de Observaciones y Notas de Conceptos
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+            {footnotesList.map(fn => (
+              <div key={fn.tag}>
+                <span className="badge badge-amber" style={{ fontWeight: 800, marginRight: 8 }}>{fn.tag}</span>
+                <strong style={{ color: 'var(--text)' }}>Item {fn.conceptoNo} ({fn.conceptoNombre}):</strong>
+                <span style={{ color: 'var(--text-2)', marginLeft: 6 }}>{fn.texto}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -516,7 +631,7 @@ function FichaDatosPredio({ b, editable = false, onFieldChange }) {
 }
 
 // ─── FORM NUEVO PRESUPUESTO COMPONENT ─────────────────────────────────────────
-function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId }) {
+function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId, preloadedConcepts }) {
   const { conceptos: catalog } = useAppContext();
   const [proyectoId, setProyectoId] = useState(preselectedProjectId || '');
   const [titulo, setTitulo] = useState('');
@@ -569,7 +684,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     else if (field === 'estimacion') setEstimacion(value);
   };
 
-  const [conceptosList, setConceptosList] = useState([]);
+  const [conceptosList, setConceptosList] = useState(preloadedConcepts || []);
   const [guardado, setGuardado] = useState(false);
 
   // Prepopulate title and address if project is selected
@@ -591,13 +706,15 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
   const cliente = selProyecto ? clientes.find(c => String(c.id) === String(selProyecto.clienteId) || c.id === selProyecto.clienteId) : null;
 
   // Calculators
-  const subtotalHonorarios = conceptosList.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
-  const totalDerechos = conceptosList.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
-  const totalExtras = conceptosList.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
+  const conceptosListSafe = conceptosList || [];
+  const subtotalHonorarios = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
+  const totalDerechos = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
+  const totalExtras = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
 
   const totalGeneral = subtotalHonorarios * 1.16 + totalDerechos + totalExtras;
   const costDirectConstVal = parseFloat(costoDirectoConstruccion) || 0;
-  const pctGestion = costDirectConstVal > 0 ? (totalGeneral / costDirectConstVal) * 100 : 0;
+  const sumaTotalGestion = subtotalHonorarios + totalDerechos + totalExtras;
+  const pctGestion = costDirectConstVal > 0 ? ((sumaTotalGestion / costDirectConstVal) * 100) : 0;
 
   const canSave = proyectoId && titulo.trim() !== '' && version.trim() !== '';
 
@@ -648,6 +765,32 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-secondary" onClick={() => {
+            const borradorObj = {
+              id: 'BORRADOR',
+              titulo: titulo || 'Nuevo Presupuesto',
+              version: version || '1.00',
+              estado: 'Borrador',
+              fecha: new Date().toISOString(),
+              conceptos: conceptosList,
+              propietario,
+              direccion,
+              supPredio,
+              supConstExistente,
+              supIntervenir,
+              uso,
+              clasificacion,
+              zonaPrimaria,
+              tipoVialidad,
+              estimacion,
+              costoDirectoConstruccion,
+              infoAdicionalJson: JSON.stringify(infoAdicional)
+            };
+            const projVinculado = proyectos.find(p => String(p.id) === String(proyectoId));
+            descargarPresupuestoPDF(borradorObj, projVinculado);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="download" size={14} /> Descargar PDF
+          </button>
           <button className="btn btn-secondary" onClick={onCancelar}>Volver al Listado</button>
           {guardado ? (
             <div className="alert alert-green" style={{ padding: '8px 16px', margin: 0 }}><Icon name="check" size={14} /> Presupuesto Guardado</div>
@@ -691,6 +834,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       <ConceptBuilder
         catalog={catalog}
         onAddConcept={handleAddConcept}
+        onImportConcepts={(imported) => setConceptosList(prev => [...prev, ...imported.map((c, i) => ({ ...c, no: prev.length + i + 1 }))])}
         equipo={EQUIPO}
       />
 
@@ -748,7 +892,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN</label>
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN (OPCIONAL)</label>
             <input
               type="number"
               className="form-control"
@@ -760,9 +904,9 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
 
           {costDirectConstVal > 0 && (
-            <div style={{ background: 'var(--accent-light)', color: 'var(--accent-text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 700 }}>% GESTIÓN VS COSTO CONST.</span>
-              <span className="mono" style={{ fontSize: 15, fontWeight: 800 }}>{pctGestion.toFixed(3)}%</span>
+            <div style={{ background: '#ffff00', color: '#000000', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1.5px solid #000000', marginTop: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
+              <span className="mono" style={{ fontSize: 15, fontWeight: 900 }}>{pctGestion.toFixed(3)}%</span>
             </div>
           )}
         </div>
@@ -901,11 +1045,31 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
     setTitulo(p.titulo || '');
     setVersion(p.version || '');
 
+    const defaultInfo = {
+      duracionUsoSuelo: "3 meses",
+      duracionLicenciaConst: "6 meses",
+      duracionTerminacionObra: "4 meses a partir de la finalización de obra",
+      duracionLicenciaFunc: "3 meses",
+      documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
+      documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
+      derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
+      formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
+      exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
+      notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
+      firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
+      firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
+      firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
+    };
+
+    let parsed = {};
     if (p.infoAdicionalJson) {
       try {
-        setInfoAdicional(JSON.parse(p.infoAdicionalJson));
+        parsed = typeof p.infoAdicionalJson === 'string' ? JSON.parse(p.infoAdicionalJson) : p.infoAdicionalJson;
       } catch (e) { }
+    } else if (p.infoAdicional && typeof p.infoAdicional === 'object') {
+      parsed = p.infoAdicional;
     }
+    setInfoAdicional({ ...defaultInfo, ...parsed });
     setIsEdited(false);
   }, [p]);
 
@@ -947,13 +1111,15 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   };
 
   // Calculations
-  const subtotalHonorarios = conceptosList.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
-  const totalDerechos = conceptosList.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
-  const totalExtras = conceptosList.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
+  const conceptosListSafe = conceptosList || [];
+  const subtotalHonorarios = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
+  const totalDerechos = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
+  const totalExtras = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
 
   const totalGeneral = subtotalHonorarios * 1.16 + totalDerechos + totalExtras;
   const costDirectConstVal = parseFloat(costoDirectoConstruccion) || 0;
-  const pctGestion = costDirectConstVal > 0 ? (totalGeneral / costDirectConstVal) * 100 : 0;
+  const sumaTotalGestion = subtotalHonorarios + totalDerechos + totalExtras;
+  const pctGestion = costDirectConstVal > 0 ? ((sumaTotalGestion / costDirectConstVal) * 100) : 0;
 
   const isBorrador = p.estado === 'Borrador';
 
@@ -975,6 +1141,29 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-secondary" onClick={() => {
+            const presupuestoActivo = {
+              ...p,
+              titulo,
+              version,
+              conceptos: conceptosList,
+              propietario,
+              direccion,
+              supPredio,
+              supConstExistente,
+              supIntervenir,
+              uso,
+              clasificacion,
+              zonaPrimaria,
+              tipoVialidad,
+              estimacion,
+              costoDirectoConstruccion,
+              infoAdicionalJson: JSON.stringify(infoAdicional)
+            };
+            descargarPresupuestoPDF(presupuestoActivo, proj);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="download" size={14} /> Descargar PDF
+          </button>
           <button className="btn btn-secondary" onClick={onCerrar}>Volver al Listado</button>
           {isEdited && (
             <button className="btn btn-primary" onClick={saveEdits} style={{ background: '#B87A0A', color: '#fff' }}>
@@ -1051,6 +1240,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <ConceptBuilder
           catalog={catalog}
           onAddConcept={handleAddConcept}
+          onImportConcepts={(imported) => handleConceptosChange([...conceptosList, ...imported.map((c, i) => ({ ...c, no: conceptosList.length + i + 1 }))])}
           equipo={EQUIPO}
         />
       )}
@@ -1108,7 +1298,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN</label>
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN (OPCIONAL)</label>
             {isBorrador ? (
               <input
                 type="number"
@@ -1119,14 +1309,14 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
                 placeholder="Ej: 77400000"
               />
             ) : (
-              <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'DM Mono' }}>{money(costDirectConstVal)}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'DM Mono' }}>{costDirectConstVal > 0 ? money(costDirectConstVal) : '—'}</div>
             )}
           </div>
 
           {costDirectConstVal > 0 && (
-            <div style={{ background: 'var(--accent-light)', color: 'var(--accent-text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 700 }}>% GESTIÓN VS COSTO CONST.</span>
-              <span className="mono" style={{ fontSize: 15, fontWeight: 800 }}>{pctGestion.toFixed(3)}%</span>
+            <div style={{ background: '#ffff00', color: '#000000', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1.5px solid #000000', marginTop: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
+              <span className="mono" style={{ fontSize: 15, fontWeight: 900 }}>{pctGestion.toFixed(3)}%</span>
             </div>
           )}
         </div>
@@ -1240,6 +1430,7 @@ export function Presupuestos() {
   const [viendoId, setViendoId] = useState(null);
   const [q, setQ] = useState('');
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
+  const [preloadedConcepts, setPreloadedConcepts] = useState([]);
 
   // Network services hook integration
   const { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto } = usePresupuestos(setPresupuestos, session);
@@ -1293,6 +1484,7 @@ export function Presupuestos() {
       if (preselectedProjectId) {
         setPreselectedProjectId(null);
       }
+      setPreloadedConcepts([]);
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
       alert("No se pudo conectar con el servidor. Revisa la consola.");
@@ -1606,10 +1798,11 @@ export function Presupuestos() {
     return (
       <FormNuevoPresupuesto
         onGuardar={guardarNuevo}
-        onCancelar={() => { setTab('agrupado'); setPreselectedProjectId(null); }}
+        onCancelar={() => { setTab('agrupado'); setPreselectedProjectId(null); setPreloadedConcepts([]); }}
         clientes={clientes}
         proyectos={proyectos}
         preselectedProjectId={preselectedProjectId}
+        preloadedConcepts={preloadedConcepts}
       />
     );
   }
@@ -1662,7 +1855,7 @@ export function Presupuestos() {
             Catálogo Conceptos
           </button>
           {session.rol !== 'cliente' && (
-            <button className="btn btn-primary" onClick={() => setTab('nuevo')}>
+            <button className="btn btn-primary" onClick={() => { setPreloadedConcepts([]); setTab('nuevo'); }}>
               <Icon name="plus" size={14} /> Nuevo Presupuesto
             </button>
           )}
@@ -1763,9 +1956,7 @@ export function Presupuestos() {
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Estatus</th>
                               <th style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Costo Total</th>
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Línea Base</th>
-                              {session.rol !== 'cliente' && (
-                                <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Acciones</th>
-                              )}
+                              <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1798,18 +1989,28 @@ export function Presupuestos() {
                                       <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
                                     )}
                                   </td>
-                                  {session.rol !== 'cliente' && (
-                                    <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                  <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                                       <button 
-                                        className="btn btn-ghost btn-sm" 
-                                        style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
-                                        title="Eliminar Presupuesto"
+                                        onClick={(e) => { e.stopPropagation(); descargarPresupuestoPDF(b, proj); }}
+                                        className="p-1.5 text-slate-600 hover:text-emerald-600 transition-colors"
+                                        style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)' }}
+                                        title="Descargar PDF"
                                       >
-                                        <Icon name="trash" size={13} />
+                                        <Icon name="download" size={14} />
                                       </button>
-                                    </td>
-                                  )}
+                                      {session.rol !== 'cliente' && (
+                                        <button 
+                                          className="btn btn-ghost btn-sm" 
+                                          style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                          onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
+                                          title="Eliminar Presupuesto"
+                                        >
+                                          <Icon name="trash" size={13} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })}
