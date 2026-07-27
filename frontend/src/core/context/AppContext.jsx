@@ -372,8 +372,6 @@ export const AppContextProvider = ({
       setClientes,
       conceptos,
       setConceptos,
-      cotizaciones,
-      setCotizaciones,
       usuarios,
       setUsuarios,
       rolesList,
@@ -396,7 +394,6 @@ export const AppContextProvider = ({
       addUser,
       saveUserEdit,
       deleteUser,
-      addQuote,
       addConcept,
       addProyecto,
       updateProyecto,
@@ -408,4 +405,3 @@ export const AppContextProvider = ({
     </AppContext.Provider>
   );
 };
-
