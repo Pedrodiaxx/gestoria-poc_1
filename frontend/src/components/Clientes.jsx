@@ -380,7 +380,7 @@ export function Clientes() {
   };
 
   return (
-    <div>
+    <div className="module-container">
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Directorio de Clientes</div>
@@ -575,7 +575,7 @@ export function Clientes() {
 
             {/* Group Table */}
             {!isCollapsed && (
-              <div className="crm-table-wrap" style={{ borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+              <div className="crm-table-wrap table-responsive-wrap" style={{ borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
                 <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -616,7 +616,7 @@ export function Clientes() {
                   <tbody>
                     {groupClients.map(c => {
                       const isSelected = selectedClients.includes(c.id);
-                      const assignedUser = usuarios.find(u => u.id === c.responsable) || {
+                      const assignedUser = usuarios.find(u => String(u.id) === String(c.responsable) || u.nombre === c.responsable) || {
                         nombre: 'Sin Asignar',
                         avatar: '?',
                         color: '#9C9A94'
@@ -1105,7 +1105,11 @@ export function Clientes() {
                               {assignedUser.avatar}
                               <select
                                 value={c.responsable || ''}
-                                onChange={e => handleUpdateClientField(c.id, 'responsable', e.target.value)}
+                                onClick={e => e.stopPropagation()}
+                                onChange={e => {
+                                  e.stopPropagation();
+                                  handleUpdateClientField(c.id, 'responsable', e.target.value);
+                                }}
                                 className="crm-avatar-select"
                                 style={{
                                   position: 'absolute',
@@ -1194,7 +1198,7 @@ export function Clientes() {
               </div>
             </div>
             {!isCollapsed && (
-              <div className="crm-table-wrap" style={{ borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+              <div className="crm-table-wrap table-responsive-wrap" style={{ borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
                 <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>

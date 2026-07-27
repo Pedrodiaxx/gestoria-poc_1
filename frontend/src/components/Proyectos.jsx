@@ -224,14 +224,14 @@ function ProyectosContent() {
   const tiposUnicos = [...new Set(safeProyectos.map(p => p?.tipo).filter(Boolean))];
 
   return (
-    <div>
+    <div className="module-container">
       {/* Page Header */}
-      <div className="page-header">
+      <div className="page-header page-header-row">
         <div>
           <div className="page-title">Proyectos</div>
           <div className="page-subtitle">Todos los proyectos y gestiones en curso · actualizado al {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button
             className="btn btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}

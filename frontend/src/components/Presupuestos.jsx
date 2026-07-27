@@ -476,7 +476,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
 
   return (
     <div>
-      <div style={{ overflowX: 'auto', marginBottom: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+      <div className="table-responsive-wrap" style={{ marginBottom: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)' }}>
           <thead>
             <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
@@ -854,7 +854,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       </div>
 
       {/* Financial & notes grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 20, marginBottom: 20 }}>
+      <div className="two-col" style={{ gap: 20, marginBottom: 20 }}>
         {/* Left: Summary totals & Construction Cost */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
@@ -916,7 +916,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-grid-2">
             <div>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
               <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
@@ -1260,7 +1260,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       </div>
 
       {/* Financial & notes grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 20, marginBottom: 20 }}>
+      <div className="two-col" style={{ gap: 20, marginBottom: 20 }}>
         {/* Left: Summary totals */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
@@ -1326,7 +1326,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-grid-2">
             <div>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
               {isBorrador ? (
@@ -1841,13 +1841,13 @@ export function Presupuestos() {
   );
 
   return (
-    <div style={{ padding: '0 10px' }}>
+    <div className="module-container" style={{ padding: '0 10px' }}>
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">{session.rol === 'cliente' ? 'Mis Presupuestos' : 'Presupuestos por Proyecto'}</div>
           <div className="page-subtitle">Historial de presupuestos ejecutivos agrupados por etapas administrativas de gestoría.</div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className={`btn ${tab === 'agrupado' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('agrupado')}>
             Presupuestos
           </button>
@@ -1946,7 +1946,7 @@ export function Presupuestos() {
                         No hay ningún presupuesto creado para este proyecto.
                       </div>
                     ) : (
-                      <div style={{ overflowX: 'auto' }}>
+                      <div className="table-responsive-wrap">
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid var(--border)' }}>

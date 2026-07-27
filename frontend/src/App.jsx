@@ -67,7 +67,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ overflowX: 'hidden' }}>
       {/* Mobile header — only visible ≤768px via CSS */}
       <div className="mobile-header">
         <button className="mobile-header-burger" onClick={() => setSidebarOpen(prev => !prev)} aria-label="Abrir menú">
@@ -91,7 +91,7 @@ export default function App() {
       />
 
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined }}>
+      <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined, overflowX: 'hidden' }}>
         {active === 'home' && <Home setActive={setActive} />}
         {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={tareas} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
