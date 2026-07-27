@@ -45,6 +45,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+
+    // Eliminar la tabla "Cotizaciones" de PostgreSQL si aún existe
+    try
+    {
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"Cotizaciones\" CASCADE;");
+        Console.WriteLine("[Startup] Tabla Cotizaciones eliminada de la base de datos PostgreSQL.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Error al eliminar tabla Cotizaciones: {ex.Message}");
+    }
+
     try
     {
         SeedData.Initialize(services);
