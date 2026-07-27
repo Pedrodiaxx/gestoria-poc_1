@@ -230,55 +230,6 @@ export const TRAMITES_MOCK = [
   },
 ]
 
-// ─── COTIZACIONES ─────────────────────────────────────────────────────────────
-// Enlazadas con los mismos clientes y proyectos
-export const initialCotizaciones = [
-  {
-    // Urbania Desarrollos — Los Álamos — en proceso
-    id: 'COT-001',
-    clienteId: 1,
-    proyectoId: 'PRY-001',
-    fecha: fmt(addDays(hoy, -45)),
-    conceptos: [
-      { clave: 'LIC-RES-02', cantidad: 1 },
-      { clave: 'DICT-02', cantidad: 1 },
-      { clave: 'REG-01', cantidad: 1 },
-      { clave: 'ALIN-01', cantidad: 1 },
-    ],
-    abonos: [14000, 8000],
-    estatus: 'en-proceso',
-  },
-  {
-    // GreenTech Solutions — Parque Logístico — en proceso
-    id: 'COT-002',
-    clienteId: 2,
-    proyectoId: 'PRY-002',
-    fecha: fmt(addDays(hoy, -22)),
-    conceptos: [
-      { clave: 'USO-SUE-02', cantidad: 1 },
-      { clave: 'LIC-COM-02', cantidad: 1 },
-      { clave: 'DICT-01', cantidad: 1 },
-      { clave: 'DICT-02', cantidad: 1 },
-    ],
-    abonos: [15000],
-    estatus: 'en-proceso',
-  },
-  {
-    // Inversiones Robles — Plaza Comercial — liquidada
-    id: 'COT-003',
-    clienteId: 3,
-    proyectoId: 'PRY-003',
-    fecha: fmt(addDays(hoy, -90)),
-    conceptos: [
-      { clave: 'PROT-01', cantidad: 1 },
-      { clave: 'CONN-01', cantidad: 1 },
-      { clave: 'TERM-01', cantidad: 1 },
-    ],
-    abonos: [4500, 3800, 2200],
-    estatus: 'liquidada',
-  },
-]
-
 // ─── TAREAS DIARIAS ───────────────────────────────────────────────────────────
 // Ligadas a trámites reales y al equipo
 export const TAREAS_MOCK = [
@@ -590,14 +541,13 @@ export const AVAILABLE_MODULES = [
   { id: 'administracion', label: 'Administración' },
   { id: 'tareas', label: 'Tareas Diarias' },
   { id: 'catalogo', label: 'Catálogo' },
-  { id: 'cotizaciones', label: 'Cotizaciones' },
   { id: 'proyectos', label: 'Proyectos' },
   { id: 'tramites', label: 'Hojas de Ruta' },
   { id: 'clientes', label: 'Clientes' },
 ]
 
 export const getDefaultModulos = (rol) => {
-  if (rol === 'admin') return ['presupuestos', 'administracion', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tramites', 'tareas']
-  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'clientes', 'cotizaciones', 'catalogo', 'proyectos', 'tramites', 'tareas']
-  return ['presupuestos', 'cotizaciones', 'tramites']
+  if (rol === 'admin') return ['presupuestos', 'administracion', 'clientes', 'catalogo', 'proyectos', 'tramites', 'tareas']
+  if (rol === 'empleado' || rol === 'gestor') return ['presupuestos', 'clientes', 'catalogo', 'proyectos', 'tramites', 'tareas']
+  return ['presupuestos', 'tramites']
 }

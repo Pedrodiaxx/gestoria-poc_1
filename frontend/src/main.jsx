@@ -18,7 +18,7 @@ const DEFAULT_USERS = [
     email: 'gabrielcoc@gmail.com',
     contrasenia: '123456789',
     rol: 'admin',
-    modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'],
+    modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'proyectos', 'clientes'],
     avatar: 'G',
     color: '#2A5F3F'
   },
@@ -28,7 +28,7 @@ const DEFAULT_USERS = [
     email: 'laura@gestoria.com',
     contrasenia: 'empleado123',
     rol: 'gestor',
-    modulos: ['presupuestos', 'tareas', 'catalogo', 'cotizaciones'],
+    modulos: ['presupuestos', 'tareas', 'catalogo'],
     avatar: 'LM',
     color: '#1A5276'
   },
@@ -38,7 +38,7 @@ const DEFAULT_USERS = [
     email: 'pnoriega@gmail.com',
     contrasenia: 'cliente123',
     rol: 'cliente',
-    modulos: ['presupuestos', 'cotizaciones'],
+    modulos: ['presupuestos'],
     avatar: 'PN',
     color: '#5B2C6F'
   }
@@ -56,7 +56,6 @@ const DEFAULT_ROLES = [
 const clientRepository = new LocalStorageRepository('giu_clientes', []);
 const userRepository = new LocalStorageRepository('giu_usuarios', DEFAULT_USERS);
 const conceptRepository = new LocalStorageRepository('giu_conceptos', CATALOGO_CONCEPTOS);
-const quoteRepository = new LocalStorageRepository('giu_cotizaciones', []);
 const rolesRepository = new LocalStorageRepository('giu_roles', DEFAULT_ROLES);
 const budgetRepository = new LocalStorageRepository('giu_presupuestos', initialPresupuestosDB);
 const projectRepository = new LocalStorageRepository('giu_proyectos', PROYECTOS_MOCK);
@@ -68,7 +67,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       clientRepository={clientRepository}
       userRepository={userRepository}
       conceptRepository={conceptRepository}
-      quoteRepository={quoteRepository}
       rolesRepository={rolesRepository}
       projectRepository={projectRepository}
       budgetRepository={budgetRepository}

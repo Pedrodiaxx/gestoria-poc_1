@@ -11,7 +11,6 @@ export function Clientes() {
     clientes,
     usuarios,
     conceptos,
-    cotizaciones,
     session,
     addClient,
     deleteClient,
@@ -108,7 +107,7 @@ export function Clientes() {
   const [showAddStatusInput, setShowAddStatusInput] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
 
-  const filteredClientes = filterClientsQuery(clientes, qClientes, usuarios, cotizaciones, conceptos);
+  const filteredClientes = filterClientsQuery(clientes, qClientes, usuarios, [], conceptos);
   const totalClientes = clientes.length;
 
   const handleUpdateClientField = (id, field, value) => {

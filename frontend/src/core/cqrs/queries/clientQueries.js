@@ -1,6 +1,6 @@
 import { TRAMITES_MOCK, TRAMITES_TIPOS, PROYECTOS_MOCK } from '../../../data/mockData';
 
-export const filterClientsQuery = (clientes, qClientes, usuarios, cotizaciones, conceptos) => {
+export const filterClientsQuery = (clientes, qClientes, usuarios, conceptos) => {
   const query = qClientes.toLowerCase().trim();
   if (!query) return clientes;
 
@@ -56,23 +56,6 @@ export const filterClientsQuery = (clientes, qClientes, usuarios, cotizaciones, 
       );
     });
     if (matchesTramite) return true;
-
-    // 5. Cotizaciones (lookup in cotizaciones)
-    const associatedCotizaciones = (cotizaciones || []).filter(cot => cot.clienteId === c.id);
-    const matchesCotizacion = associatedCotizaciones.some(cot => {
-      return (
-        cot.id.toLowerCase().includes(query) ||
-        cot.estatus.toLowerCase().includes(query) ||
-        cot.conceptos.some(item => {
-          const conc = conceptos.find(co => co.clave === item.clave);
-          return (
-            item.clave.toLowerCase().includes(query) ||
-            (conc && conc.descripcion.toLowerCase().includes(query))
-          );
-        })
-      );
-    });
-    if (matchesCotizacion) return true;
 
     return false;
   });

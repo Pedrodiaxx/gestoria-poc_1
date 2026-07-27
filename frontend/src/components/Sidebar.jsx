@@ -25,14 +25,12 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     : getDefaultModulos(session.rol);
 
   const dynamicNavItems = (session.rol === 'cliente' ? [
-    { id: 'cotizaciones', label: 'Mis Cotizaciones', icon: 'receipt' },
     { id: 'presupuestos', label: 'Mis Presupuestos', icon: 'dollar' },
     { id: 'tramites', label: 'Mis Trámites', icon: 'map' },
   ] : [
     { id: 'presupuestos', label: 'Presupuestos', icon: 'dollar' },
     { id: 'administracion', label: 'Administración', icon: 'shield' },
     { id: 'clientes', label: 'Clientes', icon: 'user' },
-    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'receipt' },
     { id: 'catalogo', label: 'Catálogo', icon: 'file' },
     { id: 'proyectos', label: 'Proyectos', icon: 'map' },
     { id: 'tramites', label: 'Hojas de Ruta', icon: 'map' },

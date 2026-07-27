@@ -2,7 +2,6 @@ export { default as Home } from './Home';
 export { default as Sidebar } from './Sidebar';
 export { default as Dashboard } from './Dashboard';
 export { default as Catalogo } from './Catalogo';
-export { default as Cotizaciones } from './Cotizaciones';
 export { default as Presupuestos } from './Presupuestos';
 export { default as HojasRuta } from './HojasRuta';
 export { default as Proyectos } from './Proyectos';

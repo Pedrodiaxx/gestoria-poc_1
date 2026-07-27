@@ -5,7 +5,6 @@ import {
   Sidebar,
   Dashboard,
   Catalogo,
-  Cotizaciones,
   Presupuestos,
   HojasRuta,
   Proyectos,
@@ -24,7 +23,6 @@ export default function App() {
     clientes,
     usuarios,
     conceptos,
-    cotizaciones,
     tareas,
     handleLogin,
     handleLogout
@@ -54,7 +52,7 @@ export default function App() {
         : getDefaultModulos(session.rol);
       // Hojas de Ruta ('tramites') está siempre disponible para todos los usuarios autenticados
       const allowed = [...userModulos, 'tramites'];
-      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'];
+      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'proyectos', 'clientes'];
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard';
         setActive(nextActive);
@@ -93,9 +91,8 @@ export default function App() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined, overflowX: 'hidden' }}>
         {active === 'home' && <Home setActive={setActive} />}
-        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={tareas} setActive={setActive} session={session} />}
+        {active === 'dashboard' && <Dashboard tareas={tareas} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
-        {active === 'cotizaciones' && <Cotizaciones />}
         {active === 'presupuestos' && <Presupuestos />}
         {active === 'tramites' && <HojasRuta session={session} />}
         {active === 'proyectos' && <Proyectos />}

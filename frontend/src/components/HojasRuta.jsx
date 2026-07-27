@@ -13,7 +13,7 @@ import {
 import { finalizarHojaDeRuta } from '../services/hojasDeRutaService';
 
 export function HojasRuta() {
-  const { session = {}, clientes = [], usuarios = [], presupuestos = [], cotizaciones = [] } = useAppContext();
+  const { session = {}, clientes = [], usuarios = [], presupuestos = [] } = useAppContext();
 
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
@@ -106,20 +106,6 @@ export function HojasRuta() {
         extras: extras,
         total: total,
         conceptosCount: foundP.conceptos?.length || 4
-      };
-    }
-
-    const foundC = (cotizaciones || []).find(c => c.id === matchId || c.proyectoId === projId);
-    if (foundC) {
-      return {
-        id: foundC.id,
-        folio: foundC.id,
-        estatus: foundC.estatus === 'liquidada' ? 'liquidada' : 'en-proceso',
-        honorarios: 28500,
-        pagoDerechos: 14200,
-        extras: 2500,
-        total: 45200,
-        conceptosCount: foundC.conceptos?.length || 3
       };
     }
 

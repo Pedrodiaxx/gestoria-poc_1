@@ -8,7 +8,6 @@ namespace Data
         {
         }
 
-        public DbSet<Cotizacion> Cotizaciones { get; set; }
         public DbSet<Cliente> Clientes { get; set; }
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<Presupuesto> Presupuestos { get; set; }

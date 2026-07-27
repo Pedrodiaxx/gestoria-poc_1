@@ -153,7 +153,7 @@ namespace Data
                     Email = "gabrielcoc@gmail.com",
                     Contrasenia = "123456789",
                     Rol = "admin",
-                    ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"cotizaciones\",\"proyectos\",\"clientes\"]",
+                    ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"proyectos\",\"clientes\"]",
                     Avatar = "G",
                     Color = "#2A5F3F"
                 });

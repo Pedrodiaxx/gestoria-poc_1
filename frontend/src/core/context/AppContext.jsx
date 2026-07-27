@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   addClientCommand, deleteClientCommand, updateClientFieldCommand,
-  addQuoteCommand, addConceptCommand
+  addConceptCommand
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
 import { fetchClientes, updateCliente } from '../../services/clientesService';
 import { fetchProyectos, updateProyecto as updateProyectoService, deleteProyecto as deleteProyectoService } from '../../services/proyectosService';
 import { fetchPresupuestos } from '../../services/presupuestosService';
-import { fetchCotizaciones } from '../../services/cotizacionesService';
 import { fetchTareas } from '../../services/tareasService';
 import { fetchConceptos } from '../../services/conceptosService';
 import { fetchUsuarios, fetchUsuarioPorId, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
@@ -149,7 +148,6 @@ export const AppContextProvider = ({
   // Business entities: empty initial state — populated exclusively from the remote API
   const [clientes, setClientes] = useState([]);
   const [conceptos, setConceptos] = useState([]);
-  const [cotizaciones, setCotizaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
 
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
@@ -167,12 +165,11 @@ export const AppContextProvider = ({
         if (session.clienteId) queryParams.clienteId = session.clienteId;
         if (session.rol) queryParams.rol = session.rol;
 
-        const [clientsData, projectsData, budgetsData, quotesData, tasksData, conceptsData, usersData] =
+        const [clientsData, projectsData, budgetsData, tasksData, conceptsData, usersData] =
           await Promise.all([
             fetchClientes(),
             fetchProyectos(queryParams),
             fetchPresupuestos(queryParams),
-            fetchCotizaciones(queryParams),
             fetchTareas(),
             fetchConceptos(),
             fetchUsuarios()
@@ -181,7 +178,6 @@ export const AppContextProvider = ({
         setClientes(clientsData || []);
         setProyectos(projectsData || []);
         setPresupuestos(budgetsData || []);
-        setCotizaciones(quotesData || []);
         setTareas(tasksData || []);
         setConceptos(conceptsData || []);
         setUsuarios(usersData || []);

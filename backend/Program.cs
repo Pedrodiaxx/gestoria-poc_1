@@ -26,7 +26,6 @@ builder.Services.AddControllers();
 
 // 4. INYECCIÓN DE DEPENDENCIAS — REPOSITORIOS (Capa de Datos)
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
-builder.Services.AddScoped<ICotizacionRepository, CotizacionRepository>();
 builder.Services.AddScoped<IProyectoRepository, ProyectoRepository>();
 builder.Services.AddScoped<IPresupuestoRepository, PresupuestoRepository>();
 builder.Services.AddScoped<ITareaRepository, TareaRepository>();
@@ -34,7 +33,6 @@ builder.Services.AddScoped<IConceptoRepository, ConceptoRepository>();
 
 // 5. INYECCIÓN DE DEPENDENCIAS — SERVICIOS (Lógica de Negocio)
 builder.Services.AddScoped<ClienteService>();
-builder.Services.AddScoped<CotizacionService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<PresupuestoService>();
 builder.Services.AddScoped<TareaService>();
