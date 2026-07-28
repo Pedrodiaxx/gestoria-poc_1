@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money, EQUIPO } from '../data/mockData';
@@ -422,7 +422,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '700', fontSize: '13.5px' }}>{money(c.honorarios)}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                   {noteTag ? (
-                    <span className="badge badge-amber" style={{ fontWeight: 800 }}>{noteTag}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '11px', fontWeight: 700, color: 'var(--text-2)' }}>{noteTag}</span>
                   ) : (
                     <span style={{ color: 'var(--text-3)' }}>—</span>
                   )}
@@ -507,16 +507,17 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
 
       {/* Legend for concept notes */}
       {footnotesList.length > 0 && !editable && (
-        <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 8, borderBottom: '1px solid var(--border)', paddingBottom: 4, letterSpacing: '0.5px' }}>
-            Simbología de Observaciones y Notas de Conceptos
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 6, letterSpacing: '0.4px' }}>
+            Notas Complementarias y Observaciones
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
             {footnotesList.map(fn => (
-              <div key={fn.tag}>
-                <span className="badge badge-amber" style={{ fontWeight: 800, marginRight: 8 }}>{fn.tag}</span>
-                <strong style={{ color: 'var(--text)' }}>Item {fn.conceptoNo} ({fn.conceptoNombre}):</strong>
-                <span style={{ color: 'var(--text-2)', marginLeft: 6 }}>{fn.texto}</span>
+              <div key={fn.tag} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '11px', fontWeight: 800, color: 'var(--text)', flexShrink: 0 }}>{fn.tag}</span>
+                <span style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>
+                  <strong style={{ color: 'var(--text)' }}>Item {fn.conceptoNo} ({fn.conceptoNombre}):</strong> {fn.texto}
+                </span>
               </div>
             ))}
           </div>
@@ -630,42 +631,72 @@ function FichaDatosPredio({ b, editable = false, onFieldChange }) {
   );
 }
 
+// ─── AUTO-SAVE CONSTANTS ──────────────────────────────────────────────────────
+const AUTOSAVE_KEY = 'giu_presupuesto_en_progreso';
+
+const defaultInfoAdicional = {
+  duracionUsoSuelo: "3 meses",
+  duracionLicenciaConst: "6 meses",
+  duracionTerminacionObra: "4 meses a partir de la finalización de obra",
+  duracionLicenciaFunc: "3 meses",
+  documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
+  documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
+  derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
+  formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
+  exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
+  notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
+  firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
+  firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
+  firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
+};
+
 // ─── FORM NUEVO PRESUPUESTO COMPONENT ─────────────────────────────────────────
 function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId, preloadedConcepts }) {
   const { conceptos: catalog } = useAppContext();
-  const [proyectoId, setProyectoId] = useState(preselectedProjectId || '');
-  const [titulo, setTitulo] = useState('');
-  const [version, setVersion] = useState('1.00');
+
+  // ── Restore draft from localStorage on mount ──
+  const savedDraft = useRef(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const autosaveTimer = useRef(null);
+  const isInitialMount = useRef(true);
+
+  // Read saved draft once on initial render
+  if (savedDraft.current === null) {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      savedDraft.current = raw ? JSON.parse(raw) : false;
+    } catch {
+      savedDraft.current = false;
+    }
+  }
+
+  const draft = savedDraft.current;
+  const hasDraft = draft && typeof draft === 'object';
+
+  // Initialize state — prefer draft values over defaults
+  const [proyectoId, setProyectoId] = useState(
+    preselectedProjectId || (hasDraft ? draft.proyectoId || '' : '')
+  );
+  const [titulo, setTitulo] = useState(hasDraft ? draft.titulo || '' : '');
+  const [version, setVersion] = useState(hasDraft ? draft.version || '1.00' : '1.00');
 
   // Metadata of property
-  const [propietario, setPropietario] = useState('');
-  const [direccion, setDireccion] = useState('');
-  const [supPredio, setSupPredio] = useState('');
-  const [supConstExistente, setSupConstExistente] = useState('0.00');
-  const [supIntervenir, setSupIntervenir] = useState('');
-  const [uso, setUso] = useState('');
-  const [clasificacion, setClasificacion] = useState('');
-  const [zonaPrimaria, setZonaPrimaria] = useState('');
-  const [tipoVialidad, setTipoVialidad] = useState('');
-  const [estimacion, setEstimacion] = useState('');
-  const [costoDirectoConstruccion, setCostoDirectoConstruccion] = useState('');
+  const [propietario, setPropietario] = useState(hasDraft ? draft.propietario || '' : '');
+  const [direccion, setDireccion] = useState(hasDraft ? draft.direccion || '' : '');
+  const [supPredio, setSupPredio] = useState(hasDraft ? draft.supPredio || '' : '');
+  const [supConstExistente, setSupConstExistente] = useState(hasDraft ? draft.supConstExistente || '0.00' : '0.00');
+  const [supIntervenir, setSupIntervenir] = useState(hasDraft ? draft.supIntervenir || '' : '');
+  const [uso, setUso] = useState(hasDraft ? draft.uso || '' : '');
+  const [clasificacion, setClasificacion] = useState(hasDraft ? draft.clasificacion || '' : '');
+  const [zonaPrimaria, setZonaPrimaria] = useState(hasDraft ? draft.zonaPrimaria || '' : '');
+  const [tipoVialidad, setTipoVialidad] = useState(hasDraft ? draft.tipoVialidad || '' : '');
+  const [estimacion, setEstimacion] = useState(hasDraft ? draft.estimacion || '' : '');
+  const [costoDirectoConstruccion, setCostoDirectoConstruccion] = useState(hasDraft ? draft.costoDirectoConstruccion || '' : '');
 
   // Auxiliary information JSON
-  const [infoAdicional, setInfoAdicional] = useState({
-    duracionUsoSuelo: "3 meses",
-    duracionLicenciaConst: "6 meses",
-    duracionTerminacionObra: "4 meses a partir de la finalización de obra",
-    duracionLicenciaFunc: "3 meses",
-    documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
-    documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
-    derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
-    formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
-    exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
-    notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
-    firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
-    firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
-    firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
-  });
+  const [infoAdicional, setInfoAdicional] = useState(
+    hasDraft && draft.infoAdicional ? { ...defaultInfoAdicional, ...draft.infoAdicional } : { ...defaultInfoAdicional }
+  );
 
   const handleInfoAdicionalChange = (key, val) => {
     setInfoAdicional(prev => ({ ...prev, [key]: val }));
@@ -684,8 +715,89 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     else if (field === 'estimacion') setEstimacion(value);
   };
 
-  const [conceptosList, setConceptosList] = useState(preloadedConcepts || []);
+  const [conceptosList, setConceptosList] = useState(
+    preloadedConcepts && preloadedConcepts.length > 0
+      ? preloadedConcepts
+      : (hasDraft && draft.conceptosList ? draft.conceptosList : [])
+  );
   const [guardado, setGuardado] = useState(false);
+
+  // Show restoration banner if draft was loaded
+  useEffect(() => {
+    if (hasDraft && !preselectedProjectId) {
+      setDraftRestored(true);
+    }
+  }, []);
+
+  // ── Auto-save: persist form state to localStorage (debounced 500ms) ──
+  const saveDraftToStorage = useCallback(() => {
+    const draftData = {
+      proyectoId,
+      titulo,
+      version,
+      propietario,
+      direccion,
+      supPredio,
+      supConstExistente,
+      supIntervenir,
+      uso,
+      clasificacion,
+      zonaPrimaria,
+      tipoVialidad,
+      estimacion,
+      costoDirectoConstruccion,
+      infoAdicional,
+      conceptosList,
+      _savedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draftData));
+    } catch (e) {
+      console.warn('[AutoSave] Error al guardar borrador:', e);
+    }
+  }, [proyectoId, titulo, version, propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion, costoDirectoConstruccion, infoAdicional, conceptosList]);
+
+  useEffect(() => {
+    // Skip auto-save on initial mount to avoid overwriting draft with restored values
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      saveDraftToStorage();
+    }, 500);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [saveDraftToStorage]);
+
+  // ── Clear draft helper ──
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(AUTOSAVE_KEY);
+    setDraftRestored(false);
+  }, []);
+
+  // ── Reset form to blank and clear draft ──
+  const handleLimpiarBorrador = () => {
+    clearDraft();
+    setProyectoId('');
+    setTitulo('');
+    setVersion('1.00');
+    setPropietario('');
+    setDireccion('');
+    setSupPredio('');
+    setSupConstExistente('0.00');
+    setSupIntervenir('');
+    setUso('');
+    setClasificacion('');
+    setZonaPrimaria('');
+    setTipoVialidad('');
+    setEstimacion('');
+    setCostoDirectoConstruccion('');
+    setInfoAdicional({ ...defaultInfoAdicional });
+    setConceptosList([]);
+  };
 
   // Prepopulate title and address if project is selected
   useEffect(() => {
@@ -751,12 +863,48 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       infoAdicionalJson: JSON.stringify(infoAdicional)
     };
     onGuardar(nuevo);
+    clearDraft(); // Limpiar borrador temporal de localStorage tras guardar exitosamente
     setGuardado(true);
     setTimeout(() => onCancelar(), 1500);
   };
 
+  // Wrap onCancelar to also clear draft
+  const handleCancelar = () => {
+    clearDraft();
+    onCancelar();
+  };
+
   return (
     <div style={{ maxWidth: '100%', padding: '0 10px' }}>
+      {/* ── Draft Restoration Banner ── */}
+      {draftRestored && (
+        <div className="autosave-banner" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 18px',
+          marginBottom: 14,
+          borderRadius: 'var(--radius-sm)',
+          background: 'linear-gradient(135deg, rgba(76, 166, 106, 0.12), rgba(76, 166, 106, 0.06))',
+          border: '1px solid rgba(76, 166, 106, 0.35)',
+          animation: 'fadeInDown 0.4s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 16 }}>⚡</span>
+            <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
+              Se ha restaurado tu trabajo no guardado anterior.
+            </span>
+          </div>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={handleLimpiarBorrador}
+            style={{ fontSize: 11, padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+          >
+            <Icon name="close" size={12} /> Limpiar / Empezar de nuevo
+          </button>
+        </div>
+      )}
+
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div>
           <div className="page-title">Nuevo Presupuesto de Gestoría</div>
@@ -791,7 +939,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="download" size={14} /> Descargar PDF
           </button>
-          <button className="btn btn-secondary" onClick={onCancelar}>Volver al Listado</button>
+          <button className="btn btn-secondary" onClick={handleCancelar}>Volver al Listado</button>
           {guardado ? (
             <div className="alert alert-green" style={{ padding: '8px 16px', margin: 0 }}><Icon name="check" size={14} /> Presupuesto Guardado</div>
           ) : (
@@ -904,9 +1052,9 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
 
           {costDirectConstVal > 0 && (
-            <div style={{ background: '#ffff00', color: '#000000', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1.5px solid #000000', marginTop: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
-              <span className="mono" style={{ fontSize: 15, fontWeight: 900 }}>{pctGestion.toFixed(3)}%</span>
+            <div style={{ background: 'var(--surface2)', color: 'var(--text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderLeft: '4px solid var(--accent)', marginTop: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.3px', color: 'var(--text-2)' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
+              <span className="mono" style={{ fontSize: 15, fontWeight: 900, color: 'var(--accent)' }}>{pctGestion.toFixed(3)}%</span>
             </div>
           )}
         </div>
@@ -1426,7 +1574,21 @@ export function Presupuestos() {
     setTareas
   } = useAppContext();
 
-  const [tab, setTab] = useState('agrupado'); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
+  // Check if a draft exists in localStorage to auto-open 'nuevo' tab
+  const hasSavedDraft = useRef(false);
+  if (!hasSavedDraft.current) {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      hasSavedDraft.current = raw ? true : false;
+    } catch {
+      hasSavedDraft.current = false;
+    }
+  }
+
+  const [tab, setTab] = useState(() => {
+    if (hasSavedDraft.current) return 'nuevo';
+    return 'agrupado';
+  }); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
   const [viendoId, setViendoId] = useState(null);
   const [q, setQ] = useState('');
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
@@ -1485,6 +1647,7 @@ export function Presupuestos() {
         setPreselectedProjectId(null);
       }
       setPreloadedConcepts([]);
+      localStorage.removeItem(AUTOSAVE_KEY); // Limpiar borrador tras guardar exitosamente
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
       alert("No se pudo conectar con el servidor. Revisa la consola.");

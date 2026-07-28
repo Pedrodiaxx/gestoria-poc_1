@@ -1670,4 +1670,24 @@ select.form-control { cursor: pointer; }
   .empty-state { padding: 32px 16px; }
 }
 
+/* ─── AUTO-SAVE BANNER ────────────────────────────────────────────────────── */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
+.autosave-banner {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.autosave-banner:hover {
+  background: linear-gradient(135deg, rgba(76, 166, 106, 0.18), rgba(76, 166, 106, 0.1)) !important;
+}

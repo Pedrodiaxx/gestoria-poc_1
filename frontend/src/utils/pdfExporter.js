@@ -102,7 +102,7 @@ export const descargarPresupuestoPDF = (presupuesto, proyecto) => {
           <td style="padding: 5px 4px; text-align: center; color: #475569; font-size: 8px; font-weight: 700; vertical-align: middle;">${c.unidad || 'GESTIÓN'}</td>
           <td style="padding: 5px 6px; text-align: right; font-weight: 800; color: #0f172a; font-size: 9px; vertical-align: middle;">$ ${honoVal.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
           <td style="padding: 5px 4px; text-align: center; font-size: 8px; vertical-align: middle;">
-            ${noteTag ? `<span style="color: #b87a0a; font-weight: 800; border: 1px solid #fde68a; background: #fffbeb; padding: 1px 5px; border-radius: 3px;">${noteTag}</span>` : '<span style="color: #cbd5e1;">—</span>'}
+            ${noteTag ? `<span style="color: #334155; font-weight: 700; background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 1px 5px; border-radius: 3px; font-size: 7.5px;">${noteTag}</span>` : '<span style="color: #cbd5e1;">—</span>'}
           </td>
           <td style="padding: 5px 6px; text-align: right; font-size: 8.5px; color: #1e293b; font-weight: 600; vertical-align: middle;">${dereVal > 0 ? `$ ${dereVal.toLocaleString('es-MX', {minimumFractionDigits: 2})}` : '—'}</td>
           <td style="padding: 5px 6px; text-align: right; font-size: 8.5px; color: #1e293b; font-weight: 600; vertical-align: middle;">${extrVal > 0 ? `$ ${extrVal.toLocaleString('es-MX', {minimumFractionDigits: 2})}` : '—'}</td>
@@ -124,6 +124,18 @@ export const descargarPresupuestoPDF = (presupuesto, proyecto) => {
     return html;
   };
 
+  let tableRowsHTML = '';
+  STAGES.forEach((stage, idx) => {
+    tableRowsHTML += renderStageRowsHTML(stage, conceptsByStage[stage] || [], idx);
+  });
+  if (otherItems.length > 0) {
+    tableRowsHTML += renderStageRowsHTML("CONCEPTOS GENERALES", otherItems, STAGES.length);
+  }
+
+  const fechaFormateada = presupuesto.fecha 
+    ? new Date(presupuesto.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+    : new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
   const element = document.createElement('div');
   element.style.padding = '4px 6px';
   element.style.fontFamily = "'Helvetica Neue', Helvetica, Arial, sans-serif";
@@ -132,20 +144,11 @@ export const descargarPresupuestoPDF = (presupuesto, proyecto) => {
   element.style.boxSizing = 'border-box';
   element.style.width = '100%';
 
-  let tableRowsHTML = STAGES.map((stage, idx) => renderStageRowsHTML(stage, conceptsByStage[stage], idx)).join('');
-  if (otherItems.length > 0) {
-    tableRowsHTML += renderStageRowsHTML("Otros Conceptos", otherItems, STAGES.length);
-  }
-
-  const fechaFormateada = presupuesto.fecha 
-    ? new Date(presupuesto.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
-    : new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-
   element.innerHTML = `
-    <!-- Header Ejecutivo Elegante -->
-    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+    <!-- Header Institucional Elegante y Formal -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
       <div>
-        <div style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; line-height: 1;">
+        <div style="font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; font-family: Arial, sans-serif;">
           GIU
         </div>
         <div style="font-size: 9px; color: #475569; margin-top: 2px; font-weight: 700;">
@@ -198,73 +201,67 @@ export const descargarPresupuestoPDF = (presupuesto, proyecto) => {
       </table>
     </div>
 
-    <!-- Tabla Principal de Conceptos Distribución Exacta (100% de Ancho A4) -->
+    <!-- Tabla Principal de Conceptos -->
     <div style="margin-bottom: 6px; border: 1.5px solid #0f172a; border-radius: 3px; overflow: hidden; width: 100%; box-sizing: border-box;">
       <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #0f172a; color: #ffffff; text-align: left; text-transform: uppercase; font-size: 7.5px; letter-spacing: 0.3px;">
-            <th style="padding: 6px 4px; width: 4%; text-align: center;">No.</th>
-            <th style="padding: 6px; width: 36%;">Concepto / Descripción del Servicio</th>
-            <th style="padding: 6px 4px; width: 8%; text-align: center;">Unidad</th>
-            <th style="padding: 6px; width: 13%; text-align: right;">Honorarios</th>
-            <th style="padding: 6px 4px; width: 13%; text-align: center;">Comentarios</th>
-            <th style="padding: 6px; width: 13%; text-align: right;">Derechos</th>
-            <th style="padding: 6px; width: 13%; text-align: right;">Gastos Extra</th>
+            <th style="padding: 6px 4px; width: 4%; text-align: center;">NO.</th>
+            <th style="padding: 6px; width: 36%;">CONCEPTO / DESCRIPCIÓN DEL SERVICIO</th>
+            <th style="padding: 6px 4px; width: 8%; text-align: center;">UNIDAD</th>
+            <th style="padding: 6px; width: 13%; text-align: right;">HONORARIOS</th>
+            <th style="padding: 6px 4px; width: 13%; text-align: center;">COMENTARIOS</th>
+            <th style="padding: 6px; width: 13%; text-align: right;">DERECHOS</th>
+            <th style="padding: 6px; width: 13%; text-align: right;">GASTOS EXTRAS</th>
           </tr>
         </thead>
         <tbody>
           ${tableRowsHTML}
-
-          <!-- Summary Total Row -->
           <tr style="background-color: #ffffff; font-weight: 800; border-top: 2px solid #0f172a; font-size: 8.5px; page-break-inside: avoid;">
             <td colspan="3" style="padding: 6px; text-align: right; color: #0f172a; text-transform: uppercase;">
-              TOTAL DE GESTIÓN, TRAMITES Y ESTUDIOS
+              TOTAL DE GESTIÓN, TRÁMITES Y ESTUDIOS
             </td>
-            <td style="padding: 6px; text-align: right; color: #0f172a; font-size: 9px;">
-              $ ${subtotalHonorarios.toLocaleString('es-MX', {minimumFractionDigits: 2})}
-            </td>
-            <td style="padding: 6px; color: #475569; font-size: 8px; font-weight: 800; text-align: center;">
-              MÁS I.V.A.
-            </td>
-            <td colspan="2" style="padding: 6px; text-align: right; color: #0f172a; font-size: 9px;">
-              <span style="color: #64748b; font-size: 7.5px; font-weight: 800; text-transform: uppercase;">TOTAL DE PAGO DE DERECHOS Y EXTRAS &nbsp;</span>
-              $ ${(derechos + extras).toLocaleString('es-MX', {minimumFractionDigits: 2})}
+            <td style="padding: 6px; text-align: right; color: #0f172a; font-size: 9.5px;">$ ${subtotalHonorarios.toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+            <td style="padding: 6px; text-align: center; color: #475569; font-size: 8px; font-weight: 700;">MÁS I.V.A.</td>
+            <td colspan="2" style="padding: 6px; text-align: right; color: #0f172a;">
+              <div style="font-size: 7.5px; color: #475569; font-weight: 700;">TOTAL DE PAGO DE DERECHOS Y EXTRAS</div>
+              <div style="font-size: 9.5px;">$ ${(derechos + extras).toLocaleString('es-MX', {minimumFractionDigits: 2})}</div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Recuadro Amarillo de Porcentaje de Gestión vs Costo Directo -->
+    <!-- Porcentaje de Gestión vs Costo Directo -->
     ${costoDirectoConst > 0 ? `
-      <div style="background-color: #ffff00; border: 2px solid #000000; padding: 5px 12px; margin-top: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; page-break-inside: avoid;">
-        <div style="font-size: 8.5px; font-weight: 900; color: #000000; letter-spacing: 0.3px; text-transform: uppercase;">
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0f172a; padding: 6px 12px; margin-top: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; page-break-inside: avoid; border-radius: 3px;">
+        <div style="font-size: 8px; font-weight: 800; color: #0f172a; letter-spacing: 0.3px; text-transform: uppercase;">
           PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN
         </div>
-        <div style="font-size: 11px; font-weight: 900; color: #000000; font-family: Arial, sans-serif; text-align: right; padding-right: 20px;">
+        <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; font-family: monospace; text-align: right;">
           ${pctGestion.toFixed(3)}%
         </div>
       </div>
     ` : ''}
 
-    <!-- Simbología de Observaciones y Notas de los Conceptos (ANTES de Términos y Cláusulas) -->
+    <!-- Notas Complementarias -->
     ${footnotesList.length > 0 ? `
-      <div style="margin-top: 8px; margin-bottom: 10px; border: 1.5px solid #0f172a; border-radius: 3px; padding: 6px 10px; background-color: #ffffff; page-break-inside: avoid;">
-        <div style="font-size: 8.5px; font-weight: 800; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;">
-          SIMBOLOGÍA DE OBSERVACIONES Y NOTAS DE CONCEPTOS
+      <div style="margin-top: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 3px; padding: 8px 12px; background-color: #f8fafc; page-break-inside: avoid;">
+        <div style="font-size: 8px; font-weight: 800; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;">
+          NOTAS COMPLEMENTARIAS Y OBSERVACIONES
         </div>
-        <div style="display: flex; flex-direction: column; gap: 3px; font-size: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 8px;">
           ${footnotesList.map(fn => `
-            <div>
-              <strong style="color: #b87a0a;">${fn.tag} (Item ${fn.conceptoNo} - ${fn.conceptoNombre}):</strong>
-              <span style="color: #1e293b;"> ${fn.texto}</span>
+            <div style="display: flex; gap: 6px; align-items: baseline;">
+              <span style="color: #0f172a; font-weight: 800; background-color: #e2e8f0; padding: 1px 5px; border-radius: 2px; font-size: 7.5px; flex-shrink: 0;">${fn.tag}</span>
+              <span style="color: #334155; line-height: 1.3;"><strong style="color: #0f172a;">${fn.conceptoNombre} (Línea ${fn.conceptoNo}):</strong> ${fn.texto}</span>
             </div>
           `).join('')}
         </div>
       </div>
     ` : ''}
 
-    <!-- Términos, Cláusulas y Condiciones Centradas -->
+    <!-- Términos -->
     <div style="page-break-inside: avoid; margin-top: 8px; margin-bottom: 14px;">
       <div style="display: flex; flex-direction: column; gap: 4px; font-size: 7.5px; color: #000000; line-height: 1.35; text-align: center;">
         ${infoAdicional.documentosTecnicos ? `
