@@ -23,17 +23,18 @@ namespace Backend.Services
 
         /// <summary>
         /// Obtiene todos los presupuestos con seguridad por rol.
-        /// REGLA DE NEGOCIO: Si rol == "cliente", filtra los presupuestos
-        /// que pertenezcan a proyectos del clienteId.
+        /// REGLA DE NEGOCIO: Si clienteId está presente o rol == "cliente",
+        /// filtra únicamente los presupuestos que pertenezcan a proyectos del cliente.
         /// </summary>
         public async Task<List<PresupuestoDTO>> GetAllAsync(int? clienteId, string? rol)
         {
             List<string>? filtroProyectoIds = null;
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase) || clienteId.HasValue;
 
-            if (rol == "cliente" && clienteId.HasValue)
+            if (isCliente && clienteId.HasValue)
             {
                 // Obtener los IDs numéricos de proyectos del cliente
-                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId);
+                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId.Value);
                 filtroProyectoIds = proyectosCliente
                     .SelectMany(pr => new[]
                     {
@@ -47,6 +48,32 @@ namespace Backend.Services
             var proyectos = await _proyectoRepo.GetAllAsync();
 
             return presupuestos.Select(p => MapToDTO(p, proyectos)).ToList();
+        }
+
+        /// <summary>
+        /// Obtiene un presupuesto por ID validando que pertenezca al cliente si el rol es 'cliente'.
+        /// </summary>
+        public async Task<PresupuestoDTO?> GetByIdAsync(int id, int? clienteId, string? rol)
+        {
+            var p = await _presupuestoRepo.GetByIdAsync(id);
+            if (p == null) return null;
+
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase);
+            if (isCliente && clienteId.HasValue)
+            {
+                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId.Value);
+                var proyectoIdsPermitidos = proyectosCliente
+                    .SelectMany(pr => new[] { $"PRY-{pr.Id.ToString().PadLeft(3, '0')}", pr.Id.ToString() })
+                    .ToList();
+
+                if (string.IsNullOrEmpty(p.ProyectoId) || !proyectoIdsPermitidos.Contains(p.ProyectoId))
+                {
+                    return null; // Acceso denegado: el presupuesto no pertenece a los proyectos del cliente
+                }
+            }
+
+            var proyectos = await _proyectoRepo.GetAllAsync();
+            return MapToDTO(p, proyectos);
         }
 
         /// <summary>

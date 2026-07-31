@@ -6,12 +6,14 @@ import { Catalogo } from './Catalogo';
 import { getDefaultModulos, AVAILABLE_MODULES } from '../data/mockData';
 import { filterUsersQuery } from '../core/cqrs/queries/userQueries';
 import { generateSecurePassword, validatePasswordSecurity } from '../utils/securityUtils';
+import { createRol } from '../services/rolesService';
 
 export default function Administracion() {
   const {
     conceptos,
     setConceptos,
     usuarios,
+    clientes = [],
     session,
     setSession,
     rolesList,
@@ -23,14 +25,16 @@ export default function Administracion() {
   } = useAppContext();
 
   const [adminTab, setAdminTab] = useState('conceptos');
+  const [userCategory, setUserCategory] = useState('equipo'); // 'equipo' | 'clientes'
   const [qUsuarios, setQUsuarios] = useState('');
   const [showAddUsuarioModal, setShowAddUsuarioModal] = useState(false);
   const [showEditUsuarioModal, setShowEditUsuarioModal] = useState(false);
   const [nuevoUsuario, setNuevoUsuario] = useState({
-    nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor')
+    nombre: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor')
   });
   const [editandoUsuario, setEditandoUsuario] = useState(null);
   const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showNuevoPassword, setShowNuevoPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
@@ -82,7 +86,7 @@ export default function Administracion() {
     setTimeout(() => setCopiedPass(false), 2000);
   };
 
-  const handleCreateRole = () => {
+  const handleCreateRole = async () => {
     const label = newRoleLabel.trim();
     if (!label) return;
     const id = label.toLowerCase().replace(/\s+/g, '-');
@@ -92,6 +96,11 @@ export default function Administracion() {
     }
     const newRole = { id, label };
     setRolesList(prev => [...prev, newRole]);
+    try {
+      await createRol(newRole);
+    } catch (err) {
+      console.error("Error al guardar rol en el servidor:", err);
+    }
     setNuevoUsuario(prev => ({
       ...prev,
       rol: id,
@@ -101,7 +110,7 @@ export default function Administracion() {
     setNewRoleLabel('');
   };
 
-  const handleCreateRoleEdit = () => {
+  const handleCreateRoleEdit = async () => {
     const label = newRoleLabelEdit.trim();
     if (!label) return;
     const id = label.toLowerCase().replace(/\s+/g, '-');
@@ -111,6 +120,11 @@ export default function Administracion() {
     }
     const newRole = { id, label };
     setRolesList(prev => [...prev, newRole]);
+    try {
+      await createRol(newRole);
+    } catch (err) {
+      console.error("Error al guardar rol en el servidor:", err);
+    }
     setEditandoUsuario(prev => ({
       ...prev,
       rol: id,
@@ -132,57 +146,65 @@ export default function Administracion() {
 
   const filteredUsuarios = filterUsersQuery(usuarios || [], qUsuarios, getRolLabel);
 
-  const handleAddUsuario = () => {
-    if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) return;
+  const handleAddUsuario = async () => {
+    if (!nuevoUsuario.nombre || !nuevoUsuario.contrasenia || isSubmitting) return;
 
     if (nuevoUsuario.contrasenia.length < 4) {
       alert('La contraseña debe tener al menos 4 caracteres.');
       return;
     }
 
-    const emailClean = nuevoUsuario.email.trim().toLowerCase();
+    const nombreClean = nuevoUsuario.nombre.trim();
 
-    if (usuarios.some(u => u.email.toLowerCase() === emailClean)) {
-      alert(`El correo "${emailClean}" ya está registrado.`);
+    if (usuarios.some(u => u.nombre && u.nombre.toLowerCase() === nombreClean.toLowerCase())) {
+      alert(`El nombre de usuario "${nombreClean}" ya está registrado.`);
       return;
     }
 
-    const words = nuevoUsuario.nombre.trim().split(' ');
-    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U';
-    const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+    setIsSubmitting(true);
+    try {
+      const words = nombreClean.split(' ');
+      const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U';
+      const colors = ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
 
-    const modulos = nuevoUsuario.modulos || [];
-    const rol = nuevoUsuario.rol;
+      const modulos = nuevoUsuario.modulos || [];
+      const rol = nuevoUsuario.rol;
 
-    const nuevo = {
-      id: `usr-${Date.now()}`,
-      nombre: nuevoUsuario.nombre.trim(),
-      email: emailClean,
-      contrasenia: nuevoUsuario.contrasenia,
-      rol,
-      modulos,
-      avatar,
-      color
-    };
+      const nuevo = {
+        id: `usr-${Date.now()}`,
+        nombre: nombreClean,
+        contrasenia: nuevoUsuario.contrasenia,
+        rol,
+        modulos,
+        avatar,
+        color,
+        clienteId: nuevoUsuario.clienteId ? parseInt(nuevoUsuario.clienteId) : null
+      };
 
-    addUser(nuevo);
-    setShowAddUsuarioModal(false);
-    setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor') });
+      await addUser(nuevo);
+      setShowAddUsuarioModal(false);
+      setNuevoUsuario({ nombre: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor'), clienteId: null });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditClick = (u) => {
     setEditandoUsuario({
       ...u,
       contrasenia: u.contrasenia || '',
-      modulos: u.modulos || getDefaultModulos(u.rol)
+      modulos: u.modulos || getDefaultModulos(u.rol),
+      clienteId: u.clienteId || null
     });
     setShowEditPassword(false);
     setShowEditUsuarioModal(true);
   };
 
   const handleSaveEditUsuario = async () => {
-    if (!editandoUsuario || !editandoUsuario.nombre || !editandoUsuario.email) return;
+    if (!editandoUsuario || !editandoUsuario.nombre || isSubmitting) return;
 
     const nuevaContrasenia = (editandoUsuario.contrasenia || '').trim();
 
@@ -191,35 +213,38 @@ export default function Administracion() {
       return;
     }
 
-    const emailClean = editandoUsuario.email.trim().toLowerCase();
+    const nombreClean = editandoUsuario.nombre.trim();
 
-    if (usuarios.some(u => u.email.toLowerCase() === emailClean && u.id !== editandoUsuario.id)) {
-      alert(`El correo "${emailClean}" ya está en uso por otro usuario.`);
+    if (usuarios.some(u => u.nombre && u.nombre.toLowerCase() === nombreClean.toLowerCase() && u.id !== editandoUsuario.id)) {
+      alert(`El nombre de usuario "${nombreClean}" ya está en uso por otro usuario.`);
       return;
     }
 
-    const words = editandoUsuario.nombre.trim().split(' ');
-    const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U';
-
-    const modulos = editandoUsuario.modulos || [];
-    const rol = editandoUsuario.rol;
-
-    const updatedUser = {
-      ...editandoUsuario,
-      nombre: editandoUsuario.nombre.trim(),
-      email: emailClean,
-      contrasenia: nuevaContrasenia,
-      rol,
-      modulos,
-      avatar
-    };
-
+    setIsSubmitting(true);
     try {
+      const words = editandoUsuario.nombre.trim().split(' ');
+      const avatar = words.map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U';
+
+      const modulos = editandoUsuario.modulos || [];
+      const rol = editandoUsuario.rol;
+
+      const updatedUser = {
+        ...editandoUsuario,
+        nombre: editandoUsuario.nombre.trim(),
+        contrasenia: nuevaContrasenia,
+        rol,
+        modulos,
+        avatar,
+        clienteId: editandoUsuario.clienteId ? parseInt(editandoUsuario.clienteId) : null
+      };
+
       await saveUserEdit(updatedUser);
       setShowEditUsuarioModal(false);
       setEditandoUsuario(null);
     } catch (err) {
       console.error("Error al actualizar usuario:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -270,13 +295,31 @@ export default function Administracion() {
       ) : (
         /* VISTA DE CONTROL DE USUARIOS */
         <div>
+          {/* Sub-tabs: Equipo Interno vs Cuentas de Clientes */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+            <button
+              className={`btn btn-sm ${userCategory === 'equipo' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setUserCategory('equipo')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="users" size={14} /> Equipo Interno / Personal ({filteredUsuarios.filter(u => u.rol !== 'cliente').length})
+            </button>
+            <button
+              className={`btn btn-sm ${userCategory === 'clientes' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setUserCategory('clientes')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="user" size={14} /> Cuentas de Clientes ({filteredUsuarios.filter(u => u.rol === 'cliente').length})
+            </button>
+          </div>
+
           {/* Header & Search */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div className="search-wrap" style={{ flex: 1, minWidth: 260, maxWidth: 400 }}>
               <Icon name="search" size={14} />
               <input
                 className="form-control search-input"
-                placeholder="Buscar usuarios por nombre, correo o rol..."
+                placeholder={userCategory === 'equipo' ? "Buscar en equipo interno..." : "Buscar cuentas de clientes..."}
                 value={qUsuarios}
                 onChange={e => setQUsuarios(e.target.value)}
               />
@@ -284,115 +327,130 @@ export default function Administracion() {
             <button
               className="btn btn-primary"
               onClick={() => {
-                setNuevoUsuario({ nombre: '', email: '', contrasenia: '', rol: 'gestor', modulos: getDefaultModulos('gestor') });
+                const defRol = userCategory === 'clientes' ? 'cliente' : 'gestor';
+                setNuevoUsuario({ nombre: '', contrasenia: '', rol: defRol, modulos: getDefaultModulos(defRol) });
                 setShowAddUsuarioModal(true);
               }}
             >
-              <Icon name="plus" size={14} /> Registrar Usuario
+              <Icon name="plus" size={14} /> {userCategory === 'clientes' ? 'Registrar Cuenta de Cliente' : 'Registrar Usuario Interno'}
             </button>
           </div>
 
           {/* Tabla de Usuarios */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
               <thead>
                 <tr style={{ background: 'var(--surface2)' }}>
                   <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>USUARIO</th>
-                  <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CORREO ELECTRÓNICO</th>
+                  {userCategory === 'clientes' && (
+                    <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CLIENTE VINCULADO</th>
+                  )}
                   <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>CONTRASEÑA</th>
                   <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ROL</th>
                   <th style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsuarios.map(u => {
-                  const rolLabel = getRolLabel(u.rol);
-                  const isLastAdmin = u.rol === 'admin' && (usuarios || []).filter(x => x.rol === 'admin').length <= 1;
-                  return (
-                    <tr
-                      key={u.id}
-                      style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                      onMouseLeave={e => e.currentTarget.style.background = ''}
-                    >
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            background: u.color || 'var(--blue)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontSize: 12, fontWeight: 700
-                          }}>
-                            {u.avatar || 'U'}
+                {filteredUsuarios
+                  .filter(u => userCategory === 'clientes' ? u.rol === 'cliente' : u.rol !== 'cliente')
+                  .map(u => {
+                    const rolLabel = getRolLabel(u.rol);
+                    const isLastAdmin = u.rol === 'admin' && (usuarios || []).filter(x => x.rol === 'admin').length <= 1;
+                    const clienteVinculado = (clientes || []).find(c => String(c.id) === String(u.clienteId));
+
+                    return (
+                      <tr
+                        key={u.id}
+                        style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                        onMouseLeave={e => e.currentTarget.style.background = ''}
+                      >
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                              width: 32, height: 32, borderRadius: '50%',
+                              background: u.color || 'var(--blue)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#fff', fontSize: 12, fontWeight: 700
+                            }}>
+                              {u.avatar || 'U'}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.nombre}</div>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-2)' }}>
-                        {u.email}
-                      </td>
+                        {userCategory === 'clientes' && (
+                          <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)' }}>
+                            {clienteVinculado ? (
+                              <span className="badge badge-blue" style={{ fontSize: 11 }}>
+                                {clienteVinculado.nombre} (ID: {clienteVinculado.id})
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-3)', fontStyle: 'italic', fontSize: 12 }}>Sin vincular</span>
+                            )}
+                          </td>
+                        )}
 
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>
-                            {visiblePasswords[u.id]
-                              ? ((u.contrasenia?.startsWith('$2a$') || u.contrasenia?.startsWith('$2b$') || u.contrasenia?.startsWith('$2y$'))
-                                  ? '123456789'
-                                  : u.contrasenia)
-                              : '••••••••'}
-                          </span>
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => togglePasswordVisibility(u.id)}
-                            style={{ padding: 4, minWidth: 'auto', borderRadius: '50%', color: 'var(--text-3)' }}
-                            title={visiblePasswords[u.id] ? "Ocultar contraseña" : "Mostrar contraseña"}
-                          >
-                            <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={14} />
-                          </button>
-                        </div>
-                      </td>
-
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        <span className={`badge ${u.rol === 'admin' ? 'badge-blue' : u.rol === 'cliente' ? 'badge-gray' : 'badge-amber'}`}>
-                          {rolLabel}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => handleEditClick(u)}
-                            style={{ padding: 6, minWidth: 'auto', borderRadius: 4 }}
-                            title="Editar usuario"
-                          >
-                            <Icon name="edit" size={14} />
-                          </button>
-
-                          {!isLastAdmin && u.id !== session.id && (
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontFamily: 'DM Mono', fontSize: 12, color: 'var(--text-2)' }}>
+                              {visiblePasswords[u.id]
+                                ? ((u.contrasenia?.startsWith('$2a$') || u.contrasenia?.startsWith('$2b$') || u.contrasenia?.startsWith('$2y$'))
+                                    ? '123456789'
+                                    : u.contrasenia)
+                                : '••••••••'}
+                            </span>
                             <button
                               className="btn btn-ghost"
-                              onClick={() => handleEliminarUsuario(u)}
-                              style={{ padding: 6, minWidth: 'auto', borderRadius: 4, color: 'var(--red)' }}
-                              title="Eliminar usuario"
+                              onClick={() => togglePasswordVisibility(u.id)}
+                              style={{ padding: 4, minWidth: 'auto', borderRadius: '50%', color: 'var(--text-3)' }}
+                              title={visiblePasswords[u.id] ? "Ocultar contraseña" : "Mostrar contraseña"}
                             >
-                              <Icon name="trash" size={14} />
+                              <Icon name={visiblePasswords[u.id] ? "eyeoff" : "eye"} size={14} />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span className={`badge ${u.rol === 'admin' ? 'badge-blue' : u.rol === 'cliente' ? 'badge-gray' : 'badge-amber'}`}>
+                            {rolLabel}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                            <button
+                              className="btn btn-ghost"
+                              onClick={() => handleEditClick(u)}
+                              style={{ padding: 6, minWidth: 'auto', borderRadius: 4 }}
+                              title="Editar usuario"
+                            >
+                              <Icon name="edit" size={14} />
+                            </button>
+
+                            {!isLastAdmin && u.id !== session.id && (
+                              <button
+                                className="btn btn-ghost"
+                                onClick={() => handleEliminarUsuario(u)}
+                                style={{ padding: 6, minWidth: 'auto', borderRadius: 4, color: 'var(--red)' }}
+                                title="Eliminar usuario"
+                              >
+                                <Icon name="trash" size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
 
-            {filteredUsuarios.length === 0 && (
+            {filteredUsuarios.filter(u => userCategory === 'clientes' ? u.rol === 'cliente' : u.rol !== 'cliente').length === 0 && (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
-                No se encontraron usuarios coincidentes.
+                No se encontraron {userCategory === 'clientes' ? 'cuentas de clientes' : 'usuarios del equipo interno'}.
               </div>
             )}
           </div>
@@ -406,23 +464,12 @@ export default function Administracion() {
             <div className="modal-title">Registrar Nuevo Usuario</div>
 
             <div className="form-group">
-              <label className="form-label">Nombre Completo *</label>
+              <label className="form-label">Nombre de Usuario *</label>
               <input
                 className="form-control"
-                placeholder="Ej: Juan Pérez"
+                placeholder="Ej: juanperez"
                 value={nuevoUsuario.nombre}
                 onChange={e => setNuevoUsuario(n => ({ ...n, nombre: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Correo Electrónico *</label>
-              <input
-                className="form-control"
-                type="email"
-                placeholder="Ej: juan@gestoria.com"
-                value={nuevoUsuario.email}
-                onChange={e => setNuevoUsuario(n => ({ ...n, email: e.target.value }))}
               />
             </div>
 
@@ -506,9 +553,11 @@ export default function Administracion() {
                   }}
                   style={{ flex: 1 }}
                 >
-                  {rolesList.map(r => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
-                  ))}
+                  {rolesList
+                    .filter(r => userCategory === 'clientes' ? r.id === 'cliente' : r.id !== 'cliente')
+                    .map(r => (
+                      <option key={r.id} value={r.id}>{r.label}</option>
+                    ))}
                 </select>
                 <button
                   type="button"
@@ -549,6 +598,23 @@ export default function Administracion() {
                       Cancelar
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Vincular con Cliente si el rol es 'cliente' */}
+              {nuevoUsuario.rol === 'cliente' && (
+                <div style={{ marginTop: 12 }}>
+                  <label className="form-label">Vincular con Perfil de Cliente (Directorio) *</label>
+                  <select
+                    className="form-control"
+                    value={nuevoUsuario.clienteId || ''}
+                    onChange={e => setNuevoUsuario(n => ({ ...n, clienteId: e.target.value ? parseInt(e.target.value) : null }))}
+                  >
+                    <option value="">-- Seleccionar Cliente --</option>
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre} (ID: {c.id})</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
@@ -604,10 +670,10 @@ export default function Administracion() {
               <button
                 className="btn btn-primary"
                 onClick={handleAddUsuario}
-                disabled={!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia}
-                style={{ opacity: (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.contrasenia) ? 0.5 : 1 }}
+                disabled={!nuevoUsuario.nombre || !nuevoUsuario.contrasenia || isSubmitting}
+                style={{ opacity: (!nuevoUsuario.nombre || !nuevoUsuario.contrasenia || isSubmitting) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> Registrar
+                <Icon name="check" size={14} /> {isSubmitting ? 'Registrando...' : 'Registrar'}
               </button>
             </div>
           </div>
@@ -621,23 +687,12 @@ export default function Administracion() {
             <div className="modal-title">Editar Usuario: {editandoUsuario.nombre}</div>
 
             <div className="form-group">
-              <label className="form-label">Nombre Completo *</label>
+              <label className="form-label">Nombre de Usuario *</label>
               <input
                 className="form-control"
-                placeholder="Ej: Juan Pérez"
+                placeholder="Ej: juanperez"
                 value={editandoUsuario.nombre}
                 onChange={e => setEditandoUsuario(n => ({ ...n, nombre: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Correo Electrónico *</label>
-              <input
-                className="form-control"
-                type="email"
-                placeholder="Ej: juan@gestoria.com"
-                value={editandoUsuario.email}
-                onChange={e => setEditandoUsuario(n => ({ ...n, email: e.target.value }))}
               />
             </div>
 
@@ -721,9 +776,11 @@ export default function Administracion() {
                   }}
                   style={{ flex: 1 }}
                 >
-                  {rolesList.map(r => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
-                  ))}
+                  {rolesList
+                    .filter(r => editandoUsuario?.rol === 'cliente' ? r.id === 'cliente' : r.id !== 'cliente')
+                    .map(r => (
+                      <option key={r.id} value={r.id}>{r.label}</option>
+                    ))}
                 </select>
                 <button
                   type="button"
@@ -764,6 +821,23 @@ export default function Administracion() {
                       Cancelar
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Vincular con Cliente si el rol es 'cliente' */}
+              {editandoUsuario.rol === 'cliente' && (
+                <div style={{ marginTop: 12 }}>
+                  <label className="form-label">Vincular con Perfil de Cliente (Directorio) *</label>
+                  <select
+                    className="form-control"
+                    value={editandoUsuario.clienteId || ''}
+                    onChange={e => setEditandoUsuario(n => ({ ...n, clienteId: e.target.value ? parseInt(e.target.value) : null }))}
+                  >
+                    <option value="">-- Seleccionar Cliente --</option>
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre} (ID: {c.id})</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
@@ -823,10 +897,10 @@ export default function Administracion() {
               <button
                 className="btn btn-primary"
                 onClick={handleSaveEditUsuario}
-                disabled={!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia}
-                style={{ opacity: (!editandoUsuario.nombre || !editandoUsuario.email || !editandoUsuario.contrasenia) ? 0.5 : 1 }}
+                disabled={!editandoUsuario.nombre || isSubmitting}
+                style={{ opacity: (!editandoUsuario.nombre || isSubmitting) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> Guardar Cambios
+                <Icon name="check" size={14} /> {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
             </div>
           </div>

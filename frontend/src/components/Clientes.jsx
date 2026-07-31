@@ -15,7 +15,9 @@ export function Clientes() {
     addClient,
     deleteClient,
     updateClientField,
-    setClientes
+    setClientes,
+    proyectos: contextProyectos = [],
+    updateProyecto
   } = useAppContext();
 
   const [qClientes, setQClientes] = useState('');
@@ -37,6 +39,7 @@ export function Clientes() {
   const [importedRows, setImportedRows] = useState(0);
   const fileInputRef = useRef(null);
   const [showManageStatuses, setShowManageStatuses] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Project selector states
   const [proyectoSearch, setProyectoSearch] = useState('');
@@ -45,13 +48,8 @@ export function Clientes() {
   const [showProyectoCellDropdown, setShowProyectoCellDropdown] = useState(null);
   const proyectoDropdownRef = useRef(null);
 
-  // All available projects (mock + stored)
-  const allProyectos = (() => {
-    try {
-      const stored = localStorage.getItem('giu_proyectos');
-      return [...PROYECTOS_MOCK, ...(stored ? JSON.parse(stored) : [])];
-    } catch { return [...PROYECTOS_MOCK]; }
-  })();
+  // All available projects (from context backend API + mock fallback)
+  const allProyectos = contextProyectos && contextProyectos.length > 0 ? contextProyectos : PROYECTOS_MOCK;
 
   // Close project dropdowns on outside click
   useEffect(() => {
@@ -243,8 +241,9 @@ export function Clientes() {
   };
 
   const handleAddCliente = async () => {
-    if (!nuevoCliente.nombre) return;
+    if (!nuevoCliente.nombre || isSubmitting) return;
 
+    setIsSubmitting(true);
     const datosParaBackend = {
       nombre: nuevoCliente.nombre,
       contacto: nuevoCliente.contacto || '',
@@ -269,6 +268,8 @@ export function Clientes() {
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
       alert("No se pudo conectar con el servidor. Revisa la consola.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -574,8 +575,8 @@ export function Clientes() {
 
             {/* Group Table */}
             {!isCollapsed && (
-              <div className="crm-table-wrap table-responsive-wrap" style={{ borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
-                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="crm-table-wrap w-full overflow-x-auto rounded-lg border border-slate-200" style={{ borderLeft: `6px solid ${group.color}`, background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
                   <thead>
                     <tr>
                       <th className="crm-checkbox-col" style={{ width: '40px', padding: '10px 0', textAlign: 'center' }}>
@@ -964,125 +965,150 @@ export function Clientes() {
 
                           {/* Proyectos */}
                           <td style={{ padding: '10px 12px', position: 'relative' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'proyectos' ? (
-                              <div style={{ position: 'relative' }} ref={proyectoDropdownRef}>
-                                <input
-                                  type="text"
-                                  className="form-control form-control-sm"
-                                  placeholder="Buscar proyecto..."
-                                  value={proyectoCellSearch[c.id] || ''}
-                                  autoFocus
-                                  onChange={e => setProyectoCellSearch(prev => ({ ...prev, [c.id]: e.target.value }))}
-                                  onFocus={() => setShowProyectoCellDropdown(c.id)}
-                                  style={{ fontSize: 12, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
-                                />
-                                {showProyectoCellDropdown === c.id && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: 0,
-                                    right: 0,
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--border-strong)',
-                                    borderRadius: 'var(--radius-md)',
-                                    boxShadow: 'var(--shadow-md)',
-                                    zIndex: 1002,
-                                    maxHeight: 200,
-                                    overflowY: 'auto',
-                                    marginTop: 2,
-                                    minWidth: 220
-                                  }}>
-                                    {allProyectos
-                                      .filter(p => {
-                                        const term = (proyectoCellSearch[c.id] || '').toLowerCase();
-                                        return !term || p.nombre.toLowerCase().includes(term) || p.id.toLowerCase().includes(term);
-                                      })
-                                      .map(p => {
-                                        const alreadyLinked = (c.proyectos || []).includes(p.nombre);
-                                        return (
-                                          <div
-                                            key={p.id}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              const current = c.proyectos || [];
-                                              const updated = alreadyLinked
-                                                ? current.filter(x => x !== p.nombre)
-                                                : [...current, p.nombre];
-                                              handleUpdateClientField(c.id, 'proyectos', updated);
-                                              setProyectoCellSearch(prev => ({ ...prev, [c.id]: '' }));
-                                            }}
-                                            style={{
-                                              padding: '7px 12px',
-                                              fontSize: 12,
-                                              cursor: 'pointer',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: 8,
-                                              background: alreadyLinked ? 'var(--accent-light)' : 'transparent',
-                                              color: alreadyLinked ? 'var(--accent)' : 'var(--text)',
-                                              borderBottom: '1px solid var(--border)'
-                                            }}
-                                            onMouseEnter={e => { if (!alreadyLinked) e.currentTarget.style.background = 'var(--surface2)'; }}
-                                            onMouseLeave={e => { if (!alreadyLinked) e.currentTarget.style.background = ''; }}
-                                          >
-                                            <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>{p.id}</span>
-                                            <span style={{ flex: 1, fontWeight: alreadyLinked ? 600 : 400 }}>{p.nombre}</span>
-                                            {alreadyLinked && <Icon name="check" size={11} />}
-                                          </div>
-                                        );
-                                      })}
-                                    {allProyectos.filter(p => {
-                                      const term = (proyectoCellSearch[c.id] || '').toLowerCase();
-                                      return !term || p.nombre.toLowerCase().includes(term);
-                                    }).length === 0 && (
-                                        <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>Sin resultados</div>
-                                      )}
-                                  </div>
-                                )}
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ marginTop: 4, fontSize: 11, padding: '2px 6px' }}
-                                  onClick={() => { setEditingCell(null); setShowProyectoCellDropdown(null); }}
-                                >
-                                  Listo ✓
-                                </button>
-                              </div>
-                            ) : (
-                              <div
-                                onClick={() => { setEditingCell({ id: c.id, field: 'proyectos' }); setShowProyectoCellDropdown(c.id); }}
-                                style={{ minHeight: 24, cursor: 'pointer', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}
-                                title="Haz clic para vincular proyectos"
-                              >
-                                {c.proyectos && c.proyectos.length > 0 ? (
-                                  c.proyectos.map((p, idx) => (
-                                    <span key={idx} style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      padding: '2px 6px 2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '11px',
-                                      background: 'var(--accent-light)',
-                                      color: 'var(--accent)',
-                                      border: '1px solid var(--accent)',
-                                      fontWeight: 500
+                            {(() => {
+                              const clientLinkedProjects = (allProyectos || []).filter(p => String(p.clienteId) === String(c.id));
+                              const displayProyectos = Array.from(new Set([
+                                ...(c.proyectos || []),
+                                ...clientLinkedProjects.map(p => p.nombre)
+                              ]));
+
+                              return editingCell?.id === c.id && editingCell?.field === 'proyectos' ? (
+                                <div style={{ position: 'relative' }} ref={proyectoDropdownRef}>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="Buscar proyecto..."
+                                    value={proyectoCellSearch[c.id] || ''}
+                                    autoFocus
+                                    onChange={e => setProyectoCellSearch(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                    onFocus={() => setShowProyectoCellDropdown(c.id)}
+                                    style={{ fontSize: 12, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
+                                  />
+                                  {showProyectoCellDropdown === c.id && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '100%',
+                                      left: 0,
+                                      right: 0,
+                                      background: 'var(--surface)',
+                                      border: '1px solid var(--border-strong)',
+                                      borderRadius: 'var(--radius-md)',
+                                      boxShadow: 'var(--shadow-md)',
+                                      zIndex: 1002,
+                                      maxHeight: 200,
+                                      overflowY: 'auto',
+                                      marginTop: 2,
+                                      minWidth: 220
                                     }}>
-                                      {p}
-                                      <span
-                                        style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1, marginLeft: 2, opacity: 0.7 }}
-                                        onClick={e => {
-                                          e.stopPropagation();
-                                          const updated = (c.proyectos || []).filter(x => x !== p);
-                                          handleUpdateClientField(c.id, 'proyectos', updated);
-                                        }}
-                                      >×</span>
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span style={{ color: 'var(--text-3)', fontSize: 11, fontStyle: 'italic' }}>+ Vincular proyecto</span>
-                                )}
-                              </div>
-                            )}
+                                      {allProyectos
+                                        .filter(p => {
+                                          const term = (proyectoCellSearch[c.id] || '').toLowerCase();
+                                          return !term || p.nombre.toLowerCase().includes(term) || String(p.id).toLowerCase().includes(term);
+                                        })
+                                        .map(p => {
+                                          const alreadyLinked = String(p.clienteId) === String(c.id) || (c.proyectos || []).includes(p.nombre);
+                                          return (
+                                            <div
+                                              key={p.id}
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const isLinkedNow = !alreadyLinked;
+                                                const newClienteId = isLinkedNow ? c.id : 0;
+                                                const updatedNames = isLinkedNow
+                                                  ? Array.from(new Set([...displayProyectos, p.nombre]))
+                                                  : displayProyectos.filter(x => x !== p.nombre);
+
+                                                handleUpdateClientField(c.id, 'proyectos', updatedNames);
+
+                                                if (p && updateProyecto) {
+                                                  await updateProyecto({
+                                                    ...p,
+                                                    clienteId: newClienteId
+                                                  });
+                                                }
+                                                setProyectoCellSearch(prev => ({ ...prev, [c.id]: '' }));
+                                              }}
+                                              style={{
+                                                padding: '7px 12px',
+                                                fontSize: 12,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                background: alreadyLinked ? 'var(--accent-light)' : 'transparent',
+                                                color: alreadyLinked ? 'var(--accent)' : 'var(--text)',
+                                                borderBottom: '1px solid var(--border)'
+                                              }}
+                                              onMouseEnter={e => { if (!alreadyLinked) e.currentTarget.style.background = 'var(--surface2)'; }}
+                                              onMouseLeave={e => { if (!alreadyLinked) e.currentTarget.style.background = ''; }}
+                                            >
+                                              <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>{p.id}</span>
+                                              <span style={{ flex: 1, fontWeight: alreadyLinked ? 600 : 400 }}>{p.nombre}</span>
+                                              {alreadyLinked && <Icon name="check" size={11} />}
+                                            </div>
+                                          );
+                                        })}
+                                      {allProyectos.filter(p => {
+                                        const term = (proyectoCellSearch[c.id] || '').toLowerCase();
+                                        return !term || p.nombre.toLowerCase().includes(term);
+                                      }).length === 0 && (
+                                          <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>Sin resultados</div>
+                                        )}
+                                    </div>
+                                  )}
+                                  <button
+                                    className="btn btn-ghost btn-sm"
+                                    style={{ marginTop: 4, fontSize: 11, padding: '2px 6px' }}
+                                    onClick={() => { setEditingCell(null); setShowProyectoCellDropdown(null); }}
+                                  >
+                                    Listo ✓
+                                  </button>
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => { setEditingCell({ id: c.id, field: 'proyectos' }); setShowProyectoCellDropdown(c.id); }}
+                                  style={{ minHeight: 24, cursor: 'pointer', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}
+                                  title="Haz clic para vincular proyectos"
+                                >
+                                  {displayProyectos && displayProyectos.length > 0 ? (
+                                    displayProyectos.map((pName, idx) => (
+                                      <span key={idx} style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        padding: '2px 6px 2px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '11px',
+                                        background: 'var(--accent-light)',
+                                        color: 'var(--accent)',
+                                        border: '1px solid var(--accent)',
+                                        fontWeight: 500
+                                      }}>
+                                        {pName}
+                                        <span
+                                          style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1, marginLeft: 2, opacity: 0.7 }}
+                                          onClick={async e => {
+                                            e.stopPropagation();
+                                            const updatedNames = displayProyectos.filter(x => x !== pName);
+                                            handleUpdateClientField(c.id, 'proyectos', updatedNames);
+
+                                            const matchedProj = (allProyectos || []).find(x => x.nombre === pName || x.id === pName);
+                                            if (matchedProj && updateProyecto) {
+                                              await updateProyecto({
+                                                ...matchedProj,
+                                                clienteId: 0
+                                              });
+                                            }
+                                          }}
+                                        >×</span>
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span style={{ color: 'var(--text-3)', fontSize: 11, fontStyle: 'italic' }}>+ Vincular proyecto</span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* Responsable */}
@@ -1120,8 +1146,7 @@ export function Clientes() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                <option value="" style={{ color: 'black' }}>Sin asignar</option>
-                                {usuarios.map(u => (
+                                {usuarios.filter(u => u.rol !== 'cliente').map(u => (
                                   <option key={u.id} value={u.id} style={{ color: 'black' }}>{u.nombre}</option>
                                 ))}
                               </select>
@@ -1197,8 +1222,8 @@ export function Clientes() {
               </div>
             </div>
             {!isCollapsed && (
-              <div className="crm-table-wrap table-responsive-wrap" style={{ borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
-                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="crm-table-wrap w-full overflow-x-auto rounded-lg border border-slate-200" style={{ borderLeft: '6px solid #797E93', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
+                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
                   <thead>
                     <tr>
                       <th className="crm-checkbox-col" style={{ width: '40px', padding: '10px 0', textAlign: 'center' }}>
@@ -1445,7 +1470,7 @@ export function Clientes() {
                   value={nuevoCliente.responsable || 'usr-admin-1'}
                   onChange={e => setNuevoCliente(n => ({ ...n, responsable: e.target.value }))}
                 >
-                  {usuarios.map(u => (
+                  {usuarios.filter(u => u.rol !== 'cliente').map(u => (
                     <option key={u.id} value={u.id}>{u.nombre}</option>
                   ))}
                 </select>
@@ -1705,10 +1730,10 @@ export function Clientes() {
               <button
                 className="btn btn-primary"
                 onClick={handleAddCliente}
-                disabled={!nuevoCliente.nombre}
-                style={{ opacity: !nuevoCliente.nombre ? 0.5 : 1 }}
+                disabled={!nuevoCliente.nombre || isSubmitting}
+                style={{ opacity: (!nuevoCliente.nombre || isSubmitting) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> Registrar
+                <Icon name="check" size={14} /> {isSubmitting ? 'Registrando...' : 'Registrar'}
               </button>
             </div>
           </div>

@@ -11,7 +11,8 @@ import {
   Clientes,
   TareasDiarias,
   Administracion,
-  Login
+  Login,
+  PortalCliente
 } from './components';
 import { getDefaultModulos } from './data/mockData';
 
@@ -62,6 +63,11 @@ export default function App() {
 
   if (!session) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // Users with role 'cliente' go directly to the Client Portal
+  if (session.rol === 'cliente') {
+    return <PortalCliente />;
   }
 
   return (

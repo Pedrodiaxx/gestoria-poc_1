@@ -22,19 +22,37 @@ namespace Backend.Services
 
         /// <summary>
         /// Obtiene todos los proyectos con seguridad por rol.
-        /// REGLA DE NEGOCIO: Si rol == "cliente", filtra por clienteId en la query.
+        /// REGLA DE NEGOCIO: Si el rol es "cliente" o se especifica clienteId, filtra por clienteId.
         /// </summary>
         public async Task<List<ProyectoDTO>> GetAllAsync(int? clienteId, string? rol)
         {
-            int? filtroClienteId = (rol == "cliente" && clienteId.HasValue)
-                ? clienteId
-                : null;
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase) || clienteId.HasValue;
+            int? filtroClienteId = (isCliente && clienteId.HasValue) ? clienteId : null;
 
             var proyectos = await _proyectoRepo.GetAllAsync(filtroClienteId);
             var clientes = await _clienteRepo.GetAllAsync();
             var presupuestos = await _presupuestoRepo.GetAllAsync();
 
             return proyectos.Select(p => MapToDTO(p, clientes, presupuestos)).ToList();
+        }
+
+        /// <summary>
+        /// Obtiene un proyecto por ID verificando propiedad del cliente.
+        /// </summary>
+        public async Task<ProyectoDTO?> GetByIdAsync(int id, int? clienteId, string? rol)
+        {
+            var p = await _proyectoRepo.GetByIdAsync(id);
+            if (p == null) return null;
+
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase);
+            if (isCliente && clienteId.HasValue && p.ClienteId != clienteId.Value)
+            {
+                return null; // Acceso denegado
+            }
+
+            var clientes = await _clienteRepo.GetAllAsync();
+            var presupuestos = await _presupuestoRepo.GetAllAsync();
+            return MapToDTO(p, clientes, presupuestos);
         }
 
         /// <summary>

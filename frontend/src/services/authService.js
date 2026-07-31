@@ -5,15 +5,21 @@ import { API_BASE_URL } from '../config/api';
  * Conecta con el controlador de autenticación del backend remoto.
  */
 
-export async function login(email, contrasenia) {
+export async function login(username, password) {
   const endpoint = `${API_BASE_URL}/api/auth/login`;
   console.log("[AUTH_ENDPOINT]:", endpoint);
+
+  const cleanUser = (username || '').trim();
+  const cleanPass = (password || '').trim();
 
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, contrasenia })
+      body: JSON.stringify({
+        username: cleanUser,
+        password: cleanPass
+      })
     });
 
     if (response.ok) {
@@ -28,19 +34,18 @@ export async function login(email, contrasenia) {
   const localUsers = saved ? JSON.parse(saved) : [];
 
   const found = localUsers.find(u =>
-    u.email.toLowerCase() === email.toLowerCase() &&
-    (u.contrasenia === contrasenia || !contrasenia)
+    u.nombre && u.nombre.toLowerCase() === cleanUser.toLowerCase() &&
+    (u.contrasenia === cleanPass || !cleanPass)
   );
 
   if (found) {
     return found;
   }
 
-  if (email.toLowerCase() === 'gabrielcoc@gmail.com') {
+  if (cleanUser.toLowerCase() === 'gabriel') {
     return {
       id: 'usr-admin-1',
       nombre: 'Gabriel',
-      email: 'gabrielcoc@gmail.com',
       rol: 'admin',
       modulos: ['presupuestos', 'administracion', 'tareas', 'catalogo', 'proyectos', 'clientes'],
       avatar: 'G',
@@ -48,7 +53,7 @@ export async function login(email, contrasenia) {
     };
   }
 
-  throw new Error('Credenciales inválidas. Revisa el correo y contraseña.');
+  throw new Error('Credenciales inválidas. Revisa el usuario y contraseña.');
 }
 
 export async function fetchUsuarios() {

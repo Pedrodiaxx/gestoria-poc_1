@@ -9,4 +9,5 @@ export { default as TareasDiarias } from './TareasDiarias';
 export { default as Administracion } from './Administracion';
 export { default as Clientes } from './Clientes';
 export { default as Login } from './Login';
+export { default as PortalCliente } from './PortalCliente';
 export { Icon } from './common/Icon';

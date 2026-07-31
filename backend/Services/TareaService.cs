@@ -1,21 +1,45 @@
 using Data;
 using Data.DTOs;
 using Backend.Repositories;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Backend.Services
 {
     public class TareaService
     {
         private readonly ITareaRepository _repo;
+        private readonly ApplicationDbContext _db;
 
-        public TareaService(ITareaRepository repo)
+        public TareaService(ITareaRepository repo, ApplicationDbContext db)
         {
             _repo = repo;
+            _db = db;
         }
 
-        public async Task<List<TareaDiariaDTO>> GetAllAsync()
+        public async Task<List<TareaDiariaDTO>> GetAllAsync(int? clienteId, string? rol)
         {
             var tareas = await _repo.GetAllAsync();
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase) || clienteId.HasValue;
+
+            if (isCliente && clienteId.HasValue)
+            {
+                var userIds = await _db.Usuarios
+                    .Where(u => u.ClienteId == clienteId.Value)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                var usernames = await _db.Usuarios
+                    .Where(u => u.ClienteId == clienteId.Value)
+                    .Select(u => u.Nombre.ToLower())
+                    .ToListAsync();
+
+                tareas = tareas.Where(t =>
+                    (t.AsignadoA != null && userIds.Contains(t.AsignadoA)) ||
+                    (t.AsignadoA != null && usernames.Contains(t.AsignadoA.ToLower()))
+                ).ToList();
+            }
+
             var hoy = DateTime.UtcNow.Date;
             return tareas.Select(t => MapToDTO(t, hoy)).ToList();
         }

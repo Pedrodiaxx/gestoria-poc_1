@@ -5,8 +5,13 @@ import { API_BASE_URL } from '../config/api';
  * Encapsula todas las llamadas fetch al endpoint /api/tareas.
  */
 
-export async function fetchTareas() {
-  const response = await fetch(`${API_BASE_URL}/api/tareas`);
+export async function fetchTareas({ clienteId, rol } = {}) {
+  const queryParams = new URLSearchParams();
+  if (clienteId) queryParams.append('clienteId', clienteId);
+  if (rol) queryParams.append('rol', rol);
+
+  const url = `${API_BASE_URL}/api/tareas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al conectar con la API de tareas');
   return response.json();
 }

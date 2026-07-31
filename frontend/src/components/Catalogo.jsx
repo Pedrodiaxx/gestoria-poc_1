@@ -81,8 +81,8 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
           <Icon name="search" size={14} />
           <input className="form-control search-input" placeholder="Buscar por clave o descripción…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
-        <div className="table-wrap">
-          <table>
+        <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
               <tr>
                 <th>Clave</th>

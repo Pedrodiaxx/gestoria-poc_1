@@ -352,8 +352,8 @@ function ProyectosContent() {
           ))}
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
                 <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ID / Nombre</th>
@@ -368,10 +368,15 @@ function ProyectosContent() {
             <tbody>
               {filtered.map(p => {
                 const cli = (clientes || []).find(c => c?.id === p?.clienteId);
-                const tipo = TRAMITES_TIPOS[p?.tipo];
-                const col = COLOR_MAP[tipo?.color] || '#777';
-                const est = ESTATUS_CONFIG[p?.estatus] || { label: p?.estatus || 'Sin estatus', badge: 'badge-gray' };
-                const monto = p?.monto || 0;
+                const est = p.estatus ? p.estatus.toLowerCase() : 'borrador';
+                const colorMap = {
+                  'activo': { bg: 'var(--accent-light)', fg: 'var(--accent-text)', lbl: 'Activo' },
+                  'en proceso': { bg: 'var(--blue-light)', fg: 'var(--blue-text)', lbl: 'En Proceso' },
+                  'finalizado': { bg: 'rgba(0,0,0,0.05)', fg: 'var(--text-2)', lbl: 'Finalizado' },
+                  'cancelado': { bg: 'var(--red-light)', fg: 'var(--red-text)', lbl: 'Cancelado' }
+                };
+                const badge = colorMap[est] || { bg: 'var(--amber-light)', fg: 'var(--amber-text)', lbl: p.estatus || 'Borrador' };
+
                 return (
                   <tr
                     key={p.id || p.idNumerico || Math.random()}

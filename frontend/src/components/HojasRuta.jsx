@@ -50,6 +50,7 @@ export function HojasRuta() {
   const [tramitesList, setTramitesList] = useState(initialList);
   const [selectedTramite, setSelectedTramite] = useState(initialList[0] || null);
   const [pasoActual, setPasoActual] = useState(initialList[0]?.pasoActual || 1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const seleccionar = (t) => {
     setSelectedTramite(t);
@@ -160,17 +161,20 @@ export function HojasRuta() {
 
   const handleFinalizarRuta = async (id) => {
     const targetId = id || selectedTramite?.id;
-    if (!targetId) return;
+    if (!targetId || isSubmitting) return;
 
     const fechaCierre = new Date().toLocaleString('es-MX', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
 
+    setIsSubmitting(true);
     try {
       await finalizarHojaDeRuta(targetId);
     } catch (err) {
       console.warn("Actualizando hoja de ruta localmente:", err);
+    } finally {
+      setIsSubmitting(false);
     }
 
     const nuevoPaso = totalPasos + 1;
@@ -441,16 +445,19 @@ export function HojasRuta() {
                 <button
                   className="btn"
                   onClick={() => handleFinalizarRuta(selectedTramite.id)}
+                  disabled={isSubmitting}
                   style={{
                     background: 'var(--green)',
                     color: '#fff',
                     border: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 6
+                    gap: 6,
+                    opacity: isSubmitting ? 0.7 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <Icon name="checkcircle" size={14} /> Finalizar Ruta
+                  <Icon name="checkcircle" size={14} /> {isSubmitting ? 'Finalizando...' : 'Finalizar Ruta'}
                 </button>
               )}
             </div>

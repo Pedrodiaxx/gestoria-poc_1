@@ -58,16 +58,16 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
         onClick={() => { setActive('home'); if (setSidebarOpen) setSidebarOpen(false); }}
         style={{
           cursor: 'pointer',
-          padding: '24px 20px 16px 20px',
+          padding: '24px 20px',
           background: 'transparent',
           border: 'none',
-          boxShadow: 'none'
+          boxShadow: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: '1px', lineHeight: 1 }}>GIU</span>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>Gestoría de Construcción</span>
-        </div>
+        <img src={logoImg} alt="GIU" style={{ maxWidth: '140px', height: 'auto', display: 'block', borderRadius: '4px' }} />
       </div>
       <div className="sidebar-section-label">Módulos</div>
       {dynamicNavItems.map(n => (

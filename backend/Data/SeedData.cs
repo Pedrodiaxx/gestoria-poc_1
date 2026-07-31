@@ -137,7 +137,18 @@ namespace Data
 
             context.SaveChanges();
 
-            var adminUser = context.Usuarios.FirstOrDefault(u => u.Id == "usr-admin-1" || u.Email == "gabrielcoc@gmail.com");
+            // Sembrar Roles si la tabla está vacía
+            if (!context.Roles.Any())
+            {
+                context.Roles.AddRange(
+                    new Rol { Id = "admin", Label = "Administrador" },
+                    new Rol { Id = "gestor", Label = "Gestor" },
+                    new Rol { Id = "cliente", Label = "Cliente" }
+                );
+                context.SaveChanges();
+            }
+
+            var adminUser = context.Usuarios.FirstOrDefault(u => u.Id == "usr-admin-1" || u.Nombre.ToLower() == "gabriel");
             if (adminUser != null)
             {
                 adminUser.Contrasenia = "123456789";
@@ -150,7 +161,6 @@ namespace Data
                 {
                     Id = "usr-admin-1",
                     Nombre = "Gabriel",
-                    Email = "gabrielcoc@gmail.com",
                     Contrasenia = "123456789",
                     Rol = "admin",
                     ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"proyectos\",\"clientes\"]",

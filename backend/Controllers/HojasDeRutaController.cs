@@ -41,9 +41,26 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetHojasDeRuta()
+        public async Task<IActionResult> GetHojasDeRuta([FromQuery] int? clienteId, [FromQuery] string? rol)
         {
-            var list = await _context.HojasDeRuta.ToListAsync();
+            var query = _context.HojasDeRuta.AsQueryable();
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase) || clienteId.HasValue;
+
+            if (isCliente && clienteId.HasValue)
+            {
+                var proyectosCliente = await _context.Proyectos
+                    .Where(p => p.ClienteId == clienteId.Value)
+                    .Select(p => p.Id)
+                    .ToListAsync();
+
+                var proyectoIdsStr = proyectosCliente
+                    .SelectMany(id => new[] { id.ToString(), $"PRY-{id.ToString().PadLeft(3, '0')}" })
+                    .ToList();
+
+                query = query.Where(h => h.ClienteId == clienteId.Value || proyectoIdsStr.Contains(h.ProyectoId));
+            }
+
+            var list = await query.ToListAsync();
             return Ok(list.Select(MapToDTO).ToList());
         }
 

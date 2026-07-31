@@ -1691,3 +1691,30 @@ select.form-control { cursor: pointer; }
 .autosave-banner:hover {
   background: linear-gradient(135deg, rgba(76, 166, 106, 0.18), rgba(76, 166, 106, 0.1)) !important;
 }
+
+/* Custom Responsive/Utility Classes */
+.w-full {
+  width: 100%;
+}
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.rounded-lg {
+  border-radius: var(--radius-md);
+}
+.border-slate-200 {
+  border: 1px solid var(--border);
+}
+.card-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+@media (min-width: 640px) {
+  .card-container {
+    padding: 24px;
+  }
+}

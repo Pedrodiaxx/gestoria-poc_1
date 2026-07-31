@@ -16,7 +16,7 @@ namespace Backend.Repositories
         {
             var query = _db.Presupuestos.AsQueryable();
 
-            if (proyectoIds != null && proyectoIds.Count > 0)
+            if (proyectoIds != null)
             {
                 query = query.Where(p => proyectoIds.Contains(p.ProyectoId));
             }

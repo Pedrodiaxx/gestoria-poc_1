@@ -1,7 +1,12 @@
 import { API_BASE_URL } from '../config/api';
 
-export async function fetchHojasDeRuta() {
-  const response = await fetch(`${API_BASE_URL}/api/hojasderuta`);
+export async function fetchHojasDeRuta({ clienteId, rol } = {}) {
+  const queryParams = new URLSearchParams();
+  if (clienteId) queryParams.append('clienteId', clienteId);
+  if (rol) queryParams.append('rol', rol);
+
+  const url = `${API_BASE_URL}/api/hojasderuta${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al consultar Hojas de Ruta desde el servidor');
   return response.json();
 }

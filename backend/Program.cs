@@ -46,16 +46,18 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    // Eliminar la tabla "Cotizaciones" de PostgreSQL si aún existe
+    // Asegurar esquema en PostgreSQL (Crear tabla Roles y remover columna Email de Usuarios)
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"Cotizaciones\" CASCADE;");
-        Console.WriteLine("[Startup] Tabla Cotizaciones eliminada de la base de datos PostgreSQL.");
+        await dbContext.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"Roles\" (\"Id\" text PRIMARY KEY, \"Label\" text NOT NULL);");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" DROP COLUMN IF EXISTS \"Email\";");
+        Console.WriteLine("[Startup] Esquema PostgreSQL actualizado (Roles asegurado, Email removido).");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Startup] Error al eliminar tabla Cotizaciones: {ex.Message}");
+        Console.WriteLine($"[Startup] Error al actualizar esquema PostgreSQL: {ex.Message}");
     }
 
     try

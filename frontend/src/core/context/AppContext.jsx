@@ -10,6 +10,7 @@ import { fetchPresupuestos } from '../../services/presupuestosService';
 import { fetchTareas } from '../../services/tareasService';
 import { fetchConceptos } from '../../services/conceptosService';
 import { fetchUsuarios, fetchUsuarioPorId, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
+import { fetchRoles } from '../../services/rolesService';
 
 
 const AppContext = createContext(null);
@@ -165,14 +166,15 @@ export const AppContextProvider = ({
         if (session.clienteId) queryParams.clienteId = session.clienteId;
         if (session.rol) queryParams.rol = session.rol;
 
-        const [clientsData, projectsData, budgetsData, tasksData, conceptsData, usersData] =
+        const [clientsData, projectsData, budgetsData, tasksData, conceptsData, usersData, rolesData] =
           await Promise.all([
             fetchClientes(),
             fetchProyectos(queryParams),
             fetchPresupuestos(queryParams),
-            fetchTareas(),
+            fetchTareas(queryParams),
             fetchConceptos(),
-            fetchUsuarios()
+            fetchUsuarios(),
+            fetchRoles()
           ]);
 
         setClientes(clientsData || []);
@@ -181,6 +183,7 @@ export const AppContextProvider = ({
         setTareas(tasksData || []);
         setConceptos(conceptsData || []);
         setUsuarios(usersData || []);
+        if (rolesData && rolesData.length > 0) setRolesList(rolesData);
       } catch (err) {
         console.error("Error en sincronización con el backend:", err);
       }
@@ -234,7 +237,7 @@ export const AppContextProvider = ({
       const actualizado = await updateUsuario(updatedUser.id, updatedUser);
       setUsuarios(prev => prev.map(u => u.id === updatedUser.id ? actualizado : u));
 
-      if (session && (String(session.id) === String(updatedUser.id) || session.email?.toLowerCase() === updatedUser.email?.toLowerCase())) {
+      if (session && String(session.id) === String(updatedUser.id)) {
         const newSession = {
           ...session,
           ...actualizado,
@@ -306,18 +309,13 @@ export const AppContextProvider = ({
   const linkClientAccount = (user, currentClientesList = clientes) => {
     if (user.rol !== 'cliente') return user;
 
-    const emailClean = user.email.trim().toLowerCase();
-    let client = currentClientesList.find(c => c.email && c.email.trim().toLowerCase() === emailClean);
+    const nameClean = (user.nombre || '').trim().toLowerCase();
 
-    // Fallback: If it's Patricia N. and she wasn't matched, find by contact name "Patricia Noriega" or ID 6
-    if (!client && emailClean === 'pnoriega@gmail.com') {
-      client = currentClientesList.find(c => c.id === 6 || (c.contacto && c.contacto.toLowerCase().includes('patricia noriega')));
-      if (client) {
-        // Update client email so they are linked directly next time
-        client.email = 'pnoriega@gmail.com';
-        updateClientField(client.id, 'email', 'pnoriega@gmail.com');
-      }
-    }
+    let client = currentClientesList.find(c =>
+      (user.clienteId && String(c.id) === String(user.clienteId)) ||
+      (nameClean && c.nombre && c.nombre.trim().toLowerCase() === nameClean) ||
+      (nameClean && c.contacto && c.contacto.trim().toLowerCase() === nameClean)
+    );
 
     if (!client) {
       const newId = Math.max(...currentClientesList.map(c => c.id), 0) + 1;
@@ -325,7 +323,7 @@ export const AppContextProvider = ({
         id: newId,
         nombre: user.nombre,
         contacto: user.nombre,
-        email: user.email,
+        email: '',
         tel: '',
         tipo: 'persona',
         rfc: '',

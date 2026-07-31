@@ -24,6 +24,17 @@ namespace Backend.Controllers
             return Ok(resultado);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id, [FromQuery] int? clienteId, [FromQuery] string? rol)
+        {
+            var resultado = await _service.GetByIdAsync(id, clienteId, rol);
+            if (resultado == null)
+            {
+                return NotFound("Proyecto no encontrado o no tiene permisos para consultarlo.");
+            }
+            return Ok(resultado);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Proyecto nuevoProyecto)
         {

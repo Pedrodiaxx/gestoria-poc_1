@@ -333,19 +333,30 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   }, {});
   const otherItems = conceptos.filter(c => !STAGES.includes(c.etapa));
 
-  // Footnotes legend map for comments
+  // Ordenar todos los conceptos según el orden de presentación por etapas
+  const orderedConcepts = [];
+  STAGES.forEach(stage => {
+    orderedConcepts.push(...(conceptsByStage[stage] || []));
+  });
+  orderedConcepts.push(...otherItems);
+
+  // Mapa por referencia de objeto JS de números correlativos globales (1..N) y notas / observaciones para la simbología
+  const conceptGlobalNoMap = new Map();
+  const conceptNoteMap = new Map();
   const footnotesList = [];
-  const conceptNoteMap = {};
   let noteCounter = 1;
 
-  conceptos.forEach((c, idx) => {
+  orderedConcepts.forEach((c, idx) => {
+    const globalNo = idx + 1;
+    conceptGlobalNoMap.set(c, globalNo);
+
     const com = (c.comentarios || c.observaciones || '').trim();
     if (com && com !== '—' && com !== '-') {
       const noteTag = `NOTA ${noteCounter}`;
-      conceptNoteMap[c.id || idx] = noteTag;
+      conceptNoteMap.set(c, noteTag);
       footnotesList.push({
         tag: noteTag,
-        conceptoNo: c.no || (idx + 1),
+        conceptoNo: globalNo,
         conceptoNombre: c.concepto || c.descripcion || '',
         texto: com
       });
@@ -371,10 +382,11 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
         </tr>
 
         {items.map((c, idx) => {
+          const displayNo = conceptGlobalNoMap.get(c) || (idx + 1);
           if (editable) {
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
-                <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold' }}>{c.no}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold' }}>{displayNo}</td>
                 <td style={{ padding: '10px 8px' }}>
                   <textarea className="form-control" rows={2} style={{ padding: '6px', fontSize: '13px', width: '100%' }} value={c.concepto} onChange={e => updateConcept(c.id, 'concepto', e.target.value)} />
                 </td>
@@ -413,10 +425,10 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
             );
           } else {
             const assigned = EQUIPO.find(eq => eq.id === c.empleadoAsignadoId);
-            const noteTag = conceptNoteMap[c.id || idx];
+            const noteTag = conceptNoteMap.get(c);
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}>
-                <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: 'var(--text-3)' }}>{c.no}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: 'var(--text-3)' }}>{displayNo}</td>
                 <td style={{ padding: '12px 10px', fontWeight: '600', fontSize: '13.5px', color: 'var(--text)' }}>{c.concepto}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'center' }}><span className="badge badge-gray">{c.unidad}</span></td>
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '700', fontSize: '13.5px' }}>{money(c.honorarios)}</td>
@@ -476,8 +488,8 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
 
   return (
     <div>
-      <div className="table-responsive-wrap" style={{ marginBottom: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)' }}>
+      <div className="w-full overflow-x-auto rounded-lg border border-slate-200" style={{ marginBottom: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)', minWidth: '900px' }}>
           <thead>
             <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
               <th style={{ padding: '12px 10px', textAlign: 'center', width: '4%' }}>No.</th>
@@ -847,7 +859,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       estado: 'Borrador',
       titulo,
       fecha: fmt(hoy),
-      clienteId: cliente ? cliente.id : null,
+      clienteId: cliente ? cliente.id : (selProyecto ? selProyecto.clienteId : null),
       conceptos: conceptosList,
       propietario,
       direccion,
@@ -2109,8 +2121,8 @@ export function Presupuestos() {
                         No hay ningún presupuesto creado para este proyecto.
                       </div>
                     ) : (
-                      <div className="table-responsive-wrap">
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: '800px' }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid var(--border)' }}>
                               <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Versión</th>
@@ -2195,8 +2207,8 @@ export function Presupuestos() {
             Catálogo de Conceptos
             <span className="badge badge-gray">{filteredCatalogo.length}</span>
           </div>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: '700px' }}>
               <thead>
                 <tr style={{ background: 'var(--surface2)' }}>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>Clave</th>
