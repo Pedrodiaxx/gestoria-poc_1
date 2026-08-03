@@ -45,10 +45,7 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Proyecto proyecto)
         {
-            if (id != proyecto.Id)
-            {
-                return BadRequest("El ID de la ruta no coincide con el del cuerpo.");
-            }
+            proyecto.Id = id;
             var dto = await _service.UpdateAsync(proyecto);
             return Ok(dto);
         }

@@ -273,10 +273,12 @@ export const AppContextProvider = ({
     setProyectos(prev => [nuevo, ...prev]);
   };
   const updateProyecto = async (updated) => {
+    const idNumerico = updated.idNumerico || (typeof updated.id === 'number' ? updated.id : parseInt(String(updated.id).replace(/\D/g, '')) || 0);
+
     // Optimistic update of local state
-    setProyectos(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setProyectos(prev => prev.map(p => (p.id === updated.id || p.idNumerico === idNumerico) ? { ...p, ...updated } : p));
+
     try {
-      const idNumerico = updated.idNumerico || updated.id;
       const modeloProyecto = {
         id: idNumerico,
         nombre: updated.nombre,
@@ -284,10 +286,24 @@ export const AppContextProvider = ({
         estatus: updated.estatus,
         prioridad: updated.prioridad,
         avance: updated.avance,
-        fechaInicio: updated.fechaInicio,
-        monto: updated.monto
+        usoPrincipal: updated.usoPrincipal || null,
+        usoComplementario: updated.usoComplementario || null,
+        impactoPrincipal: updated.impactoPrincipal || null,
+        usosComplementariosJson: updated.usosComplementariosJson || (updated.usosComplementarios?.length ? JSON.stringify(updated.usosComplementarios) : null),
+        direccionPrincipal: updated.direccionPrincipal || updated.ubicacion || null,
+        direccionesComplementariasJson: updated.direccionesComplementariasJson || (updated.direccionesComplementarias?.length ? JSON.stringify(updated.direccionesComplementarias) : null),
+        vialidadPrincipal: updated.vialidadPrincipal || null,
+        vialidadComplementaria: updated.vialidadComplementaria || null,
+        alcance: updated.alcance || null,
+        descripcion: updated.descripcion || null,
+        responsable: updated.responsable || null,
+        fechaInicio: updated.fechaInicio
       };
-      await updateProyectoService(idNumerico, modeloProyecto);
+      const dto = await updateProyectoService(idNumerico, modeloProyecto);
+      if (dto) {
+        setProyectos(prev => prev.map(p => (p.id === dto.id || p.idNumerico === dto.idNumerico) ? dto : p));
+      }
+      return dto;
     } catch (err) {
       console.error("Error al actualizar proyecto en el backend:", err);
     }

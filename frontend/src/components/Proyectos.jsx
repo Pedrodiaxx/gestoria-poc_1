@@ -1368,6 +1368,7 @@ function ProyectosContent() {
           getBudgetTotal={calcBudgetTotal}
           onClose={() => setProyectoDetalle(null)}
           onEliminar={handleEliminarProyecto}
+          onUpdateProyecto={(updated) => setProyectoDetalle(updated)}
           onCrearPresupuesto={(pid) => {
             setPreselectedProjectId && setPreselectedProjectId(pid);
             setActive && setActive('presupuestos');
@@ -1529,7 +1530,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
 }
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
-function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onCrearPresupuesto, onVerPresupuesto, session }) {
+function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onUpdateProyecto, onCrearPresupuesto, onVerPresupuesto, session }) {
   const { proyectos = [], updateProyecto, tareas = [], usuarios = [], setProyectos } = useAppContext();
   const { actualizarProyecto } = useProyectos(setProyectos, session);
 
@@ -1561,7 +1562,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   }
 
   const safeProyectos = Array.isArray(proyectos) ? proyectos : [];
-  const p = safeProyectos.find(proj => proj?.id === initialProyecto?.id || proj?.idNumerico === initialProyecto?.idNumerico) || initialProyecto;
+  const p = safeProyectos.find(proj => proj?.id === initialProyecto?.id || (proj?.idNumerico && proj?.idNumerico === initialProyecto?.idNumerico)) || initialProyecto;
 
   const cli = (clientes || []).find(c => c?.id === p?.clienteId);
   const tipo = TRAMITES_TIPOS[p?.tipo];
@@ -1628,9 +1629,11 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
 
     const dirsFiltradas = editDireccionesComp.filter(d => d && typeof d === 'string' && d.trim() !== '');
     const usosFiltrados = editUsosComp.filter(u => u && typeof u === 'string' && u.trim() !== '');
+    const targetId = p.idNumerico || (typeof p.id === 'number' ? p.id : parseInt(String(p.id).replace(/\D/g, '')) || 0);
 
     const payload = {
-      id: p.idNumerico,
+      id: targetId,
+      idNumerico: targetId,
       nombre: editNombre,
       clienteId: p.clienteId,
       estatus: editEstatus,
@@ -1651,10 +1654,15 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
     };
 
     try {
-      if (actualizarProyecto) {
-        await actualizarProyecto(p.idNumerico, payload);
+      let resultado = null;
+      if (actualizarProyecto && targetId > 0) {
+        resultado = await actualizarProyecto(targetId, payload);
       } else if (updateProyecto) {
-        updateProyecto({ ...p, ...payload, direccionesComplementarias: dirsFiltradas, usosComplementarios: usosFiltrados });
+        resultado = await updateProyecto({ ...p, ...payload, direccionesComplementarias: dirsFiltradas, usosComplementarios: usosFiltrados });
+      }
+
+      if (onUpdateProyecto && resultado) {
+        onUpdateProyecto(resultado);
       }
     } catch (error) {
       console.error('Error al guardar los cambios del proyecto:', error);
