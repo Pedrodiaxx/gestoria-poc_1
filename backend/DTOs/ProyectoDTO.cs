@@ -3,7 +3,7 @@ namespace Data.DTOs
     /// <summary>
     /// DTO de salida para el endpoint GET /api/proyectos.
     /// Contiene el folio formateado, el nombre del cliente ya resuelto,
-    /// los datos de avance, y las estadísticas de presupuesto calculadas en el servidor.
+    /// los datos de avance, las estadísticas de presupuesto y todos los metadatos urbanos (Anexo N-02).
     /// </summary>
     public class ProyectoDTO
     {
@@ -32,17 +32,35 @@ namespace Data.DTOs
         public string Prioridad { get; set; } = "media";
         public int Avance { get; set; }
 
+        // ─── Clasificación Normativa (Anexo N-02) ────────────────────────────────
+        public string UsoPrincipal { get; set; } = string.Empty;
+        public string UsoComplementario { get; set; } = string.Empty;
+        public string ImpactoPrincipal { get; set; } = string.Empty;
+
+        /// <summary>Array de usos complementarios (hasta 3), deserializado desde JSON.</summary>
+        public List<string> UsosComplementarios { get; set; } = new();
+
+        // ─── Dirección e Infraestructura Vial ────────────────────────────────────
+        public string DireccionPrincipal { get; set; } = string.Empty;
+
+        /// <summary>Array de hasta 3 direcciones complementarias, deserializado desde JSON.</summary>
+        public List<string> DireccionesComplementarias { get; set; } = new();
+
+        public string VialidadPrincipal { get; set; } = string.Empty;
+        public string VialidadComplementaria { get; set; } = string.Empty;
+
+        // ─── Información Adicional ────────────────────────────────────────────────
+        public string Alcance { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+
+        /// <summary>ID del usuario responsable asignado.</summary>
+        public string Responsable { get; set; } = string.Empty;
+
         /// <summary>Fecha formateada como "yyyy-MM-dd" lista para la UI.</summary>
         public string FechaInicio { get; set; } = string.Empty;
 
         /// <summary>Tipo de trámite (ej: "licencia_construccion").</summary>
         public string Tipo { get; set; } = "licencia_construccion";
-
-        /// <summary>Descripción del proyecto.</summary>
-        public string Descripcion { get; set; } = string.Empty;
-
-        /// <summary>Responsable asignado.</summary>
-        public string Responsable { get; set; } = "usr-admin-1";
 
         /// <summary>Monto total del presupuesto base asociado, calculado en el servidor.</summary>
         public double Monto { get; set; }

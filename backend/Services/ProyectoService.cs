@@ -1,6 +1,7 @@
 using Data;
 using Data.DTOs;
 using Backend.Repositories;
+using System.Text.Json;
 
 namespace Backend.Services
 {
@@ -57,9 +58,13 @@ namespace Backend.Services
 
         /// <summary>
         /// Crea un nuevo proyecto y devuelve el DTO calculado.
+        /// REGLA DE NEGOCIO: Avance siempre inicia en 0.
         /// </summary>
         public async Task<ProyectoDTO> CreateAsync(Proyecto nuevoProyecto)
         {
+            // Regla de negocio: el avance inicial siempre es 0 al crear
+            nuevoProyecto.Avance = 0;
+
             var created = await _proyectoRepo.AddAsync(nuevoProyecto);
             var clientes = await _clienteRepo.GetAllAsync();
             return MapToDTO(created, clientes, new List<Presupuesto>());
@@ -73,9 +78,9 @@ namespace Backend.Services
             return MapToDTO(updated, clientes, presupuestos);
         }
 
-        // ────────────────────────────────────────────────────────────
-        // LÓGICA DE NEGOCIO: Folio, cliente resuelto, monto, badges
-        // ────────────────────────────────────────────────────────────
+        // ────────────────────────────────────────────────────────────────────────
+        // LÓGICA DE NEGOCIO: Folio, cliente resuelto, monto, badges, metadatos urbanos
+        // ────────────────────────────────────────────────────────────────────────
         private static ProyectoDTO MapToDTO(Proyecto p, List<Cliente> clientes, List<Presupuesto> presupuestos)
         {
             var cli = clientes.FirstOrDefault(c => c.Id == p.ClienteId);
@@ -95,6 +100,10 @@ namespace Backend.Services
             var presAsociados = presupuestos.Where(b => b.ProyectoId == folioProyecto).ToList();
             double monto = presAsociados.Sum(b => b.TotalDirecto + b.TotalIndirecto);
 
+            // Deserializar arrays JSON
+            var usosComplementarios = DeserializeJsonArray(p.UsosComplementariosJson);
+            var direccionesComplementarias = DeserializeJsonArray(p.DireccionesComplementariasJson);
+
             return new ProyectoDTO
             {
                 Id = folioProyecto,
@@ -107,13 +116,47 @@ namespace Backend.Services
                 EstatusLabel = label,
                 Prioridad = p.Prioridad ?? "media",
                 Avance = p.Avance,
+
+                // Clasificación Normativa
+                UsoPrincipal = p.UsoPrincipal ?? "",
+                UsoComplementario = p.UsoComplementario ?? "",
+                ImpactoPrincipal = p.ImpactoPrincipal ?? "",
+                UsosComplementarios = usosComplementarios,
+
+                // Dirección e Infraestructura Vial
+                DireccionPrincipal = p.DireccionPrincipal ?? "",
+                DireccionesComplementarias = direccionesComplementarias,
+                VialidadPrincipal = p.VialidadPrincipal ?? "",
+                VialidadComplementaria = p.VialidadComplementaria ?? "",
+
+                // Información Adicional
+                Alcance = p.Alcance ?? "",
+                Descripcion = p.Descripcion ?? "",
+                Responsable = p.Responsable ?? "",
+
                 FechaInicio = p.FechaInicio.ToString("yyyy-MM-dd"),
                 Tipo = "licencia_construccion",
-                Descripcion = "",
-                Responsable = "usr-admin-1",
                 Monto = monto,
                 TotalPresupuestos = presAsociados.Count
             };
+        }
+
+        /// <summary>
+        /// Deserializa un string JSON como array de strings.
+        /// Devuelve lista vacía si el string es null, vacío o inválido.
+        /// </summary>
+        private static List<string> DeserializeJsonArray(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<string>();
+            try
+            {
+                var result = JsonSerializer.Deserialize<List<string>>(json);
+                return result ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
         }
 
         public async Task<bool> DeleteAsync(int id)
