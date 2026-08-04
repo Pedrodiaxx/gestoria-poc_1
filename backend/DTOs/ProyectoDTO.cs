@@ -40,6 +40,9 @@ namespace Data.DTOs
         /// <summary>Array de usos complementarios (hasta 3), deserializado desde JSON.</summary>
         public List<string> UsosComplementarios { get; set; } = new();
 
+        /// <summary>Zona Primaria según el PDUM Mérida.</summary>
+        public string ZonaPrimaria { get; set; } = string.Empty;
+
         // ─── Dirección e Infraestructura Vial ────────────────────────────────────
         public string DireccionPrincipal { get; set; } = string.Empty;
 

@@ -122,6 +122,7 @@ namespace Backend.Services
                 UsoComplementario = p.UsoComplementario ?? "",
                 ImpactoPrincipal = p.ImpactoPrincipal ?? "",
                 UsosComplementarios = usosComplementarios,
+                ZonaPrimaria = p.ZonaPrimaria ?? "",
 
                 // Dirección e Infraestructura Vial
                 DireccionPrincipal = p.DireccionPrincipal ?? "",

@@ -811,23 +811,56 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     setConceptosList([]);
   };
 
-  // Prepopulate title and address if project is selected
+  const handleProyectoChange = (e) => {
+    const selectedId = e.target.value;
+    setProyectoId(selectedId);
+    if (!selectedId) return;
+
+    const valNum = parseInt(selectedId);
+    const proyectoSeleccionado = (proyectos || []).find(p =>
+      p.id === selectedId || p.id === valNum || p.idNumerico === valNum
+    );
+
+    if (proyectoSeleccionado) {
+      setTitulo(`Presupuesto Gestoría — ${proyectoSeleccionado.nombre || ''}`);
+
+      const clientObj = (clientes || []).find(c => String(c.id) === String(proyectoSeleccionado.clienteId) || c.id === proyectoSeleccionado.clienteId);
+      const propietarioNombre = clientObj?.nombre || proyectoSeleccionado.cliente?.nombre || proyectoSeleccionado.clienteNombre || '';
+
+      setPropietario(propietarioNombre);
+      setDireccion(proyectoSeleccionado.direccionPrincipal || proyectoSeleccionado.ubicacion || '');
+      setUso(proyectoSeleccionado.usoComplementario || proyectoSeleccionado.usoPrincipal || '');
+      setClasificacion(proyectoSeleccionado.impactoPrincipal || '');
+      setZonaPrimaria(proyectoSeleccionado.zonaPrimaria || '');
+      setTipoVialidad(proyectoSeleccionado.vialidadPrincipal || '');
+    }
+  };
+
+  // Prepopulate title and metadata if project is selected or loaded
   useEffect(() => {
     if (proyectoId) {
-      const selectedProj = proyectos.find(p => p.id === proyectoId);
+      const valNum = parseInt(proyectoId);
+      const selectedProj = (proyectos || []).find(p =>
+        p.id === proyectoId || p.id === valNum || p.idNumerico === valNum
+      );
       if (selectedProj) {
-        setTitulo(`Presupuesto Gestoría — ${selectedProj.nombre}`);
-        setDireccion(selectedProj.ubicacion || '');
-        const client = clientes.find(c => String(c.id) === String(selectedProj.clienteId) || c.id === selectedProj.clienteId);
-        if (client) {
-          setPropietario(client.nombre || '');
-        }
+        if (!titulo) setTitulo(`Presupuesto Gestoría — ${selectedProj.nombre || ''}`);
+        if (!direccion) setDireccion(selectedProj.direccionPrincipal || selectedProj.ubicacion || '');
+
+        const client = (clientes || []).find(c => String(c.id) === String(selectedProj.clienteId) || c.id === selectedProj.clienteId);
+        const propietarioNombre = client?.nombre || selectedProj.cliente?.nombre || selectedProj.clienteNombre || '';
+        if (!propietario) setPropietario(propietarioNombre);
+
+        if (!uso) setUso(selectedProj.usoComplementario || selectedProj.usoPrincipal || '');
+        if (!clasificacion) setClasificacion(selectedProj.impactoPrincipal || '');
+        if (!zonaPrimaria) setZonaPrimaria(selectedProj.zonaPrimaria || '');
+        if (!tipoVialidad) setTipoVialidad(selectedProj.vialidadPrincipal || '');
       }
     }
   }, [proyectoId, proyectos, clientes]);
 
-  const selProyecto = proyectos.find(p => p.id === proyectoId);
-  const cliente = selProyecto ? clientes.find(c => String(c.id) === String(selProyecto.clienteId) || c.id === selProyecto.clienteId) : null;
+  const selProyecto = (proyectos || []).find(p => p.id === proyectoId || p.id === parseInt(proyectoId) || p.idNumerico === parseInt(proyectoId));
+  const cliente = selProyecto ? (clientes || []).find(c => String(c.id) === String(selProyecto.clienteId) || c.id === selProyecto.clienteId) : null;
 
   // Calculators
   const conceptosListSafe = conceptosList || [];
@@ -902,7 +935,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           animation: 'fadeInDown 0.4s ease-out'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>⚡</span>
             <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
               Se ha restaurado tu trabajo no guardado anterior.
             </span>
@@ -967,7 +999,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 0.5fr', gap: 16 }}>
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 700 }}>Proyecto Vinculado *</label>
-            <select className="form-control" value={proyectoId} onChange={e => setProyectoId(e.target.value)}>
+            <select className="form-control" value={proyectoId} onChange={handleProyectoChange}>
               <option value="">— Selecciona un proyecto para importar datos —</option>
               {proyectos.map(p => <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>)}
             </select>

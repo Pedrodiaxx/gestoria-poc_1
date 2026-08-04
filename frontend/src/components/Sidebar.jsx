@@ -36,7 +36,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     { id: 'tramites', label: 'Hojas de Ruta', icon: 'map' },
     { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
   ]).filter(item => {
-    if (item.id === 'tramites') return true;
+    if (item.id === 'tramites' || item.id === 'clientes') return true;
     return allowed.includes(item.id);
   });
 

@@ -24,6 +24,9 @@ namespace Data
         /// <summary>Usos complementarios adicionales (hasta 3) serializados como JSON array.</summary>
         public string? UsosComplementariosJson { get; set; }
 
+        /// <summary>Zona Primaria según el PDUM Mérida (ej: "ZCO - ZONA 1. CONSOLIDACIÓN URBANA").</summary>
+        public string? ZonaPrimaria { get; set; }
+
         // ─── Dirección e Infraestructura Vial ────────────────────────────────────
         /// <summary>Dirección principal del predio donde se ubica el proyecto.</summary>
         public string? DireccionPrincipal { get; set; }

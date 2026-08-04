@@ -50,6 +50,7 @@ namespace Backend.Repositories
                 existing.UsoComplementario = proyecto.UsoComplementario;
                 existing.ImpactoPrincipal = proyecto.ImpactoPrincipal;
                 existing.UsosComplementariosJson = proyecto.UsosComplementariosJson;
+                existing.ZonaPrimaria = proyecto.ZonaPrimaria;
                 existing.DireccionPrincipal = proyecto.DireccionPrincipal;
                 existing.DireccionesComplementariasJson = proyecto.DireccionesComplementariasJson;
                 existing.VialidadPrincipal = proyecto.VialidadPrincipal;

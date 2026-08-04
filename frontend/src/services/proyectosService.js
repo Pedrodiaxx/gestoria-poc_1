@@ -18,6 +18,12 @@ export async function fetchProyectos({ clienteId, rol } = {}) {
   return response.json();
 }
 
+export async function fetchProyectoById(id) {
+  const response = await fetch(`${API_BASE_URL}/api/proyectos/${id}`);
+  if (!response.ok) throw new Error('Error al consultar proyecto en el servidor');
+  return response.json();
+}
+
 export async function createProyecto(datos) {
   const response = await fetch(`${API_BASE_URL}/api/proyectos`, {
     method: 'POST',

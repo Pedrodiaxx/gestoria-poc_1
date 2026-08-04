@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { useProyectos } from '../hooks/useProyectos';
+import { fetchProyectoById } from '../services/proyectosService';
 import {
   PROYECTOS_MOCK,
   TRAMITES_TIPOS,
@@ -18,6 +19,25 @@ const ESTATUS_CONFIG = {
   'pendiente': { label: 'Pendiente', color: '#B87A0A', badge: 'badge-amber' },
   'pausado': { label: 'Pausado', color: '#9C9A94', badge: 'badge-gray' },
 };
+
+export const ZONAS_PRIMARIAS_OPTIONS = [
+  "ZCO - ZONA 1. CONSOLIDACIÓN URBANA",
+  "ZCR - ZONA 2. CRECIMIENTO URBANO",
+  "ZRS - ZONA 3. REGENERACIÓN Y DESARROLLO SUSTENTABLE",
+  "ZRN - ZONA 4. CONSERVACIÓN DE LOS RECURSOS NATURALES"
+];
+
+export const VIALIDADES_JERARQUIZADAS_OPTIONS = [
+  "Regional Federal",
+  "Regional Estatal: Anillo Periférico norte",
+  "Regional Estatal: Anillo Periférico sur",
+  "Regional Municipal",
+  "Intercomisarías (0-500 m²)",
+  "Vialidad A",
+  "Vialidad B",
+  "Vialidad C",
+  "Vialidad D"
+];
 
 export const USOS_NORMATIVOS_MAP = {
   "HABITACIONAL": [
@@ -927,6 +947,12 @@ export const GIROS_IMPACTO_MAP = {
   "HOSPITAL GENERAL": "Alto Impacto"
 };
 
+// ─── HELPER: TITLE CASE ──────────────────────────────────────────────────────
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+};
+
 // ─── ERROR BOUNDARY COMPONENT ────────────────────────────────────────────────
 class ProyectosErrorBoundary extends Component {
   constructor(props) {
@@ -1605,30 +1631,68 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const [editVialidadComplementaria, setEditVialidadComplementaria] = useState(p?.vialidadComplementaria || '');
   const [editDireccionesComp, setEditDireccionesComp] = useState(p?.direccionesComplementarias || []);
   const [editUsosComp, setEditUsosComp] = useState(p?.usosComplementarios || []);
+  const [editZonaPrimaria, setEditZonaPrimaria] = useState(p?.zonaPrimaria || '');
+  const [editNombrePredio, setEditNombrePredio] = useState(p?.nombrePredio || '');
+  const [editSuperficie, setEditSuperficie] = useState(p?.superficie || '');
+
+  const inferUsoPrincipal = (usoComp) => {
+    if (!usoComp) return '';
+    for (const [cat, list] of Object.entries(USOS_NORMATIVOS_MAP)) {
+      if (list.includes(usoComp)) return cat;
+    }
+    return '';
+  };
 
   useEffect(() => {
-    if (!p) return;
-    setEditNombre(p?.nombre || '');
-    setEditEstatus(p?.estatus || 'pendiente');
-    setEditPrioridad(p?.prioridad || 'media');
-    setEditResponsable(p?.responsable || (teamMembers[0]?.id || 'u1'));
-    setEditUbicacion(p?.direccionPrincipal || p?.ubicacion || '');
-    setEditAlcance(p?.alcance || '');
-    setEditDescripcion(p?.descripcion || '');
-    setEditUsoPrincipal(p?.usoPrincipal || '');
-    setEditUsoComplementario(p?.usoComplementario || '');
-    setEditImpactoPrincipal(p?.impactoPrincipal || '');
-    setEditVialidadPrincipal(p?.vialidadPrincipal || '');
-    setEditVialidadComplementaria(p?.vialidadComplementaria || '');
-    setEditDireccionesComp(p?.direccionesComplementarias || []);
-    setEditUsosComp(p?.usosComplementarios || []);
-  }, [p]);
+    if (!initialProyecto) return;
+
+    const fillFormState = (data) => {
+      if (!data) return;
+      setEditNombre(data.nombre || '');
+      setEditEstatus(data.estatus || 'pendiente');
+      setEditPrioridad(data.prioridad || 'media');
+      setEditResponsable(data.responsable || (teamMembers[0]?.id || 'u1'));
+      setEditUbicacion(data.direccionPrincipal || data.ubicacion || '');
+      setEditAlcance(data.alcance || '');
+      setEditDescripcion(data.descripcion || '');
+
+      const giroExacto = data.usoComplementario || '';
+      const catInferida = data.usoPrincipal || inferUsoPrincipal(giroExacto);
+      const impactoCalc = data.impactoPrincipal || (giroExacto && GIROS_IMPACTO_MAP[giroExacto] ? GIROS_IMPACTO_MAP[giroExacto] : '');
+
+      setEditUsoPrincipal(catInferida);
+      setEditUsoComplementario(giroExacto);
+      setEditImpactoPrincipal(impactoCalc);
+      setEditZonaPrimaria(data.zonaPrimaria || '');
+
+      setEditVialidadPrincipal(data.vialidadPrincipal || '');
+      setEditVialidadComplementaria(data.vialidadComplementaria || '');
+      setEditDireccionesComp(data.direccionesComplementarias || []);
+      setEditUsosComp(data.usosComplementarios || []);
+      setEditNombrePredio(data.nombrePredio || '');
+      setEditSuperficie(data.superficie || '');
+    };
+
+    fillFormState(p);
+
+    const targetId = p?.idNumerico || (typeof p?.id === 'number' ? p.id : parseInt(String(p?.id || '').replace(/\D/g, '')) || 0);
+    if (targetId > 0) {
+      fetchProyectoById(targetId)
+        .then(datosApi => {
+          if (datosApi) {
+            fillFormState(datosApi);
+          }
+        })
+        .catch(err => console.warn("Aviso al obtener datos frescos de GET /api/proyectos/{id}:", err));
+    }
+  }, [initialProyecto?.id, initialProyecto?.idNumerico]);
 
   const handleSaveEdit = async () => {
     if (!editNombre) return;
 
     const dirsFiltradas = editDireccionesComp.filter(d => d && typeof d === 'string' && d.trim() !== '');
-    const usosFiltrados = editUsosComp.filter(u => u && typeof u === 'string' && u.trim() !== '');
+    // usosFiltrados: los pares {giro, uso} con al menos el giro seleccionado
+    const usosFiltrados = editUsosComp.filter(par => par && typeof par === 'object' && par.giro && par.giro.trim() !== '');
     const targetId = p.idNumerico || (typeof p.id === 'number' ? p.id : parseInt(String(p.id).replace(/\D/g, '')) || 0);
 
     const payload = {
@@ -1642,6 +1706,9 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
       usoPrincipal: editUsoPrincipal,
       usoComplementario: editUsoComplementario,
       impactoPrincipal: editImpactoPrincipal,
+      zonaPrimaria: editZonaPrimaria || '',
+      nombrePredio: editNombrePredio || '',
+      superficie: editSuperficie ? parseFloat(editSuperficie) || editSuperficie : null,
       direccionPrincipal: editUbicacion || '',
       direccionesComplementariasJson: dirsFiltradas.length > 0 ? JSON.stringify(dirsFiltradas) : null,
       vialidadPrincipal: editVialidadPrincipal || '',
@@ -1784,6 +1851,16 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
               </div>
             </div>
 
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Nombre del Predio</label>
+                <input className="form-control" placeholder="Ej: Predio El Roble" value={editNombrePredio} onChange={e => setEditNombrePredio(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Superficie Aproximada (m²)</label>
+                <input className="form-control" type="number" min="0" step="0.01" placeholder="Ej: 1250.50" value={editSuperficie} onChange={e => setEditSuperficie(e.target.value)} />
+              </div>
+            </div>
             <div className="form-group">
               <label className="form-label">Dirección Principal (Ubicación)</label>
               <input className="form-control" value={editUbicacion} onChange={e => setEditUbicacion(e.target.value)} />
@@ -1836,14 +1913,17 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                   className="form-control"
                   value={editUsoPrincipal}
                   onChange={e => {
-                    setEditUsoPrincipal(e.target.value);
+                    const giro = e.target.value;
+                    setEditUsoPrincipal(giro);
                     setEditUsoComplementario('');
-                    setEditImpactoPrincipal('');
+                    if (editUsosComp.length === 0) {
+                      setEditImpactoPrincipal(giro && GIROS_IMPACTO_MAP[giro] ? GIROS_IMPACTO_MAP[giro] : '');
+                    }
                   }}
                 >
                   <option value="">— Seleccionar Giro —</option>
                   {Object.keys(USOS_NORMATIVOS_MAP).map(uso => (
-                    <option key={uso} value={uso}>{uso}</option>
+                    <option key={uso} value={uso}>{toTitleCase(uso)}</option>
                   ))}
                 </select>
               </div>
@@ -1856,88 +1936,147 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                   onChange={e => {
                     const giro = e.target.value;
                     setEditUsoComplementario(giro);
-                    setEditImpactoPrincipal(giro && GIROS_IMPACTO_MAP[giro] ? GIROS_IMPACTO_MAP[giro] : '');
+                    if (editUsosComp.length === 0) {
+                      setEditImpactoPrincipal(giro && GIROS_IMPACTO_MAP[giro] ? GIROS_IMPACTO_MAP[giro] : '');
+                    }
                   }}
                 >
                   <option value="">
                     {!editUsoPrincipal ? '-- Selecciona primero Giro --' : '— Seleccionar Uso Principal —'}
                   </option>
                   {editUsoPrincipal && (USOS_NORMATIVOS_MAP[editUsoPrincipal] || []).map(comp => (
-                    <option key={comp} value={comp}>{comp}</option>
+                    <option key={comp} value={comp}>{toTitleCase(comp)}</option>
                   ))}
                 </select>
               </div>
 
+              {/* ── Pares Giro + Uso Complementario (máx 3, opcionales, encadenados) ── */}
+              {editUsosComp.map((par, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Giro Complementario {idx + 1}</span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setEditUsosComp(editUsosComp.filter((_, i) => i !== idx))}
+                        style={{ padding: '1px 6px', minWidth: 'auto', color: 'var(--red)', fontSize: 11 }}
+                      >✕</button>
+                    </label>
+                    <select
+                      className="form-control"
+                      value={par.giro || ''}
+                      onChange={e => {
+                        const updated = editUsosComp.map((p, i) => i === idx ? { giro: e.target.value, uso: '' } : p);
+                        setEditUsosComp(updated);
+                      }}
+                    >
+                      <option value="">— Seleccionar Giro —</option>
+                      {Object.keys(USOS_NORMATIVOS_MAP).map(u => (
+                        <option key={u} value={u}>{toTitleCase(u)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Uso Complementario {idx + 1}</label>
+                    <select
+                      className="form-control"
+                      value={par.uso || ''}
+                      disabled={!par.giro}
+                      onChange={e => {
+                        const updated = editUsosComp.map((p, i) => i === idx ? { ...p, uso: e.target.value } : p);
+                        setEditUsosComp(updated);
+                      }}
+                    >
+                      <option value="">{!par.giro ? '-- Selecciona primero Giro --' : '— Seleccionar Uso —'}</option>
+                      {par.giro && (USOS_NORMATIVOS_MAP[par.giro] || []).map(u => (
+                        <option key={u} value={u}>{toTitleCase(u)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </React.Fragment>
+              ))}
+
+              {editUsosComp.length < 3 && (
+                <div style={{ gridColumn: '1/-1' }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => setEditUsosComp([...editUsosComp, { giro: '', uso: '' }])}
+                    style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Icon name="plus" size={11} /> Agregar Giro Complementario
+                  </button>
+                </div>
+              )}
+
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">Nivel de Impacto</label>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Nivel de Impacto</span>
+                  {editUsosComp.length > 0 && (
+                    <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 400 }}>Editable — hay giros complementarios activos</span>
+                  )}
+                </label>
                 <input
                   className="form-control"
                   value={editImpactoPrincipal}
-                  readOnly
-                  disabled
+                  readOnly={editUsosComp.length === 0}
+                  disabled={editUsosComp.length === 0}
+                  onChange={e => setEditImpactoPrincipal(e.target.value)}
                   placeholder="Autocalculado al seleccionar Giro y Uso Principal"
-                  style={{ background: 'var(--surface)', cursor: 'not-allowed', fontWeight: 500 }}
+                  style={{
+                    background: editUsosComp.length > 0 ? '' : 'var(--surface)',
+                    cursor: editUsosComp.length > 0 ? 'text' : 'not-allowed',
+                    fontWeight: 500
+                  }}
                 />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                <label className="form-label">Zona Primaria (PDUM)</label>
+                <select
+                  name="zonaPrimaria"
+                  className="form-control"
+                  value={editZonaPrimaria}
+                  onChange={e => setEditZonaPrimaria(e.target.value)}
+                >
+                  <option value="">— Seleccionar Zona Primaria —</option>
+                  {ZONAS_PRIMARIAS_OPTIONS.map(z => (
+                    <option key={z} value={z}>{z}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Vialidad Principal</label>
-                <input className="form-control" value={editVialidadPrincipal} onChange={e => setEditVialidadPrincipal(e.target.value)} placeholder="Ej: Av. Juárez" />
+                <select
+                  name="vialidadPrincipal"
+                  className="form-control"
+                  value={editVialidadPrincipal}
+                  onChange={e => setEditVialidadPrincipal(e.target.value)}
+                >
+                  <option value="">— Seleccionar Vialidad —</option>
+                  {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Vialidad Complementaria</label>
-                <input className="form-control" value={editVialidadComplementaria} onChange={e => setEditVialidadComplementaria(e.target.value)} placeholder="Ej: Calle 5" />
+                <select
+                  name="vialidadComplementaria"
+                  className="form-control"
+                  value={editVialidadComplementaria}
+                  onChange={e => setEditVialidadComplementaria(e.target.value)}
+                >
+                  <option value="">— Seleccionar Vialidad —</option>
+                  {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Usos Complementarios (fuera del grid para ocupar ancho completo) */}
-            <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ margin: 0, fontWeight: 500, fontSize: 13 }}>Uso Complementario <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>(Máx 3, opcional)</span></label>
-                {editUsosComp.length < 3 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => setEditUsosComp([...editUsosComp, ''])}
-                    style={{ padding: '2px 8px', fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    + Agregar Uso
-                  </button>
-                )}
-              </div>
-              {editUsosComp.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic', padding: '6px 0' }}>
-                  Sin usos complementarios registrados. Pulsa "Agregar Uso" para añadir uno.
-                </div>
-              )}
-              {editUsosComp.map((uso, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <select
-                    className="form-control"
-                    style={{ flex: 1 }}
-                    value={uso}
-                    onChange={e => {
-                      const updated = [...editUsosComp];
-                      updated[idx] = e.target.value;
-                      setEditUsosComp(updated);
-                    }}
-                  >
-                    <option value="">— Seleccionar Uso Complementario —</option>
-                    {Object.values(USOS_NORMATIVOS_MAP).flat().map(comp => (
-                      <option key={comp} value={comp}>{comp}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => setEditUsosComp(editUsosComp.filter((_, i) => i !== idx))}
-                    style={{ padding: 6, minWidth: 'auto', color: 'var(--red)', flexShrink: 0 }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
 
             <div className="form-group">
               <label className="form-label">Alcance del Proyecto</label>
@@ -2004,13 +2143,29 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 </div>
               )}
 
+              {(p?.nombrePredio || p?.superficie) && (
+                <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4, display: 'flex', gap: 24 }}>
+                  {p?.nombrePredio && (
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Nombre del Predio</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.nombrePredio}</div>
+                    </div>
+                  )}
+                  {p?.superficie && (
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Superficie (m²)</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.superficie} m²</div>
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Giro</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoPrincipal || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoPrincipal ? toTitleCase(p.usoPrincipal) : 'No especificado'}</div>
               </div>
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Uso Principal</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoComplementario || 'No especificado'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoComplementario ? toTitleCase(p.usoComplementario) : 'No especificado'}</div>
               </div>
 
               {/* Usos Complementarios */}
@@ -2035,6 +2190,13 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Nivel de Impacto</div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p?.impactoPrincipal || 'No especificado'}</div>
               </div>
+
+              {p?.zonaPrimaria && (
+                <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Zona Primaria (PDUM)</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.zonaPrimaria}</div>
+                </div>
+              )}
 
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Vialidad Principal</div>
@@ -2277,6 +2439,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
   const [usoPrincipal, setUsoPrincipal] = useState('');
   const [usoComplementario, setUsoComplementario] = useState('');
   const [impactoPrincipal, setImpactoPrincipal] = useState('');
+  const [zonaPrimaria, setZonaPrimaria] = useState('');
 
   const handleUsoPrincipalChange = (e) => {
     const selected = e.target.value;
@@ -2299,6 +2462,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
   const [vialidadComplementaria, setVialidadComplementaria] = useState('');
   const [direccionesComplementarias, setDireccionesComplementarias] = useState([]);
   const [usosComplementarios, setUsosComplementarios] = useState([]);
+  const [nombrePredio, setNombrePredio] = useState('');
+  const [superficie, setSuperficie] = useState('');
 
   const handleAddDireccionComp = () => {
     if (direccionesComplementarias.length < 3) {
@@ -2349,6 +2514,9 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
       usoPrincipal,
       usoComplementario,
       impactoPrincipal,
+      zonaPrimaria: zonaPrimaria || '',
+      nombrePredio: nombrePredio || '',
+      superficie: superficie ? parseFloat(superficie) || superficie : null,
       // Metadatos urbanos: persistirán en PostgreSQL
       direccionPrincipal: ubicacion || '',
       direccionesComplementariasJson: dirsFiltradas.length > 0 ? JSON.stringify(dirsFiltradas) : null,
@@ -2502,7 +2670,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                 >
                   <option value="">— Seleccionar Giro —</option>
                   {Object.keys(USOS_NORMATIVOS_MAP).map(uso => (
-                    <option key={uso} value={uso}>{uso}</option>
+                    <option key={uso} value={uso}>{toTitleCase(uso)}</option>
                   ))}
                 </select>
               </div>
@@ -2521,70 +2689,115 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                     {!usoPrincipal ? '-- Selecciona primero Giro --' : '— Seleccionar Uso Principal —'}
                   </option>
                   {usoPrincipal && (USOS_NORMATIVOS_MAP[usoPrincipal] || []).map(comp => (
-                    <option key={comp} value={comp}>{comp}</option>
+                    <option key={comp} value={comp}>{toTitleCase(comp)}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* NIVEL DE IMPACTO - INPUT FINO Y FORMAL */}
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nivel de Impacto</label>
+            {/* ── Pares Giro + Uso Complementario (máx 3, opcionales, encadenados) ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 0 }}>
+              {usosComplementarios.map((par, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 500, fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Giro Complementario {idx + 1}</span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setUsosComplementarios(usosComplementarios.filter((_, i) => i !== idx))}
+                        disabled={isSubmitting}
+                        style={{ padding: '1px 6px', minWidth: 'auto', color: 'var(--red)', fontSize: 11 }}
+                      >✕</button>
+                    </label>
+                    <select
+                      className="form-control"
+                      value={par.giro || ''}
+                      disabled={isSubmitting}
+                      onChange={e => setUsosComplementarios(usosComplementarios.map((p, i) => i === idx ? { giro: e.target.value, uso: '' } : p))}
+                      style={{ fontSize: 13 }}
+                    >
+                      <option value="">— Seleccionar Giro —</option>
+                      {Object.keys(USOS_NORMATIVOS_MAP).map(u => (
+                        <option key={u} value={u}>{toTitleCase(u)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Uso Complementario {idx + 1}</label>
+                    <select
+                      className="form-control"
+                      value={par.uso || ''}
+                      disabled={!par.giro || isSubmitting}
+                      onChange={e => setUsosComplementarios(usosComplementarios.map((p, i) => i === idx ? { ...p, uso: e.target.value } : p))}
+                      style={{ fontSize: 13 }}
+                    >
+                      <option value="">{!par.giro ? '-- Selecciona primero Giro --' : '— Seleccionar Uso —'}</option>
+                      {par.giro && (USOS_NORMATIVOS_MAP[par.giro] || []).map(u => (
+                        <option key={u} value={u}>{toTitleCase(u)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+
+            {usosComplementarios.length < 3 && (
+              <div style={{ marginTop: usosComplementarios.length > 0 ? 8 : 0 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() => setUsosComplementarios([...usosComplementarios, { giro: '', uso: '' }])}
+                  disabled={isSubmitting}
+                  style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <Icon name="plus" size={11} /> Agregar Giro Complementario
+                </button>
+              </div>
+            )}
+
+            {/* NIVEL DE IMPACTO */}
+            <div className="form-group" style={{ margin: '14px 0 0 0' }}>
+              <label className="form-label" style={{ fontWeight: 500, fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Nivel de Impacto</span>
+                {usosComplementarios.length > 0 && (
+                  <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 400 }}>Editable — hay giros complementarios activos</span>
+                )}
+              </label>
               <input
                 name="impactoPrincipal"
                 className="form-control"
                 placeholder="Autocalculado al seleccionar Giro y Uso Principal"
                 value={impactoPrincipal}
-                readOnly
-                disabled
+                readOnly={usosComplementarios.length === 0}
+                disabled={usosComplementarios.length === 0}
+                onChange={e => setImpactoPrincipal(e.target.value)}
                 style={{
-                  background: 'var(--surface)',
+                  background: usosComplementarios.length > 0 ? '' : 'var(--surface)',
                   color: 'var(--text)',
                   fontWeight: 500,
                   fontSize: 13,
-                  cursor: 'not-allowed'
+                  cursor: usosComplementarios.length > 0 ? 'text' : 'not-allowed'
                 }}
               />
             </div>
 
-            {/* USOS COMPLEMENTARIOS (MÁX 3) */}
-            <div style={{ marginTop: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ margin: 0, fontWeight: 500, fontSize: 13 }}>Usos Complementarios (Máx 3)</label>
-                {usosComplementarios.length < 3 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={handleAddUsoComp}
-                    disabled={isSubmitting}
-                    style={{ padding: '2px 8px', fontSize: 12, color: 'var(--blue)' }}
-                  >
-                    + Agregar Uso
-                  </button>
-                )}
-              </div>
-              {usosComplementarios.map((uso, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-3)', minWidth: 65, fontWeight: 500 }}>Uso {idx + 1}:</span>
-                  <input
-                    className="form-control"
-                    style={{ flex: 1, fontSize: 13 }}
-                    placeholder="Ej: Comercial / Servicios adicionales"
-                    value={uso}
-                    onChange={e => handleUpdateUsoComp(idx, e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => handleRemoveUsoComp(idx)}
-                    disabled={isSubmitting}
-                    style={{ padding: 6, minWidth: 'auto', color: 'var(--red)' }}
-                  >
-                    <Icon name="x" size={14} />
-                  </button>
-                </div>
-              ))}
+            {/* ZONA PRIMARIA (PDUM) */}
+            <div className="form-group" style={{ margin: '14px 0 0 0' }}>
+              <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Zona Primaria (PDUM)</label>
+              <select
+                name="zonaPrimaria"
+                className="form-control"
+                value={zonaPrimaria}
+                onChange={e => setZonaPrimaria(e.target.value)}
+                disabled={isSubmitting}
+                style={{ fontSize: 13 }}
+              >
+                <option value="">— Seleccionar Zona Primaria —</option>
+                {ZONAS_PRIMARIAS_OPTIONS.map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -2595,6 +2808,33 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nombre del Predio</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ej: Predio El Roble"
+                    value={nombrePredio}
+                    onChange={e => setNombrePredio(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Superficie Aproximada (m²)</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej: 1250.50"
+                    value={superficie}
+                    onChange={e => setSuperficie(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  />
+                </div>
+              </div>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Dirección Principal (Ubicación del Predio) *</label>
                 <input
@@ -2610,11 +2850,35 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Principal</label>
-                  <input className="form-control" placeholder="Ej: Av. García Lavín" value={vialidadPrincipal} onChange={e => setVialidadPrincipal(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
+                  <select
+                    name="vialidadPrincipal"
+                    className="form-control"
+                    value={vialidadPrincipal}
+                    onChange={e => setVialidadPrincipal(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Seleccionar Vialidad —</option>
+                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Complementaria</label>
-                  <input className="form-control" placeholder="Ej: Calle 27 x 32" value={vialidadComplementaria} onChange={e => setVialidadComplementaria(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
+                  <select
+                    name="vialidadComplementaria"
+                    className="form-control"
+                    value={vialidadComplementaria}
+                    onChange={e => setVialidadComplementaria(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Seleccionar Vialidad —</option>
+                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

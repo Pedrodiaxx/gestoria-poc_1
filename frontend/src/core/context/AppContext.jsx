@@ -297,6 +297,7 @@ export const AppContextProvider = ({
         alcance: updated.alcance || null,
         descripcion: updated.descripcion || null,
         responsable: updated.responsable || null,
+        zonaPrimaria: updated.zonaPrimaria || null,
         fechaInicio: updated.fechaInicio
       };
       const dto = await updateProyectoService(idNumerico, modeloProyecto);
