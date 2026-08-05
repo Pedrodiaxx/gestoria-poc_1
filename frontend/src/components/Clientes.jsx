@@ -546,10 +546,12 @@ export function Clientes() {
                   key={c.id}
                   onClick={() => setSelectedClientId(c.id)}
                   style={{
-                    background: '#FFFFFF',
+                    background: isSelected ? '#E0EAE2' : '#ECF3EE',
                     borderRadius: 12,
-                    border: isSelected ? '1.5px solid #1E5631' : '1px solid #E4E4E7',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    border: isSelected ? '1.5px solid #1E5631' : '1px solid rgba(30, 86, 49, 0.35)',
+                    boxShadow: isSelected
+                      ? '0 0 0 3px rgba(30, 86, 49, 0.22), 0 2px 6px rgba(0,0,0,0.05)'
+                      : '0 0 0 2px rgba(30, 86, 49, 0.10), 0 1px 3px rgba(0,0,0,0.03)',
                     padding: 16,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
@@ -565,8 +567,8 @@ export function Clientes() {
                     {/* Header Row: Client Name & Badges */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
                       <div>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', lineHeight: 1.3 }} title="Nombre o Razón Social">{c.nombre}</div>
-                        <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: '#092C15', lineHeight: 1.3 }} title="Nombre o Razón Social">{c.nombre}</div>
+                        <div style={{ fontSize: 12, color: '#2C4A34', marginTop: 2, fontWeight: 500 }}>
                           {c.contacto && c.contacto !== 'S/N' ? `Contacto: ${c.contacto}` : 'Contacto: S/N'}
                         </div>
                       </div>
@@ -576,9 +578,9 @@ export function Clientes() {
                           fontWeight: 600,
                           padding: '2px 8px',
                           borderRadius: 9999,
-                          background: isLead ? '#F1F5F9' : isActivo ? '#ECFDF5' : '#FEF3C7',
-                          color: isLead ? '#475569' : isActivo ? '#047857' : '#D97706',
-                          border: `1px solid ${isLead ? '#E2E8F0' : isActivo ? '#A7F3D0' : '#FDE68A'}`,
+                          background: isLead ? '#E2E8F0' : isActivo ? '#D1E7DD' : '#FEF3C7',
+                          color: isLead ? '#334155' : isActivo ? '#0F5132' : '#D97706',
+                          border: `1px solid ${isLead ? '#CBD5E1' : isActivo ? '#A3CFBB' : '#FDE68A'}`,
                           letterSpacing: 0.3
                         }}>
                           {isLead ? 'LEAD' : isActivo ? 'CLIENTE ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
@@ -588,9 +590,9 @@ export function Clientes() {
                           fontWeight: 500,
                           padding: '2px 7px',
                           borderRadius: 9999,
-                          background: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          color: '#64748B',
+                          background: 'rgba(226, 232, 240, 0.75)',
+                          border: '1px solid #CBD5E1',
+                          color: '#475569',
                           textTransform: 'uppercase'
                         }}>
                           {c.personaTipo || 'Moral'}
@@ -599,21 +601,21 @@ export function Clientes() {
                     </div>
 
                     {/* Metadata Lines */}
-                    <div style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
+                    <div style={{ fontSize: 12, color: '#2C4A34', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
                       {c.email && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Icon name="mail" size={13} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                          <Icon name="mail" size={13} style={{ color: '#165B33', flexShrink: 0 }} />
                           <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{c.email}</span>
                         </div>
                       )}
                       {c.tel && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Icon name="phone" size={13} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                          <Icon name="phone" size={13} style={{ color: '#165B33', flexShrink: 0 }} />
                           <span>{c.tel}</span>
                         </div>
                       )}
                       {c.rfc && (
-                        <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', color: '#64748B', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#165B33', marginTop: 2 }}>
                           RFC: {c.rfc}
                         </div>
                       )}
@@ -627,19 +629,19 @@ export function Clientes() {
                     justify: 'space-between',
                     marginTop: 12,
                     paddingTop: 10,
-                    borderTop: '1px solid #F1F5F9',
+                    borderTop: '1px solid rgba(30, 86, 49, 0.18)',
                     gap: 8
                   }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1, overflow: 'hidden' }}>
                       {getRelatedProjectsForClient(c).map((proj, idx) => (
                         <span key={idx} style={{
                           fontSize: 11,
-                          background: '#F8FAFC',
-                          color: '#475569',
+                          background: '#FFFFFF',
+                          color: '#1E5631',
                           padding: '2px 7px',
                           borderRadius: 6,
-                          border: '1px solid #E2E8F0',
-                          fontWeight: 400
+                          border: '1px solid rgba(30, 86, 49, 0.25)',
+                          fontWeight: 500
                         }}>
                           {proj.nombre ? (proj.nombre.length > 20 ? proj.nombre.substring(0, 20) + '...' : proj.nombre) : proj}
                         </span>
@@ -655,19 +657,19 @@ export function Clientes() {
                       }}
                       style={{
                         padding: 6,
-                        color: '#EF4444',
+                        color: '#DC2626',
                         background: 'transparent',
                         border: 'none',
-                        borderRadius: 6,
+                        borderRadius: 8,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justify: 'center',
                         flexShrink: 0,
-                        transition: 'background 0.15s ease, color 0.15s ease'
+                        transition: 'all 0.15s ease'
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#EF4444'; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(254, 226, 226, 0.8)'; e.currentTarget.style.color = '#B91C1C'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#DC2626'; }}
                       title="Eliminar cliente"
                     >
                       <Icon name="trash" size={14} />
