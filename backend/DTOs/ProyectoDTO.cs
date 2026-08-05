@@ -52,6 +52,12 @@ namespace Data.DTOs
         public string VialidadPrincipal { get; set; } = string.Empty;
         public string VialidadComplementaria { get; set; } = string.Empty;
 
+        /// <summary>Categoría de área de compatibilidad (Ej: "Industria", "Ambiental").</summary>
+        public string AreaCompatibilidad { get; set; } = string.Empty;
+
+        /// <summary>Zona de compatibilidad específica (Ej: "Áreas Industriales (AI)").</summary>
+        public string ZonaCompatibilidadEspecifica { get; set; } = string.Empty;
+
         // ─── Información Adicional ────────────────────────────────────────────────
         public string Alcance { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;

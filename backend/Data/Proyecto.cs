@@ -40,6 +40,12 @@ namespace Data
         /// <summary>Nombre de la vialidad complementaria (calle secundaria, esquina).</summary>
         public string? VialidadComplementaria { get; set; }
 
+        /// <summary>Categoría de área de compatibilidad (Ej: "INDUSTRIA", "AMBIENTAL").</summary>
+        public string? AreaCompatibilidad { get; set; }
+
+        /// <summary>Zona de compatibilidad específica (Ej: "Áreas Industriales (AI)", "Zona de Monumentos Históricos").</summary>
+        public string? ZonaCompatibilidadEspecifica { get; set; }
+
         // ─── Información Adicional del Proyecto ──────────────────────────────────
         /// <summary>Alcance del proyecto (descripción técnica detallada).</summary>
         public string? Alcance { get; set; }

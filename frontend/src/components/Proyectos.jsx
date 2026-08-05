@@ -27,6 +27,23 @@ export const ZONAS_PRIMARIAS_OPTIONS = [
   "ZRN - ZONA 4. CONSERVACIÓN DE LOS RECURSOS NATURALES"
 ];
 
+export const AREAS_COMPATIBILIDAD_MAP = {
+  "INDUSTRIA": [
+    "Áreas Industriales (AI)",
+    "Áreas de Amortiguamiento Industrial"
+  ],
+  "CENTROS DE POBLACIÓN": [
+    "Centros de Población y Centros de Población en Transición"
+  ],
+  "AMBIENTAL": [
+    "Área de Transición Mérida-Cuxtal (ATC)",
+    "Áreas de Recuperación (AR)"
+  ],
+  "PATRIMONIO": [
+    "Zona de Monumentos Históricos"
+  ]
+};
+
 export const VIALIDADES_JERARQUIZADAS_OPTIONS = [
   "Regional Federal",
   "Regional Estatal: Anillo Periférico norte",
@@ -1336,7 +1353,7 @@ function ProyectosContent() {
                     <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-2)' }}>{cli?.nombre || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ fontSize: 11, background: BG_MAP[tipo?.color] || '#eee', color: col, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>
-                        {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
+                        {tipo?.nombre || 'Gestión General'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
@@ -1488,7 +1505,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
             borderRadius: 10,
             fontWeight: 500
           }}>
-            {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
+            {tipo?.nombre || 'Gestión General'}
           </span>
           {cli && (
             <span style={{
@@ -2096,15 +2113,9 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Tipo de Gestión</div>
-                <span style={{ fontSize: 11, background: BG_MAP[tipo?.color] || '#eee', color: col, padding: '3px 8px', borderRadius: 10, fontWeight: 600, display: 'inline-block' }}>
-                  {tipo?.icono || '📁'} {tipo?.nombre || 'Gestión General'}
-                </span>
-              </div>
-              <div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Prioridad</div>
                 <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize', color: p?.prioridad === 'alta' ? 'var(--red)' : p?.prioridad === 'media' ? 'var(--amber)' : 'var(--text-3)' }}>
-                  ⚡ {p?.prioridad || 'Media'}
+                  {p?.prioridad || 'Media'}
                 </span>
               </div>
 
@@ -2431,6 +2442,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
   const [vialidadComplementaria, setVialidadComplementaria] = useState('');
   const [direccionesComplementarias, setDireccionesComplementarias] = useState([]);
   const [usosComplementarios, setUsosComplementarios] = useState([]);
+  const [areaCompatibilidad, setAreaCompatibilidad] = useState('');
+  const [zonaCompatibilidadEspecifica, setZonaCompatibilidadEspecifica] = useState('');
 
   const handleAddDireccionComp = () => {
     if (direccionesComplementarias.length < 3) {
@@ -2491,6 +2504,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
       descripcion: descripcion || '',
       responsable: responsable || '',
       usosComplementariosJson: usosFiltrados.length > 0 ? JSON.stringify(usosFiltrados) : null,
+      areaCompatibilidad: areaCompatibilidad || '',
+      zonaCompatibilidadEspecifica: zonaCompatibilidadEspecifica || '',
       fechaInicio: new Date().toISOString()
     };
 
@@ -2858,6 +2873,54 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                     </button>
                   </div>
                 ))}
+              </div>
+
+              {/* Áreas y Zonas de Compatibilidad */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 10 }}>
+                  Áreas y Zonas de Compatibilidad
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Categoría de Área</label>
+                    <select
+                      name="areaCompatibilidad"
+                      className="form-control"
+                      value={areaCompatibilidad}
+                      onChange={e => {
+                        const cat = e.target.value;
+                        setAreaCompatibilidad(cat);
+                        const opciones = AREAS_COMPATIBILIDAD_MAP[cat] || [];
+                        setZonaCompatibilidadEspecifica(opciones.length === 1 ? opciones[0] : '');
+                      }}
+                      disabled={isSubmitting}
+                      style={{ fontSize: 13 }}
+                    >
+                      <option value="">— Seleccionar Categoría —</option>
+                      {Object.keys(AREAS_COMPATIBILIDAD_MAP).map(cat => (
+                        <option key={cat} value={cat}>{toTitleCase(cat)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Zona de Compatibilidad Específica</label>
+                    <select
+                      name="zonaCompatibilidadEspecifica"
+                      className="form-control"
+                      value={zonaCompatibilidadEspecifica}
+                      onChange={e => setZonaCompatibilidadEspecifica(e.target.value)}
+                      disabled={!areaCompatibilidad || isSubmitting}
+                      style={{ fontSize: 13 }}
+                    >
+                      <option value="">
+                        {!areaCompatibilidad ? '-- Selecciona primero Categoría --' : '— Seleccionar Zona —'}
+                      </option>
+                      {areaCompatibilidad && (AREAS_COMPATIBILIDAD_MAP[areaCompatibilidad] || []).map(zona => (
+                        <option key={zona} value={zona}>{toTitleCase(zona)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

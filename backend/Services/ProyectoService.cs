@@ -129,6 +129,8 @@ namespace Backend.Services
                 DireccionesComplementarias = direccionesComplementarias,
                 VialidadPrincipal = p.VialidadPrincipal ?? "",
                 VialidadComplementaria = p.VialidadComplementaria ?? "",
+                AreaCompatibilidad = p.AreaCompatibilidad ?? "",
+                ZonaCompatibilidadEspecifica = p.ZonaCompatibilidadEspecifica ?? "",
 
                 // Información Adicional
                 Alcance = p.Alcance ?? "",
