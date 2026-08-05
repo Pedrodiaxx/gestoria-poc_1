@@ -1632,8 +1632,6 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const [editDireccionesComp, setEditDireccionesComp] = useState(p?.direccionesComplementarias || []);
   const [editUsosComp, setEditUsosComp] = useState(p?.usosComplementarios || []);
   const [editZonaPrimaria, setEditZonaPrimaria] = useState(p?.zonaPrimaria || '');
-  const [editNombrePredio, setEditNombrePredio] = useState(p?.nombrePredio || '');
-  const [editSuperficie, setEditSuperficie] = useState(p?.superficie || '');
 
   const inferUsoPrincipal = (usoComp) => {
     if (!usoComp) return '';
@@ -1669,8 +1667,6 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
       setEditVialidadComplementaria(data.vialidadComplementaria || '');
       setEditDireccionesComp(data.direccionesComplementarias || []);
       setEditUsosComp(data.usosComplementarios || []);
-      setEditNombrePredio(data.nombrePredio || '');
-      setEditSuperficie(data.superficie || '');
     };
 
     fillFormState(p);
@@ -1707,8 +1703,6 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
       usoComplementario: editUsoComplementario,
       impactoPrincipal: editImpactoPrincipal,
       zonaPrimaria: editZonaPrimaria || '',
-      nombrePredio: editNombrePredio || '',
-      superficie: editSuperficie ? parseFloat(editSuperficie) || editSuperficie : null,
       direccionPrincipal: editUbicacion || '',
       direccionesComplementariasJson: dirsFiltradas.length > 0 ? JSON.stringify(dirsFiltradas) : null,
       vialidadPrincipal: editVialidadPrincipal || '',
@@ -1840,7 +1834,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
               </div>
 
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">Responsable del Trámite</label>
+                <label className="form-label">Encargado / Responsable</label>
                 <select className="form-control" value={editResponsable} onChange={e => setEditResponsable(e.target.value)}>
                   {teamMembers.map(e => (
                     <option key={e.id} value={e.id}>
@@ -1851,18 +1845,8 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
               </div>
             </div>
 
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label">Nombre del Predio</label>
-                <input className="form-control" placeholder="Ej: Predio El Roble" value={editNombrePredio} onChange={e => setEditNombrePredio(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Superficie Aproximada (m²)</label>
-                <input className="form-control" type="number" min="0" step="0.01" placeholder="Ej: 1250.50" value={editSuperficie} onChange={e => setEditSuperficie(e.target.value)} />
-              </div>
-            </div>
             <div className="form-group">
-              <label className="form-label">Dirección Principal (Ubicación)</label>
+              <label className="form-label">Dirección Principal</label>
               <input className="form-control" value={editUbicacion} onChange={e => setEditUbicacion(e.target.value)} />
             </div>
 
@@ -2143,22 +2127,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 </div>
               )}
 
-              {(p?.nombrePredio || p?.superficie) && (
-                <div style={{ gridColumn: '1/-1', borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4, display: 'flex', gap: 24 }}>
-                  {p?.nombrePredio && (
-                    <div>
-                      <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Nombre del Predio</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.nombrePredio}</div>
-                    </div>
-                  )}
-                  {p?.superficie && (
-                    <div>
-                      <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Superficie (m²)</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 500 }}>{p.superficie} m²</div>
-                    </div>
-                  )}
-                </div>
-              )}
+
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 4 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Giro</div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{p?.usoPrincipal ? toTitleCase(p.usoPrincipal) : 'No especificado'}</div>
@@ -2462,8 +2431,6 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
   const [vialidadComplementaria, setVialidadComplementaria] = useState('');
   const [direccionesComplementarias, setDireccionesComplementarias] = useState([]);
   const [usosComplementarios, setUsosComplementarios] = useState([]);
-  const [nombrePredio, setNombrePredio] = useState('');
-  const [superficie, setSuperficie] = useState('');
 
   const handleAddDireccionComp = () => {
     if (direccionesComplementarias.length < 3) {
@@ -2515,8 +2482,6 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
       usoComplementario,
       impactoPrincipal,
       zonaPrimaria: zonaPrimaria || '',
-      nombrePredio: nombrePredio || '',
-      superficie: superficie ? parseFloat(superficie) || superficie : null,
       // Metadatos urbanos: persistirán en PostgreSQL
       direccionPrincipal: ubicacion || '',
       direccionesComplementariasJson: dirsFiltradas.length > 0 ? JSON.stringify(dirsFiltradas) : null,
@@ -2596,7 +2561,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nombre del Proyecto *</label>
+                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nombre del Proyecto</label>
                 <input
                   className="form-control"
                   placeholder="Ej: Plaza Comercial Los Encinos - Manifestación de Impacto"
@@ -2808,35 +2773,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nombre del Predio</label>
-                  <input
-                    className="form-control"
-                    placeholder="Ej: Predio El Roble"
-                    value={nombrePredio}
-                    onChange={e => setNombrePredio(e.target.value)}
-                    disabled={isSubmitting}
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Superficie Aproximada (m²)</label>
-                  <input
-                    className="form-control"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Ej: 1250.50"
-                    value={superficie}
-                    onChange={e => setSuperficie(e.target.value)}
-                    disabled={isSubmitting}
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
-              </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Dirección Principal (Ubicación del Predio) *</label>
+                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Dirección Principal</label>
                 <input
                   className="form-control"
                   placeholder="Ej: Av. Andrés García Lavín #204, Col. San Ramón Norte"
@@ -2937,7 +2875,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
               </div>
 
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Resumen Breve (Para Tarjetas y Listados)</label>
+                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Resumen Breve</label>
                 <input className="form-control" placeholder="Resumen corto..." value={descripcion} onChange={e => setDescripcion(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
               </div>
             </div>

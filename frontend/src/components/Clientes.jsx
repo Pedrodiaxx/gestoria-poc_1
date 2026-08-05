@@ -547,108 +547,130 @@ export function Clientes() {
                   onClick={() => setSelectedClientId(c.id)}
                   style={{
                     background: '#FFFFFF',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     border: isSelected ? '1.5px solid #1E5631' : '1px solid #E4E4E7',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                     padding: 16,
                     cursor: 'pointer',
-                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                    transition: 'all 0.15s ease',
+                    minHeight: 180,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                     position: 'relative'
                   }}
                 >
-                  {/* Header Row: Client Name & Badges */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', lineHeight: 1.3 }}>{c.nombre}</div>
-                      <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>{c.contacto || 'Contacto S/N'}</div>
+                  {/* Top Content */}
+                  <div>
+                    {/* Header Row: Client Name & Badges */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', lineHeight: 1.3 }}>{c.nombre}</div>
+                        <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>{c.contacto || 'Contacto S/N'}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: 9999,
+                          background: isLead ? '#F1F5F9' : isActivo ? '#ECFDF5' : '#FEF3C7',
+                          color: isLead ? '#475569' : isActivo ? '#047857' : '#D97706',
+                          border: `1px solid ${isLead ? '#E2E8F0' : isActivo ? '#A7F3D0' : '#FDE68A'}`,
+                          letterSpacing: 0.3
+                        }}>
+                          {isLead ? 'LEAD' : isActivo ? 'CLIENTE ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
+                        </span>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          padding: '2px 7px',
+                          borderRadius: 9999,
+                          background: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          color: '#64748B',
+                          textTransform: 'uppercase'
+                        }}>
+                          {c.personaTipo || 'Moral'}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
-                      <span style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        padding: '3px 8px',
-                        borderRadius: 4,
-                        background: isLead ? '#F1F5F9' : isActivo ? '#E6F4EA' : '#FEF3C7',
-                        color: isLead ? '#475569' : isActivo ? '#1E5631' : '#D97706',
-                        letterSpacing: 0.3
-                      }}>
-                        {isLead ? 'LEAD' : isActivo ? 'CLIENTE ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
-                      </span>
-                      <span style={{
-                        fontSize: 10,
-                        fontWeight: 500,
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        background: '#FAFAFA',
-                        border: '1px solid #E4E4E7',
-                        color: '#71717A',
-                        textTransform: 'uppercase'
-                      }}>
-                        {c.personaTipo || 'Moral'}
-                      </span>
+
+                    {/* Metadata Lines */}
+                    <div style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
+                      {c.email && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Icon name="mail" size={13} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                          <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{c.email}</span>
+                        </div>
+                      )}
+                      {c.tel && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Icon name="phone" size={13} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                          <span>{c.tel}</span>
+                        </div>
+                      )}
+                      {c.rfc && (
+                        <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', color: '#64748B', marginTop: 2 }}>
+                          RFC: {c.rfc}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Metadata Lines */}
-                  <div style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4, margin: '10px 0' }}>
-                    {c.email && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Icon name="mail" size={13} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                        <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{c.email}</span>
-                      </div>
-                    )}
-                    {c.tel && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Icon name="phone" size={13} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                        <span>{c.tel}</span>
-                      </div>
-                    )}
-                    {c.rfc && (
-                      <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', color: '#71717A', marginTop: 2 }}>
-                        RFC: {c.rfc}
-                      </div>
-                    )}
-                  </div>
+                  {/* Bottom Footer Row: Related Projects & Delete Button on Bottom Right */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justify: 'space-between',
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTop: '1px solid #F1F5F9',
+                    gap: 8
+                  }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1, overflow: 'hidden' }}>
+                      {getRelatedProjectsForClient(c).map((proj, idx) => (
+                        <span key={idx} style={{
+                          fontSize: 11,
+                          background: '#F8FAFC',
+                          color: '#475569',
+                          padding: '2px 7px',
+                          borderRadius: 6,
+                          border: '1px solid #E2E8F0',
+                          fontWeight: 400
+                        }}>
+                          {proj.nombre ? (proj.nombre.length > 20 ? proj.nombre.substring(0, 20) + '...' : proj.nombre) : proj}
+                        </span>
+                      ))}
+                    </div>
 
-                  {/* Related Projects Tags */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10, paddingTop: 8, borderTop: '1px solid #F4F4F5' }}>
-                    {getRelatedProjectsForClient(c).map((proj, idx) => (
-                      <span key={idx} style={{
-                        fontSize: 11,
-                        background: '#F4F4F5',
-                        color: '#3F3F46',
-                        padding: '2px 7px',
-                        borderRadius: 4,
-                        border: '1px solid #E4E4E7',
-                        fontWeight: 400
-                      }}>
-                        {proj.nombre ? (proj.nombre.length > 24 ? proj.nombre.substring(0, 24) + '...' : proj.nombre) : proj}
-                      </span>
-                    ))}
+                    {/* Delete Button (PARTE INFERIOR DERECHA) */}
+                    <button
+                      className="btn btn-ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClient(c.id);
+                      }}
+                      style={{
+                        padding: 6,
+                        color: '#EF4444',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'center',
+                        flexShrink: 0,
+                        transition: 'background 0.15s ease, color 0.15s ease'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#EF4444'; }}
+                      title="Eliminar cliente"
+                    >
+                      <Icon name="trash" size={14} />
+                    </button>
                   </div>
-
-                  {/* Delete Button */}
-                  <button
-                    className="btn btn-ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClient(c.id);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: 12,
-                      right: 10,
-                      opacity: 0.4,
-                      padding: 4,
-                      color: '#EF4444',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
-                    title="Eliminar cliente"
-                  >
-                    <Icon name="trash" size={13} />
-                  </button>
                 </div>
               );
             })}
@@ -778,7 +800,7 @@ export function Clientes() {
             </div>
 
             {/* Section 4: PROYECTOS E HITOS (Compact Project Cards) */}
-            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F4F4F5' }}>
+            <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
                 PROYECTOS E HITOS
               </div>
@@ -808,61 +830,6 @@ export function Clientes() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* Section 5: VALORES AL PROYECTO (Financial Overview) */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
-                VALORES AL PROYECTO
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 95px', gap: 12, alignItems: 'center' }}>
-                {/* SVG Line Chart */}
-                <div style={{ background: '#FAFAFA', padding: 10, borderRadius: 6, border: '1px solid #E4E4E7' }}>
-                  <svg viewBox="0 0 200 80" style={{ width: '100%', height: 70, overflow: 'visible' }}>
-                    <path
-                      d="M 10,65 Q 40,65 70,50 T 130,20 T 190,40 L 190,75 L 10,75 Z"
-                      fill="rgba(30, 86, 49, 0.08)"
-                    />
-                    <path
-                      d="M 10,65 Q 40,65 70,50 T 130,20 T 190,40"
-                      fill="none"
-                      stroke="#1E5631"
-                      strokeWidth="2"
-                    />
-                    <circle cx="130" cy="20" r="4" fill="#1E5631" />
-                  </svg>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#71717A', marginTop: 2, fontWeight: 600 }}>
-                    <span>Ene</span>
-                    <span>Feb</span>
-                    <span>Mar</span>
-                    <span>Abr</span>
-                  </div>
-                </div>
-
-                {/* Metrics mini table */}
-                <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E4E4E7', paddingBottom: 3, marginBottom: 4, fontWeight: 700, color: '#71717A', fontSize: 9 }}>
-                    <span>Valores</span>
-                    <span>Métricas</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#18181B', padding: '1px 0' }}>
-                    <span>12,000</span>
-                    <span style={{ color: '#A1A1AA' }}>0.0</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#18181B', padding: '1px 0' }}>
-                    <span>7,000</span>
-                    <span style={{ color: '#A1A1AA' }}>0.0</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#18181B', padding: '1px 0' }}>
-                    <span>2,000</span>
-                    <span style={{ color: '#A1A1AA' }}>0.0</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#18181B', padding: '1px 0' }}>
-                    <span>11,000</span>
-                    <span style={{ color: '#A1A1AA' }}>0.0</span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1471,6 +1438,73 @@ export function Clientes() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => { setShowManageStatuses(false); setNewStatusLabel(''); }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Client Deletion */}
+      {clientsToDelete && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.6)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)', padding: 16
+          }}
+          onClick={() => setClientsToDelete(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 12,
+              border: '1px solid #E4E4E7',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+              padding: '24px 28px',
+              maxWidth: 420,
+              width: '100%',
+              animation: 'slideUpLogin 0.2s ease-out'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2',
+                color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Icon name="trash" size={20} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#18181B' }}>Confirmar eliminación</h4>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#71717A' }}>Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 13, color: '#3F3F46', marginBottom: 20, lineHeight: 1.5 }}
+                 dangerouslySetInnerHTML={{ __html: clientsToDelete.message }} />
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                className="btn"
+                onClick={() => setClientsToDelete(null)}
+                style={{
+                  background: '#FFFFFF', border: '1px solid #E4E4E7', color: '#3F3F46',
+                  padding: '8px 16px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn"
+                onClick={confirmEliminarClientes}
+                style={{
+                  background: '#DC2626', color: '#FFFFFF', border: 'none',
+                  padding: '8px 18px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>
