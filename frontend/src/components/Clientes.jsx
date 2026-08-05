@@ -438,23 +438,29 @@ export function Clientes() {
 
   const getRelatedProjectsForClient = (client) => {
     if (!client) return [];
-    const clientProjects = allProyectos.filter(p => p.clienteId === client.id || String(p.clienteId) === String(client.id));
+
+    // 1. Proyectos asociados por clienteId
+    const clientProjects = allProyectos.filter(p => p && (p.clienteId === client.id || String(p.clienteId) === String(client.id)));
     if (clientProjects.length > 0) return clientProjects;
+
+    // 2. Proyectos asociados explícitamente en el array proyectos del cliente
     if (client.proyectos && Array.isArray(client.proyectos) && client.proyectos.length > 0) {
       return client.proyectos.map(pName => (typeof pName === 'string' ? { nombre: pName } : pName));
     }
+
+    // 3. Mapeo específico solo para clientes mock de demostración inicial
     if (client.nombre?.toLowerCase().includes('roberto')) {
-      return [{ nombre: 'Plaza Comercial Paseo...' }, { nombre: 'Montejo - Fisail P...' }];
+      return [{ nombre: 'Plaza Comercial Paseo Montejo - Fase II' }, { nombre: 'Montejo - Fiscal' }];
     }
     if (client.nombre?.toLowerCase().includes('urbania')) {
-      return [{ nombre: 'Desarrollo Residencial Vía...' }, { nombre: 'Hito A Logrado' }];
+      return [{ nombre: 'Desarrollo Residencial Vía Montejo - Manifestación de Impacto' }];
     }
-    if (client.nombre?.toLowerCase().includes('eze')) {
-      return [{ nombre: 'Plaza Comercial Paseo...' }];
+    if (client.nombre?.toLowerCase().includes('desarrolladora metropolitana')) {
+      return [{ nombre: 'Plaza Comercial Paseo Montejo - Fase II' }];
     }
-    return [
-      { nombre: 'Plaza Comercial Paseo...' }
-    ];
+
+    // Si el cliente no tiene proyectos vinculados, NO se asigna ningún proyecto falso por defecto
+    return [];
   };
 
   return (
@@ -875,30 +881,36 @@ export function Clientes() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {getRelatedProjectsForClient(selectedClient).map((proj, idx) => (
-                  <div key={idx} style={{
-                    background: '#FAFAFA',
-                    border: '1px solid #E4E4E7',
-                    borderRadius: 6,
-                    padding: '10px 12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#18181B' }}>
-                        {proj.nombre || proj}
-                      </span>
-                      <span style={{ fontSize: 10, background: '#E6F4EA', color: '#1E5631', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>
-                        En Proceso
-                      </span>
+                {getRelatedProjectsForClient(selectedClient).length > 0 ? (
+                  getRelatedProjectsForClient(selectedClient).map((proj, idx) => (
+                    <div key={idx} style={{
+                      background: '#FAFAFA',
+                      border: '1px solid #E4E4E7',
+                      borderRadius: 6,
+                      padding: '10px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#18181B' }}>
+                          {proj.nombre || proj}
+                        </span>
+                        <span style={{ fontSize: 10, background: '#E6F4EA', color: '#1E5631', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>
+                          En Proceso
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#71717A', marginTop: 2 }}>
+                        <span>Hito: Contrato firmado</span>
+                        <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#71717A', marginTop: 2 }}>
-                      <span>Hito: Contrato firmado</span>
-                      <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
-                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: 12, color: '#A1A1AA', fontStyle: 'italic', padding: '8px 0' }}>
+                    Sin proyectos vinculados.
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
