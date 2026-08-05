@@ -113,9 +113,28 @@ export function Clientes() {
     actualizarCampoCliente(id, field, value);
   };
 
+  // Clean up any residual SweetAlert modals in the DOM when client deletion confirmation opens
+  useEffect(() => {
+    if (clientsToDelete) {
+      if (typeof Swal !== 'undefined' && Swal.close) {
+        Swal.close();
+      }
+      if (typeof document !== 'undefined') {
+        const swalElements = document.querySelectorAll('.swal2-container');
+        swalElements.forEach(el => el.remove());
+        document.body.classList.remove('swal2-shown', 'swal2-height-auto');
+      }
+    }
+  }, [clientsToDelete]);
+
   const handleDeleteClient = (id) => {
-    if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) {
+    if (typeof Swal !== 'undefined' && Swal.close) {
       Swal.close();
+    }
+    if (typeof document !== 'undefined') {
+      const swalElements = document.querySelectorAll('.swal2-container');
+      swalElements.forEach(el => el.remove());
+      document.body.classList.remove('swal2-shown', 'swal2-height-auto');
     }
     const client = clientes.find(c => c.id === id);
     if (!client) return;
