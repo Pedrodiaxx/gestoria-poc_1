@@ -1167,49 +1167,66 @@ export function Clientes() {
                     border: '1px solid var(--border-strong)',
                     borderRadius: 'var(--radius-md)',
                     boxShadow: 'var(--shadow-md)',
-                    zIndex: 1002, maxHeight: 220, overflowY: 'auto', marginTop: 4
+                    zIndex: 1002, maxHeight: 240, overflowY: 'auto', marginTop: 4
                   }}>
-                    {allProyectos
-                      .filter(p => {
-                        const term = proyectoSearch.toLowerCase();
-                        return !term || p.nombre.toLowerCase().includes(term) || p.id.toLowerCase().includes(term);
-                      })
-                      .map(p => {
-                        const alreadySelected = (nuevoCliente.proyectos || []).includes(p.nombre);
+                    {(() => {
+                      const term = proyectoSearch.toLowerCase().trim();
+                      const matching = allProyectos.filter(p => {
+                        if (!p) return false;
+                        const nom = p.nombre || '';
+                        const idStr = p.id ? String(p.id) : '';
+                        return !term || nom.toLowerCase().includes(term) || idStr.toLowerCase().includes(term);
+                      });
+                      const visible = matching.slice(0, 10);
+
+                      if (matching.length === 0) {
                         return (
-                          <div
-                            key={p.id}
-                            onClick={() => {
-                              if (alreadySelected) {
-                                setNuevoCliente(n => ({ ...n, proyectos: n.proyectos.filter(x => x !== p.nombre) }));
-                              } else {
-                                setNuevoCliente(n => ({ ...n, proyectos: [...(n.proyectos || []), p.nombre] }));
-                              }
-                              setProyectoSearch('');
-                              setShowProyectoDropdown(false);
-                            }}
-                            style={{
-                              padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: 10,
-                              background: alreadySelected ? 'var(--accent-light)' : 'transparent',
-                              color: alreadySelected ? 'var(--accent)' : 'var(--text)',
-                              borderBottom: '1px solid var(--border)'
-                            }}
-                            onMouseEnter={e => { if (!alreadySelected) e.currentTarget.style.background = 'var(--surface2)'; }}
-                            onMouseLeave={e => { if (!alreadySelected) e.currentTarget.style.background = ''; }}
-                          >
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0, minWidth: 56 }}>{p.id}</span>
-                            <span style={{ flex: 1, fontWeight: alreadySelected ? 600 : 400 }}>{p.nombre}</span>
-                            {alreadySelected && <Icon name="check" size={13} />}
+                          <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>
+                            No se encontraron proyectos
                           </div>
                         );
-                      })}
-                    {allProyectos.filter(p => {
-                      const term = proyectoSearch.toLowerCase();
-                      return !term || p.nombre.toLowerCase().includes(term);
-                    }).length === 0 && (
-                        <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>No se encontraron proyectos</div>
-                      )}
+                      }
+
+                      return (
+                        <>
+                          {visible.map(p => {
+                            const alreadySelected = (nuevoCliente.proyectos || []).includes(p.nombre);
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  if (alreadySelected) {
+                                    setNuevoCliente(n => ({ ...n, proyectos: n.proyectos.filter(x => x !== p.nombre) }));
+                                  } else {
+                                    setNuevoCliente(n => ({ ...n, proyectos: [...(n.proyectos || []), p.nombre] }));
+                                  }
+                                  setProyectoSearch('');
+                                  setShowProyectoDropdown(false);
+                                }}
+                                style={{
+                                  padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  background: alreadySelected ? 'var(--accent-light)' : 'transparent',
+                                  color: alreadySelected ? 'var(--accent)' : 'var(--text)',
+                                  borderBottom: '1px solid var(--border)'
+                                }}
+                                onMouseEnter={e => { if (!alreadySelected) e.currentTarget.style.background = 'var(--surface2)'; }}
+                                onMouseLeave={e => { if (!alreadySelected) e.currentTarget.style.background = ''; }}
+                              >
+                                <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0, minWidth: 56 }}>{p.id}</span>
+                                <span style={{ flex: 1, fontWeight: alreadySelected ? 600 : 400 }}>{p.nombre}</span>
+                                {alreadySelected && <Icon name="check" size={13} />}
+                              </div>
+                            );
+                          })}
+                          {matching.length > 10 && (
+                            <div style={{ padding: '8px 12px', fontSize: 11, color: '#71717A', fontStyle: 'italic', textAlign: 'center', background: '#FAFAFA', borderTop: '1px solid #E4E4E7' }}>
+                              Mostrando 10 de {matching.length} proyectos. Usa el buscador para filtrar más.
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
