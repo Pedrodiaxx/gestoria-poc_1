@@ -1338,6 +1338,11 @@ function ProyectosContent() {
                 };
                 const badge = colorMap[est] || { bg: 'var(--amber-light)', fg: 'var(--amber-text)', lbl: p.estatus || 'Borrador' };
 
+                // Compute tipo/col/monto for list view
+                const tipoObj = (TRAMITES_TIPOS || []).find(t => t.id === p?.tipo);
+                const col = tipoObj ? (COLOR_MAP[tipoObj.color] || '#1A5276') : '#1A5276';
+                const monto = p.monto || 0;
+
                 return (
                   <tr
                     key={p.id || p.idNumerico || Math.random()}
@@ -1352,8 +1357,8 @@ function ProyectosContent() {
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-2)' }}>{cli?.nombre || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span style={{ fontSize: 11, background: BG_MAP[tipo?.color] || '#eee', color: col, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>
-                        {tipo?.nombre || 'Gestión General'}
+                      <span style={{ fontSize: 11, background: BG_MAP[tipoObj?.color] || '#eee', color: col, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>
+                        {tipoObj?.nombre || 'Gestión General'}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
