@@ -1219,13 +1219,14 @@ function ProyectosContent() {
 
       {/* Filtros y búsqueda */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 380 }}>
+        <div className="search-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 380, background: '#FFFFFF', borderRadius: 12, border: '1px solid #E4E4E7', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <Icon name="search" size={14} />
           <input
             className="form-control search-input"
             placeholder="Buscar por nombre, ID, cliente..."
             value={q}
             onChange={e => setQ(e.target.value)}
+            style={{ border: 'none', background: 'transparent' }}
           />
         </div>
 
@@ -1233,7 +1234,7 @@ function ProyectosContent() {
           className="form-control"
           value={filtroEstatus}
           onChange={e => setFiltroEstatus(e.target.value)}
-          style={{ width: 160 }}
+          style={{ width: 160, background: '#FFFFFF', borderRadius: 12, border: '1px solid #E4E4E7', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
         >
           <option value="todos">Todos los Estatus</option>
           {Object.entries(ESTATUS_CONFIG).map(([key, val]) => (
@@ -1245,7 +1246,7 @@ function ProyectosContent() {
           className="form-control"
           value={filtroTipo}
           onChange={e => setFiltroTipo(e.target.value)}
-          style={{ width: 200 }}
+          style={{ width: 200, background: '#FFFFFF', borderRadius: 12, border: '1px solid #E4E4E7', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
         >
           <option value="todos">Todos los Tipos</option>
           {tiposUnicos.map(tipo => (
@@ -1446,20 +1447,24 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
       style={{
         padding: 0,
         overflow: 'hidden',
-        borderTop: `3px solid ${col}`,
+        background: '#ECF3EE',
+        border: '1px solid rgba(30, 86, 49, 0.35)',
+        borderTop: `4px solid ${col}`,
+        borderRadius: 12,
+        boxShadow: 'rgba(30, 86, 49, 0.1) 0px 0px 0px 1px',
         transition: 'transform 0.15s, box-shadow 0.15s',
         cursor: 'pointer'
       }}
       onClick={onClick}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'rgba(30, 86, 49, 0.2) 0px 4px 12px'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'rgba(30, 86, 49, 0.1) 0px 0px 0px 1px'; }}
     >
       {/* Card Header */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid rgba(30, 86, 49, 0.15)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div>
             <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: col, fontWeight: 700, letterSpacing: 0.5 }}>{p.id || 'PRY-???'}</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginTop: 4, lineHeight: 1.3 }}>{p.nombre || 'Sin nombre'}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#092C15', marginTop: 4, lineHeight: 1.3 }}>{p.nombre || 'Sin nombre'}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span className={`badge ${p.estatusBadge || est.badge}`} style={{ flexShrink: 0 }}>{p.estatusLabel || est.label}</span>
