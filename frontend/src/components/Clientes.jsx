@@ -4,6 +4,7 @@ import Icon from './common/Icon';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { filterClientsQuery } from '../core/cqrs/queries/clientQueries';
 import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
 import { useClientes } from '../hooks/useClientes';
 
 export function Clientes() {
@@ -113,6 +114,9 @@ export function Clientes() {
   };
 
   const handleDeleteClient = (id) => {
+    if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) {
+      Swal.close();
+    }
     const client = clientes.find(c => c.id === id);
     if (!client) return;
     setClientsToDelete({
@@ -134,6 +138,9 @@ export function Clientes() {
   };
 
   const handleBulkDelete = () => {
+    if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) {
+      Swal.close();
+    }
     if (selectedClients.length === 0) return;
     setClientsToDelete({
       ids: [...selectedClients],
@@ -1461,7 +1468,7 @@ export function Clientes() {
           className="modal-overlay"
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(15, 23, 42, 0.6)', zIndex: 9999,
+            background: 'rgba(15, 23, 42, 0.65)', zIndex: 99999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             backdropFilter: 'blur(4px)', padding: 16
           }}
@@ -1472,10 +1479,12 @@ export function Clientes() {
               background: '#FFFFFF',
               borderRadius: 12,
               border: '1px solid #E4E4E7',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1)',
               padding: '24px 28px',
               maxWidth: 420,
               width: '100%',
+              zIndex: 100000,
+              position: 'relative',
               animation: 'slideUpLogin 0.2s ease-out'
             }}
             onClick={e => e.stopPropagation()}
