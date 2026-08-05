@@ -565,8 +565,10 @@ export function Clientes() {
                     {/* Header Row: Client Name & Badges */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
                       <div>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', lineHeight: 1.3 }}>{c.nombre}</div>
-                        <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>{c.contacto || 'Contacto S/N'}</div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', lineHeight: 1.3 }} title="Nombre o Razón Social">{c.nombre}</div>
+                        <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>
+                          {c.contacto && c.contacto !== 'S/N' ? `Contacto: ${c.contacto}` : 'Contacto: S/N'}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
                         <span style={{
@@ -698,7 +700,7 @@ export function Clientes() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre Fiscal:</div>
+                  <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre o Razón Social:</div>
                   <div style={{ fontWeight: 600, color: '#18181B', fontSize: 14, marginTop: 1 }}>
                     {selectedClient.nombre || '—'}
                   </div>
@@ -713,7 +715,7 @@ export function Clientes() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 2 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Persona Física/Moral:</div>
+                    <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Persona Física / Moral:</div>
                     <div style={{ color: '#27272A', fontWeight: 500, marginTop: 1 }}>
                       Persona {selectedClient.personaTipo || selectedClient.tipo || 'Moral'}
                     </div>
@@ -751,6 +753,14 @@ export function Clientes() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="user" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre del Contacto:</span>
+                  <span style={{ color: '#27272A', fontWeight: 500 }}>
+                    {selectedClient.contacto && selectedClient.contacto !== 'S/N' ? selectedClient.contacto : '—'}
+                  </span>
+                </div>
+
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                   <Icon name="map" size={14} style={{ color: '#A1A1AA', marginTop: 2, flexShrink: 0 }} />
                   <div style={{ color: '#27272A', lineHeight: 1.4 }}>
@@ -765,11 +775,11 @@ export function Clientes() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="phone" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ color: '#27272A' }}>{selectedClient.tel || selectedClient.telefono || selectedClient.contacto || '—'}</span>
+                  <span style={{ color: '#27272A' }}>{selectedClient.tel || selectedClient.telefono || '—'}</span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Apoderado:</span>
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Apoderado / Representante Legal:</span>
                   <span style={{ color: '#27272A', fontWeight: 500 }}>{selectedClient.apoderadoLegal || selectedClient.apoderado || '—'}</span>
                 </div>
               </div>
