@@ -1,58 +1,68 @@
 import { TRAMITES_MOCK, TRAMITES_TIPOS, PROYECTOS_MOCK } from '../../../data/mockData';
 
-export const filterClientsQuery = (clientes, qClientes, usuarios, conceptos) => {
-  const query = qClientes.toLowerCase().trim();
+export const filterClientsQuery = (clientes, qClientes, usuarios = [], conceptos = []) => {
+  if (!Array.isArray(clientes)) return [];
+  const query = (qClientes || '').toLowerCase().trim();
   if (!query) return clientes;
 
+  const safeUsuarios = Array.isArray(usuarios) ? usuarios : [];
+
   return clientes.filter(c => {
+    if (!c) return false;
+
     // 1. Cliente basic fields
     const matchesClient =
       ((c.nombre || '').toLowerCase().includes(query)) ||
-      (c.nombreComercial && c.nombreComercial.toLowerCase().includes(query)) ||
-      (c.contacto && c.contacto.toLowerCase().includes(query)) ||
-      (c.rfc && c.rfc.toLowerCase().includes(query)) ||
-      (c.rfcFiscal && c.rfcFiscal.toLowerCase().includes(query)) ||
-      (c.email && c.email.toLowerCase().includes(query)) ||
-      (c.tel && c.tel.toLowerCase().includes(query)) ||
-      (c.ciudad && c.ciudad.toLowerCase().includes(query)) ||
-      (c.direccionFiscal && c.direccionFiscal.toLowerCase().includes(query)) ||
-      (c.apoderado && c.apoderado.toLowerCase().includes(query)) ||
-      (c.personaTipo && c.personaTipo.toLowerCase().includes(query)) ||
-      (c.estatus && c.estatus.toLowerCase().includes(query));
+      ((c.nombreComercial || '').toLowerCase().includes(query)) ||
+      ((c.contacto || '').toLowerCase().includes(query)) ||
+      ((c.rfc || '').toLowerCase().includes(query)) ||
+      ((c.rfcFiscal || '').toLowerCase().includes(query)) ||
+      ((c.email || '').toLowerCase().includes(query)) ||
+      ((c.tel || '').toLowerCase().includes(query)) ||
+      ((c.telefono || '').toLowerCase().includes(query)) ||
+      ((c.ciudad || '').toLowerCase().includes(query)) ||
+      ((c.direccionFiscal || '').toLowerCase().includes(query)) ||
+      ((c.apoderado || '').toLowerCase().includes(query)) ||
+      ((c.apoderadoLegal || '').toLowerCase().includes(query)) ||
+      ((c.personaTipo || '').toLowerCase().includes(query)) ||
+      ((c.estatus || '').toLowerCase().includes(query));
 
     if (matchesClient) return true;
 
     // 2. Proyectos vinculados (strings en el cliente)
-    const matchesProyecto = c.proyectos && c.proyectos.some(p => p.toLowerCase().includes(query));
-    if (matchesProyecto) return true;
+    if (Array.isArray(c.proyectos)) {
+      const matchesProyecto = c.proyectos.some(p => p && String(p).toLowerCase().includes(query));
+      if (matchesProyecto) return true;
+    }
 
     // 2b. Proyectos reales (PROYECTOS_MOCK) asociados al cliente
-    const realProyectos = PROYECTOS_MOCK.filter(p => p.clienteId === c.id);
+    const realProyectos = (PROYECTOS_MOCK || []).filter(p => p && p.clienteId === c.id);
     const matchesRealProyecto = realProyectos.some(p =>
-      p.id.toLowerCase().includes(query) ||
-      p.nombre.toLowerCase().includes(query) ||
-      (p.descripcion && p.descripcion.toLowerCase().includes(query))
+      (p.id && String(p.id).toLowerCase().includes(query)) ||
+      (p.nombre && String(p.nombre).toLowerCase().includes(query)) ||
+      (p.descripcion && String(p.descripcion).toLowerCase().includes(query))
     );
     if (matchesRealProyecto) return true;
 
     // 3. Responsable (lookup in usuarios)
-    const assignedUser = usuarios.find(u => u.id === c.responsable);
-    const matchesUser = assignedUser && (
-      assignedUser.nombre.toLowerCase().includes(query) ||
-      assignedUser.email.toLowerCase().includes(query) ||
-      assignedUser.rol.toLowerCase().includes(query)
-    );
-    if (matchesUser) return true;
+    const assignedUser = safeUsuarios.find(u => u && u.id === c.responsable);
+    if (assignedUser) {
+      const matchesUser =
+        (assignedUser.nombre && String(assignedUser.nombre).toLowerCase().includes(query)) ||
+        (assignedUser.email && String(assignedUser.email).toLowerCase().includes(query)) ||
+        (assignedUser.rol && String(assignedUser.rol).toLowerCase().includes(query));
+      if (matchesUser) return true;
+    }
 
     // 4. Trámites / Hojas de ruta (lookup in TRAMITES_MOCK)
-    const associatedTramites = TRAMITES_MOCK.filter(t => t.clienteId === c.id);
+    const associatedTramites = (TRAMITES_MOCK || []).filter(t => t && t.clienteId === c.id);
     const matchesTramite = associatedTramites.some(t => {
-      const tipoInfo = TRAMITES_TIPOS[t.tipo];
+      const tipoInfo = TRAMITES_TIPOS && TRAMITES_TIPOS[t.tipo];
       return (
-        t.id.toLowerCase().includes(query) ||
-        (t.folio && t.folio.toLowerCase().includes(query)) ||
-        (t.notas && t.notas.toLowerCase().includes(query)) ||
-        (tipoInfo && tipoInfo.nombre.toLowerCase().includes(query))
+        (t.id && String(t.id).toLowerCase().includes(query)) ||
+        (t.folio && String(t.folio).toLowerCase().includes(query)) ||
+        (t.notas && String(t.notas).toLowerCase().includes(query)) ||
+        (tipoInfo && tipoInfo.nombre && String(tipoInfo.nombre).toLowerCase().includes(query))
       );
     });
     if (matchesTramite) return true;

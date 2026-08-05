@@ -106,7 +106,26 @@ export function Clientes() {
   const [showAddStatusInput, setShowAddStatusInput] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
 
-  const filteredClientes = filterClientsQuery(clientes, qClientes, usuarios, conceptos);
+  // 1. Ordenamiento cronológico descendente (los más recientes primero)
+  const sortedClientes = [...clientes].sort((a, b) => {
+    const valA = a.createdAt || a.fechaCreacion || a.created_at || a.id;
+    const valB = b.createdAt || b.fechaCreacion || b.created_at || b.id;
+    const dateA = new Date(valA);
+    const dateB = new Date(valB);
+    if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+      return dateB - dateA;
+    }
+    const numA = parseInt(String(a.id).replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt(String(b.id).replace(/\D/g, ''), 10) || 0;
+    return numB - numA;
+  });
+
+  // 2. Búsqueda y filtrado sobre el 100% de los registros de la base de datos
+  const matchingClientes = filterClientsQuery(sortedClientes, qClientes, usuarios, conceptos);
+
+  // 3. Lógica de renderizado: si la búsqueda está vacía, se muestran únicamente los primeros 12. Si hay búsqueda, se muestran todos los resultados.
+  const isSearching = Boolean(qClientes && qClientes.trim() !== '');
+  const filteredClientes = isSearching ? matchingClientes : matchingClientes.slice(0, 12);
   const totalClientes = clientes.length;
 
   const handleUpdateClientField = (id, field, value) => {
@@ -558,6 +577,18 @@ export function Clientes() {
                 <Icon name="x" size={14} />
               </button>
             )}
+          </div>
+
+          {/* Results Summary Indicator */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#71717A', padding: '0 2px', marginTop: -10 }}>
+            <span>
+              {isSearching
+                ? `Mostrando ${filteredClientes.length} resultado(s) para "${qClientes}" de ${totalClientes} clientes.`
+                : totalClientes > 12
+                  ? `Mostrando los 12 clientes más recientes (de ${totalClientes} registrados). Usa la búsqueda para encontrar cualquier otro.`
+                  : `Mostrando ${filteredClientes.length} cliente(s).`
+              }
+            </span>
           </div>
 
           {/* Client List Grid */}
