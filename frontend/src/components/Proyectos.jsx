@@ -1269,25 +1269,6 @@ function ProyectosContent() {
             <option key={tipo} value={tipo}>{TRAMITES_TIPOS[tipo]?.nombre || tipo}</option>
           ))}
         </select>
-
-        <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', borderRadius: 'var(--radius-md)', padding: 4 }}>
-          <button
-            className={`btn btn-sm ${vista === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setVista('grid')}
-            title="Vista en cuadrícula"
-            style={{ padding: '4px 10px' }}
-          >
-            <Icon name="grid" size={13} />
-          </button>
-          <button
-            className={`btn btn-sm ${vista === 'lista' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setVista('lista')}
-            title="Vista en lista"
-            style={{ padding: '4px 10px' }}
-          >
-            <Icon name="list" size={13} />
-          </button>
-        </div>
       </div>
 
       {/* Results count */}
@@ -1296,112 +1277,23 @@ function ProyectosContent() {
         {q && <> · búsqueda: "<em>{q}</em>"</>}
       </div>
 
-      {/* Grid / Lista */}
-      {vista === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-          {filtered.map(p => (
-            <ProyectoCard
-              key={p.id || p.idNumerico || Math.random()}
-              proyecto={p}
-              clientes={clientes}
-              setActive={setActive}
-              onClick={() => setProyectoDetalle(p)}
-              onEliminar={handleEliminarProyecto}
-              montoReal={p.monto || 0}
-              session={session}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-            <thead>
-              <tr style={{ background: 'var(--surface2)' }}>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>ID / Nombre</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Cliente</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Tipo</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Estatus</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Avance</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Monto</th>
-                <th style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-2)', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => {
-                const cli = (clientes || []).find(c => c?.id === p?.clienteId);
-                const est = p.estatus ? p.estatus.toLowerCase() : 'borrador';
-                const colorMap = {
-                  'activo': { bg: 'var(--accent-light)', fg: 'var(--accent-text)', lbl: 'Activo' },
-                  'en proceso': { bg: 'var(--blue-light)', fg: 'var(--blue-text)', lbl: 'En Proceso' },
-                  'finalizado': { bg: 'rgba(0,0,0,0.05)', fg: 'var(--text-2)', lbl: 'Finalizado' },
-                  'cancelado': { bg: 'var(--red-light)', fg: 'var(--red-text)', lbl: 'Cancelado' }
-                };
-                const badge = colorMap[est] || { bg: 'var(--amber-light)', fg: 'var(--amber-text)', lbl: p.estatus || 'Borrador' };
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        {filtered.map(p => (
+          <ProyectoCard
+            key={p.id || p.idNumerico || Math.random()}
+            proyecto={p}
+            clientes={clientes}
+            setActive={setActive}
+            onClick={() => setProyectoDetalle(p)}
+            onEliminar={handleEliminarProyecto}
+            montoReal={p.monto || 0}
+            session={session}
+          />
+        ))}
+      </div>
 
-                // Compute tipo/col/monto for list view
-                const tipoObj = (TRAMITES_TIPOS || []).find(t => t.id === p?.tipo);
-                const col = tipoObj ? (COLOR_MAP[tipoObj.color] || '#1A5276') : '#1A5276';
-                const monto = p.monto || 0;
-
-                return (
-                  <tr
-                    key={p.id || p.idNumerico || Math.random()}
-                    style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s', cursor: 'pointer' }}
-                    onClick={() => setProyectoDetalle(p)}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                    onMouseLeave={e => e.currentTarget.style.background = ''}
-                  >
-                    <td style={{ padding: '10px 14px' }}>
-                      <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: col, fontWeight: 600 }}>{p.id || 'PRY-???'}</div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginTop: 2 }}>{p.nombre || 'Sin nombre'}</div>
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-2)' }}>{cli?.nombre || '—'}</td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{ fontSize: 11, background: BG_MAP[tipoObj?.color] || '#eee', color: col, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>
-                        {tipoObj?.nombre || 'Gestión General'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      <span className={`badge ${p.estatusBadge || est.badge}`}>{p.estatusLabel || est.label}</span>
-                    </td>
-                    <td style={{ padding: '10px 14px', minWidth: 120 }}>
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${p.avance || 0}%`, background: col }} />
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>{p.avance || 0}%</div>
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                      {money(monto)}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      {session?.rol !== 'cliente' && (
-                        <button
-                          className="btn btn-ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEliminarProyecto(p.id, p.idNumerico);
-                          }}
-                          style={{ padding: 6, minWidth: 'auto', color: 'var(--red)', borderRadius: 4 }}
-                          title="Eliminar Proyecto"
-                        >
-                          <Icon name="trash" size={14} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 13 }}>
-              No se encontraron proyectos con ese criterio.
-            </div>
-          )}
-        </div>
-      )}
-
-      {filtered.length === 0 && vista === 'grid' && (
+      {filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-3)', fontSize: 14 }}>
           No se encontraron proyectos con ese criterio de búsqueda.
         </div>
