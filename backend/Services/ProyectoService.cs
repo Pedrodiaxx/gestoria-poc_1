@@ -10,15 +10,18 @@ namespace Backend.Services
         private readonly IProyectoRepository _proyectoRepo;
         private readonly IClienteRepository _clienteRepo;
         private readonly IPresupuestoRepository _presupuestoRepo;
+        private readonly ITareaRepository _tareaRepo;
 
         public ProyectoService(
             IProyectoRepository proyectoRepo,
             IClienteRepository clienteRepo,
-            IPresupuestoRepository presupuestoRepo)
+            IPresupuestoRepository presupuestoRepo,
+            ITareaRepository tareaRepo)
         {
             _proyectoRepo = proyectoRepo;
             _clienteRepo = clienteRepo;
             _presupuestoRepo = presupuestoRepo;
+            _tareaRepo = tareaRepo;
         }
 
         /// <summary>
@@ -33,8 +36,9 @@ namespace Backend.Services
             var proyectos = await _proyectoRepo.GetAllAsync(filtroClienteId);
             var clientes = await _clienteRepo.GetAllAsync();
             var presupuestos = await _presupuestoRepo.GetAllAsync();
+            var tareas = await _tareaRepo.GetAllAsync();
 
-            return proyectos.Select(p => MapToDTO(p, clientes, presupuestos)).ToList();
+            return proyectos.Select(p => MapToDTO(p, clientes, presupuestos, tareas)).ToList();
         }
 
         /// <summary>
@@ -53,7 +57,8 @@ namespace Backend.Services
 
             var clientes = await _clienteRepo.GetAllAsync();
             var presupuestos = await _presupuestoRepo.GetAllAsync();
-            return MapToDTO(p, clientes, presupuestos);
+            var tareas = await _tareaRepo.GetAllAsync();
+            return MapToDTO(p, clientes, presupuestos, tareas);
         }
 
         /// <summary>
@@ -67,7 +72,8 @@ namespace Backend.Services
 
             var created = await _proyectoRepo.AddAsync(nuevoProyecto);
             var clientes = await _clienteRepo.GetAllAsync();
-            return MapToDTO(created, clientes, new List<Presupuesto>());
+            var tareas = await _tareaRepo.GetAllAsync();
+            return MapToDTO(created, clientes, new List<Presupuesto>(), tareas);
         }
 
         public async Task<ProyectoDTO> UpdateAsync(Proyecto proyecto)
@@ -75,13 +81,14 @@ namespace Backend.Services
             var updated = await _proyectoRepo.UpdateAsync(proyecto);
             var clientes = await _clienteRepo.GetAllAsync();
             var presupuestos = await _presupuestoRepo.GetAllAsync();
-            return MapToDTO(updated, clientes, presupuestos);
+            var tareas = await _tareaRepo.GetAllAsync();
+            return MapToDTO(updated, clientes, presupuestos, tareas);
         }
 
         // ────────────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Folio, cliente resuelto, monto, badges, metadatos urbanos
         // ────────────────────────────────────────────────────────────────────────
-        private static ProyectoDTO MapToDTO(Proyecto p, List<Cliente> clientes, List<Presupuesto> presupuestos)
+        private static ProyectoDTO MapToDTO(Proyecto p, List<Cliente> clientes, List<Presupuesto> presupuestos, List<TareaDiaria> tareas)
         {
             var cli = clientes.FirstOrDefault(c => c.Id == p.ClienteId);
 
@@ -99,6 +106,12 @@ namespace Backend.Services
             var folioProyecto = $"PRY-{p.Id.ToString().PadLeft(3, '0')}";
             var presAsociados = presupuestos.Where(b => b.ProyectoId == folioProyecto).ToList();
             double monto = presAsociados.Sum(b => b.TotalDirecto + b.TotalIndirecto);
+
+            var hoy = DateTime.UtcNow.Date;
+            var tareasAsociadas = tareas
+                .Where(t => t.ProyectoId == folioProyecto || t.ProyectoId == p.Id.ToString())
+                .Select(t => TareaService.MapToDTO(t, hoy))
+                .ToList();
 
             // Deserializar arrays JSON
             var usosComplementarios = DeserializeJsonArray(p.UsosComplementariosJson);
@@ -140,7 +153,8 @@ namespace Backend.Services
                 FechaInicio = p.FechaInicio.ToString("yyyy-MM-dd"),
                 Tipo = "licencia_construccion",
                 Monto = monto,
-                TotalPresupuestos = presAsociados.Count
+                TotalPresupuestos = presAsociados.Count,
+                TareasDiarias = tareasAsociadas
             };
         }
 

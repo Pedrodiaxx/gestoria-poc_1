@@ -66,7 +66,7 @@ namespace Backend.Services
         // ───────────────────────────────────────────────────────────────────
         // LÓGICA DE NEGOCIO: Clasificación temporal y badges de prioridad
         // ───────────────────────────────────────────────────────────────────
-        private static TareaDiariaDTO MapToDTO(TareaDiaria t, DateTime hoy)
+        public static TareaDiariaDTO MapToDTO(TareaDiaria t, DateTime hoy)
         {
             // Badge y label de prioridad
             string prBadge, prLabel;
@@ -106,7 +106,8 @@ namespace Backend.Services
                 Completada = t.Hecho,
                 Fecha = t.Fecha.ToString("yyyy-MM-dd"),
                 AsignadoA = t.AsignadoA ?? "u1",
-                Columna = columna
+                Columna = columna,
+                ProyectoId = t.ProyectoId ?? ""
             };
         }
     }

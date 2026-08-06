@@ -4,6 +4,7 @@ import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { useProyectos } from '../hooks/useProyectos';
 import { fetchProyectoById } from '../services/proyectosService';
+import { createTarea, updateTarea } from '../services/tareasService';
 import {
   PROYECTOS_MOCK,
   TRAMITES_TIPOS,
@@ -1471,7 +1472,7 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
 
 // ─── MODAL PROYECTO DETALLE COMPONENT ─────────────────────────────────────────
 function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presupuestos = [], getBudgetTotal, onClose, onEliminar, onUpdateProyecto, onCrearPresupuesto, onVerPresupuesto, session }) {
-  const { proyectos = [], updateProyecto, tareas = [], usuarios = [], setProyectos } = useAppContext();
+  const { proyectos = [], updateProyecto, tareas = [], setTareas, usuarios = [], setProyectos } = useAppContext();
   const { actualizarProyecto } = useProyectos(setProyectos, session);
 
   // Guard previas si no existe initialProyecto
@@ -1521,9 +1522,76 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const asociados = safePresupuestos.filter(b => b?.proyectoId === p?.id || (b?.proyectoId && p?.idNumerico && b?.proyectoId === p?.idNumerico));
   const baseline = asociados.find(b => b?.isBaseline);
 
-  // Tareas asociadas al proyecto o asignadas
+  // Tareas asociadas al proyecto o asignadas (Contexto + API DTO)
   const safeTareas = Array.isArray(tareas) ? tareas : [];
-  const tareasAsociadas = safeTareas.filter(t => t?.proyectoId === p?.id || (p?.idNumerico && t?.proyectoId === p?.idNumerico));
+  const folioPry = p?.id || (p?.idNumerico ? `PRY-${String(p.idNumerico).padStart(3, '0')}` : '');
+  const idNumStr = p?.idNumerico ? String(p.idNumerico) : '';
+
+  const tareasDeContexto = safeTareas.filter(t =>
+    t?.proyectoId === folioPry ||
+    t?.proyectoId === idNumStr ||
+    t?.proyectoId === p?.id
+  );
+  const tareasDeApi = Array.isArray(p?.tareasDiarias) ? p.tareasDiarias : [];
+
+  const tareasMap = new Map();
+  [...tareasDeApi, ...tareasDeContexto].forEach(t => {
+    if (t && t.id) tareasMap.set(t.id, t);
+  });
+  const tareasAsociadas = Array.from(tareasMap.values());
+
+  // Estado para creación rápida de tareas vinculadas
+  const [showNuevaTareaModal, setShowNuevaTareaModal] = useState(false);
+  const [nuevaTareaTitulo, setNuevaTareaTitulo] = useState('');
+  const [nuevaTareaAsignadoA, setNuevaTareaAsignadoA] = useState(teamMembers[0]?.id || 'u1');
+  const [nuevaTareaPrioridad, setNuevaTareaPrioridad] = useState('media');
+  const [isSubmittingTarea, setIsSubmittingTarea] = useState(false);
+
+  const handleCrearTareaRapida = async () => {
+    if (!nuevaTareaTitulo.trim() || isSubmittingTarea) return;
+    setIsSubmittingTarea(true);
+
+    const datosTarea = {
+      titulo: nuevaTareaTitulo.trim(),
+      prioridad: nuevaTareaPrioridad || 'media',
+      hecho: false,
+      fecha: new Date().toISOString(),
+      asignadoA: nuevaTareaAsignadoA || teamMembers[0]?.id || 'u1',
+      proyectoId: folioPry
+    };
+
+    try {
+      const creada = await createTarea(datosTarea);
+      setTareas(prev => [...(Array.isArray(prev) ? prev : []), creada]);
+      setNuevaTareaTitulo('');
+      setShowNuevaTareaModal(false);
+    } catch (err) {
+      console.error('Error al crear tarea vinculada al proyecto:', err);
+      alert('No se pudo crear la tarea. Revisa tu conexión.');
+    } finally {
+      setIsSubmittingTarea(false);
+    }
+  };
+
+  const handleToggleTarea = async (tarea) => {
+    const nuevoHecho = !(tarea.completada || tarea.hecho);
+    const updated = { ...tarea, hecho: nuevoHecho, completada: nuevoHecho };
+    setTareas(prev => (Array.isArray(prev) ? prev : []).map(t => t.id === tarea.id ? updated : t));
+
+    try {
+      await updateTarea(tarea.id, {
+        id: tarea.id,
+        titulo: tarea.titulo,
+        prioridad: tarea.prioridad || 'media',
+        hecho: nuevoHecho,
+        fecha: tarea.fecha ? new Date(tarea.fecha).toISOString() : new Date().toISOString(),
+        asignadoA: tarea.asignadoA || 'u1',
+        proyectoId: tarea.proyectoId || folioPry
+      });
+    } catch (err) {
+      console.error('Error al actualizar tarea:', err);
+    }
+  };
 
   // Ordenar presupuestos por versión
   const sortedBudgets = [...asociados].sort((a, b) => {
@@ -2219,8 +2287,94 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
             {/* Tareas Diarias Asociadas */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Tareas Diarias Asociadas</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Tareas Diarias Asociadas ({tareasAsociadas.length})
+                </span>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  style={{ fontSize: 11, padding: '4px 8px', color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
+                  onClick={() => setShowNuevaTareaModal(!showNuevaTareaModal)}
+                >
+                  <Icon name="plus" size={12} /> Agregar Tarea
+                </button>
               </div>
+
+              {/* Formulario rápido para nueva tarea */}
+              {showNuevaTareaModal && (
+                <div style={{
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--blue)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 14,
+                  marginBottom: 14,
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', marginBottom: 10 }}>
+                    Nueva Tarea Vinculada a {folioPry}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <input
+                      className="form-control"
+                      placeholder="Título o descripción de la tarea..."
+                      value={nuevaTareaTitulo}
+                      onChange={e => setNuevaTareaTitulo(e.target.value)}
+                      disabled={isSubmittingTarea}
+                      style={{ fontSize: 13 }}
+                      autoFocus
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: 11, marginBottom: 4 }}>Gestor Asignado</label>
+                        <select
+                          className="form-control"
+                          value={nuevaTareaAsignadoA}
+                          onChange={e => setNuevaTareaAsignadoA(e.target.value)}
+                          disabled={isSubmittingTarea}
+                          style={{ fontSize: 12 }}
+                        >
+                          {teamMembers.map(u => (
+                            <option key={u.id} value={u.id}>{u.nombre} ({u.rol || 'Gestor'})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: 11, marginBottom: 4 }}>Prioridad</label>
+                        <select
+                          className="form-control"
+                          value={nuevaTareaPrioridad}
+                          onChange={e => setNuevaTareaPrioridad(e.target.value)}
+                          disabled={isSubmittingTarea}
+                          style={{ fontSize: 12 }}
+                        >
+                          <option value="alta">Alta</option>
+                          <option value="media">Media</option>
+                          <option value="baja">Baja</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setShowNuevaTareaModal(false)}
+                        disabled={isSubmittingTarea}
+                        style={{ fontSize: 12 }}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={handleCrearTareaRapida}
+                        disabled={!nuevaTareaTitulo.trim() || isSubmittingTarea}
+                        style={{ fontSize: 12, padding: '4px 14px' }}
+                      >
+                        {isSubmittingTarea ? 'Guardando...' : 'Guardar Tarea'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {tareasAsociadas.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 16px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface2)', color: 'var(--text-3)', fontSize: 12 }}>
@@ -2229,17 +2383,58 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {tareasAsociadas.map(t => (
-                    <div key={t.id || Math.random()} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                      <Icon name={t.hecho ? "check-circle" : "circle"} size={14} style={{ color: t.hecho ? 'var(--green)' : 'var(--text-3)' }} />
-                      <span style={{ fontSize: 12, color: t.hecho ? 'var(--text-3)' : 'var(--text)', textDecoration: t.hecho ? 'line-through' : 'none', flex: 1 }}>
-                        {t.titulo || 'Tarea sin título'}
-                      </span>
-                      <span className={`badge ${t.hecho ? 'badge-green' : 'badge-amber'}`} style={{ fontSize: 9 }}>
-                        {t.hecho ? 'Completada' : 'Pendiente'}
-                      </span>
-                    </div>
-                  ))}
+                  {tareasAsociadas.map(t => {
+                    const isDone = t.completada || t.hecho;
+                    const statusLabel = isDone ? 'Completada' : (t.columna === 'atrasada' ? 'Atrasada' : 'Pendiente');
+                    const badgeClass = isDone ? 'badge-green' : (t.columna === 'atrasada' ? 'badge-red' : 'badge-amber');
+                    const user = resolveUser(t.asignadoA, usuarios);
+
+                    return (
+                      <div
+                        key={t.id || Math.random()}
+                        onClick={() => handleToggleTarea(t)}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          padding: '10px 12px',
+                          background: 'var(--surface2)',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--blue)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, overflow: 'hidden' }}>
+                            <Icon name={isDone ? "check-circle" : "circle"} size={14} style={{ color: isDone ? 'var(--green)' : 'var(--text-3)', flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 500, color: isDone ? 'var(--text-3)' : 'var(--text)', textDecoration: isDone ? 'line-through' : 'none', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {t.titulo || 'Tarea sin título'}
+                            </span>
+                          </div>
+                          <span className={`badge ${badgeClass}`} style={{ fontSize: 10, flexShrink: 0 }}>
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)', paddingTop: 4, borderTop: '1px dashed var(--border)' }}>
+                          {user ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ width: 14, height: 14, borderRadius: '50%', background: user.color || 'var(--blue)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>
+                                {user.avatar || 'U'}
+                              </span>
+                              <span>{user.nombre}</span>
+                            </div>
+                          ) : (
+                            <span>Gestor: {t.asignadoA || 'Sin asignar'}</span>
+                          )}
+                          {t.fecha && <span style={{ fontFamily: 'DM Mono, monospace' }}>{t.fecha}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

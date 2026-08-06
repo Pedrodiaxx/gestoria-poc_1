@@ -76,5 +76,8 @@ namespace Data.DTOs
 
         /// <summary>Cantidad de presupuestos asociados a este proyecto.</summary>
         public int TotalPresupuestos { get; set; }
+
+        /// <summary>Lista de tareas diarias vinculadas al proyecto.</summary>
+        public List<TareaDiariaDTO> TareasDiarias { get; set; } = new();
     }
 }
