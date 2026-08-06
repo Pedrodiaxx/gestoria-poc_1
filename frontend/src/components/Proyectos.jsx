@@ -2805,41 +2805,6 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Principal</label>
-                  <select
-                    name="vialidadPrincipal"
-                    className="form-control"
-                    value={vialidadPrincipal}
-                    onChange={e => setVialidadPrincipal(e.target.value)}
-                    disabled={isSubmitting}
-                    style={{ fontSize: 13 }}
-                  >
-                    <option value="">— Seleccionar Vialidad —</option>
-                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Complementaria</label>
-                  <select
-                    name="vialidadComplementaria"
-                    className="form-control"
-                    value={vialidadComplementaria}
-                    onChange={e => setVialidadComplementaria(e.target.value)}
-                    disabled={isSubmitting}
-                    style={{ fontSize: 13 }}
-                  >
-                    <option value="">— Seleccionar Vialidad —</option>
-                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {/* Direcciones Complementarias */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -2878,6 +2843,41 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                     </button>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Principal</label>
+                  <select
+                    name="vialidadPrincipal"
+                    className="form-control"
+                    value={vialidadPrincipal}
+                    onChange={e => setVialidadPrincipal(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Seleccionar Vialidad —</option>
+                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Vialidad Complementaria</label>
+                  <select
+                    name="vialidadComplementaria"
+                    className="form-control"
+                    value={vialidadComplementaria}
+                    onChange={e => setVialidadComplementaria(e.target.value)}
+                    disabled={isSubmitting}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Seleccionar Vialidad —</option>
+                    {VIALIDADES_JERARQUIZADAS_OPTIONS.map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Áreas y Zonas de Compatibilidad */}
