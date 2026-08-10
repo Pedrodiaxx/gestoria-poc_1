@@ -10,58 +10,6 @@ import { descargarPresupuestoPDF } from '../utils/pdfExporter';
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 
-const parseConceptosFile = (file, onParsed) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const content = e.target.result;
-    try {
-      if (file.name.endsWith('.json')) {
-        const parsed = JSON.parse(content);
-        const arr = Array.isArray(parsed) ? parsed : (parsed.conceptos || []);
-        const formatted = arr.map((c, idx) => ({
-          id: `conc-imp-${Date.now()}-${idx}`,
-          no: idx + 1,
-          etapa: c.etapa || "Uso de Suelo",
-          concepto: c.concepto || c.descripcion || "Servicio Importado",
-          unidad: c.unidad || "GESTIÓN",
-          honorarios: parseFloat(c.honorarios || c.precio || c.precioUnitario) || 0,
-          comentarios: c.comentarios || "",
-          pagoDerechos: parseFloat(c.pagoDerechos) || 0,
-          extra: parseFloat(c.extra) || 0,
-          empleadoAsignadoId: c.empleadoAsignadoId || ""
-        }));
-        onParsed(formatted);
-      } else {
-        const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
-        const startIdx = lines[0].toLowerCase().includes('concepto') || lines[0].toLowerCase().includes('etapa') || lines[0].toLowerCase().includes('descripcion') ? 1 : 0;
-        const formatted = [];
-        for (let i = startIdx; i < lines.length; i++) {
-          const cols = lines[i].split(/[,;]/).map(s => s.trim().replace(/^["']|["']$/g, ''));
-          if (cols.length >= 1 && cols[0]) {
-            formatted.push({
-              id: `conc-csv-${Date.now()}-${i}`,
-              no: formatted.length + 1,
-              etapa: cols[0] && STAGES.includes(cols[0]) ? cols[0] : "Uso de Suelo",
-              concepto: cols[1] || cols[0] || "Servicio CSV",
-              unidad: cols[2] || "GESTIÓN",
-              honorarios: parseFloat(cols[3]) || 0,
-              comentarios: cols[4] || "",
-              pagoDerechos: parseFloat(cols[5]) || 0,
-              extra: parseFloat(cols[6]) || 0,
-              empleadoAsignadoId: ""
-            });
-          }
-        }
-        onParsed(formatted);
-      }
-    } catch (err) {
-      console.error("Error al importar archivo:", err);
-      alert("Error al leer el archivo. Asegúrate de que sea un JSON o CSV válido.");
-    }
-  };
-  reader.readAsText(file);
-};
-
 const STAGES = [
   "Uso de Suelo",
   "Licencia de Construcción",
@@ -122,7 +70,7 @@ const getStageDurationKey = (stageName) => {
 };
 
 // ─── CATALOG FILTER & CONCEPT BUILDER COMPONENT ──────────────────────────────
-function ConceptBuilder({ catalog, onAddConcept, onImportConcepts, equipo }) {
+function ConceptBuilder({ catalog, onAddConcept, equipo }) {
   const [nuevaEtapa, setNuevaEtapa] = useState("Uso de Suelo");
   const [nuevoConcepto, setNuevoConcepto] = useState("");
   const [nuevaUnidad, setNuevaUnidad] = useState("GESTIÓN");
@@ -171,24 +119,11 @@ function ConceptBuilder({ catalog, onAddConcept, onImportConcepts, equipo }) {
 
   return (
     <div className="card" style={{ marginBottom: 20, padding: 20, border: '1px solid var(--border)', background: 'var(--surface2)' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text)' }}>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', color: 'var(--text)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="plus" size={16} style={{ color: 'var(--accent)' }} />
           <span>Agregar Conceptos al Presupuesto</span>
         </div>
-        {onImportConcepts && (
-          <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
-            <Icon name="upload" size={14} /> Importar JSON/CSV
-            <input type="file" accept=".json,.csv" style={{ display: 'none' }} onChange={e => {
-              if (e.target.files && e.target.files[0]) {
-                parseConceptosFile(e.target.files[0], (imported) => {
-                  onImportConcepts(imported);
-                  e.target.value = '';
-                });
-              }
-            }} />
-          </label>
-        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
@@ -539,103 +474,124 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   );
 }
 
+// ─── HELPER FUNCTION FOR TITLE CASE ─────────────────────────────────────────
+function toTitleCase(str) {
+  if (!str) return '';
+  
+  // 1. Convertir todo a minúsculas
+  let formatted = str.toLowerCase();
+
+  // 2. Capitalizar la primera letra de cada palabra (soporta á, é, í, ó, ú, ñ)
+  formatted = formatted.replace(/(?:^|\s|\/|-)(\p{L})/gu, (match, letter) => {
+    return match.replace(letter, letter.toUpperCase());
+  });
+
+  // 3. Reglas especiales para Siglas y Acrónimos entre paréntesis
+  // Mantiene (AI), (ATC), (AR), (PDUM), (ZCO) totalmente en MAYÚSCULAS
+  formatted = formatted.replace(/\(([^)]+)\)/g, (match, p1) => `(${p1.toUpperCase()})`);
+
+  // 4. Preposiciones y conectores comunes en minúsculas si no son la primera palabra
+  const preposiciones = ['De', 'Del', 'Y', 'En', 'Para', 'Con', 'O', 'A'];
+  preposiciones.forEach((prep) => {
+    const regex = new RegExp(`\\b${prep}\\b`, 'g');
+    formatted = formatted.replace(regex, prep.toLowerCase());
+  });
+
+  // Asegurar que la primera letra del string completo SIEMPRE quede en Mayúscula
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
 // ─── SPECIFICATIONS CARD COMPONENT ──────────────────────────────────────────
 function FichaDatosPredio({ b, editable = false, onFieldChange }) {
+  const inputStyle = { fontSize: '12px', padding: '5px 10px', height: '34px' };
+  const labelStyle = { fontSize: '10px', fontWeight: 700, color: 'var(--text-3)', marginBottom: '4px', letterSpacing: '0.2px' };
+
   return (
-    <div className="card" style={{ marginBottom: 20, padding: 20, border: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-        <Icon name="list" size={16} style={{ color: 'var(--accent)' }} />
-        <span>Ficha de Metadatos del Predio y Parámetros Urbanos</span>
+    <div className="card" style={{ marginBottom: 16, padding: '14px 18px', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+        <Icon name="list" size={15} style={{ color: 'var(--accent)' }} />
+        <span>Datos del Predio y Parametros Urbanos</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>PROPIETARIO / CLIENTE</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px 12px' }}>
+        <div style={{ gridColumn: 'span 2' }}>
+          <label className="form-label" style={labelStyle}>PROPIETARIO / CLIENTE</label>
           {editable ? (
-            <input className="form-control" value={b.propietario} onChange={e => onFieldChange('propietario', e.target.value)} placeholder="Ej: Santos Lugo" />
+            <input className="form-control" style={inputStyle} value={b.propietario} onChange={e => onFieldChange('propietario', e.target.value)} placeholder="Ej: Santos Lugo" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.propietario || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.propietario) || '—'}</div>
           )}
         </div>
 
         <div style={{ gridColumn: 'span 2' }}>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>DIRECCIÓN COMPLETA</label>
+          <label className="form-label" style={labelStyle}>DIRECCIÓN COMPLETA</label>
           {editable ? (
-            <input className="form-control" value={b.direccion} onChange={e => onFieldChange('direccion', e.target.value)} placeholder="Ej: Tablajes 20690 Colonia Centro" />
+            <input className="form-control" style={inputStyle} value={b.direccion} onChange={e => onFieldChange('direccion', e.target.value)} placeholder="Ej: Tablajes 20690 Colonia Centro" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.direccion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.direccion) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>USO DE SUELO AUTORIZADO</label>
+          <label className="form-label" style={labelStyle}>USO DE SUELO AUTORIZADO</label>
           {editable ? (
-            <input className="form-control" value={b.uso} onChange={e => onFieldChange('uso', e.target.value)} placeholder="Ej: Tienda de Abarrotes" />
+            <input className="form-control" style={inputStyle} value={b.uso} onChange={e => onFieldChange('uso', e.target.value)} placeholder="Ej: Tienda de Abarrotes" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.uso || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.uso) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>CLASIFICACIÓN DE IMPACTO</label>
+          <label className="form-label" style={labelStyle}>CLASIFICACIÓN DE IMPACTO</label>
           {editable ? (
-            <input className="form-control" value={b.clasificacion} onChange={e => onFieldChange('clasificacion', e.target.value)} placeholder="Ej: Bajo Impacto" />
+            <input className="form-control" style={inputStyle} value={b.clasificacion} onChange={e => onFieldChange('clasificacion', e.target.value)} placeholder="Ej: Bajo Impacto" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.clasificacion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.clasificacion) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>ZONA PRIMARIA (PDUM)</label>
+          <label className="form-label" style={labelStyle}>ZONA PRIMARIA (PDUM)</label>
           {editable ? (
-            <input className="form-control" value={b.zonaPrimaria} onChange={e => onFieldChange('zonaPrimaria', e.target.value)} placeholder="Ej: 2" />
+            <input className="form-control" style={inputStyle} value={b.zonaPrimaria} onChange={e => onFieldChange('zonaPrimaria', e.target.value)} placeholder="Ej: 2" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.zonaPrimaria || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.zonaPrimaria) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>TIPO DE VIALIDAD (PDUM)</label>
+          <label className="form-label" style={labelStyle}>TIPO DE VIALIDAD (PDUM)</label>
           {editable ? (
-            <input className="form-control" value={b.tipoVialidad} onChange={e => onFieldChange('tipoVialidad', e.target.value)} placeholder="Ej: Local" />
+            <input className="form-control" style={inputStyle} value={b.tipoVialidad} onChange={e => onFieldChange('tipoVialidad', e.target.value)} placeholder="Ej: Local" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.tipoVialidad || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.tipoVialidad) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE PREDIO (M2)</label>
+          <label className="form-label" style={labelStyle}>SUPERFICIE PREDIO (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supPredio} onChange={e => onFieldChange('supPredio', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supPredio} onChange={e => onFieldChange('supPredio', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supPredio ? `${parseFloat(b.supPredio).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supPredio ? `${parseFloat(b.supPredio).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE CONST. EXISTENTE (M2)</label>
+          <label className="form-label" style={labelStyle}>SUP. CONST. EXISTENTE (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supConstExistente} onChange={e => onFieldChange('supConstExistente', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supConstExistente} onChange={e => onFieldChange('supConstExistente', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supConstExistente ? `${parseFloat(b.supConstExistente).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '0.00 M2'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supConstExistente ? `${parseFloat(b.supConstExistente).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '0.00 M2'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE A INTERVENIR (M2)</label>
+          <label className="form-label" style={labelStyle}>SUPERFICIE A INTERVENIR (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supIntervenir} onChange={e => onFieldChange('supIntervenir', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supIntervenir} onChange={e => onFieldChange('supIntervenir', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', fontFamily: 'DM Mono' }}>{b.supIntervenir ? `${parseFloat(b.supIntervenir).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
-          )}
-        </div>
-
-        <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>ESTIMACIÓN</label>
-          {editable ? (
-            <input className="form-control" value={b.estimacion} onChange={e => onFieldChange('estimacion', e.target.value)} placeholder="Estimación" />
-          ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.estimacion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', fontFamily: 'DM Mono' }}>{b.supIntervenir ? `${parseFloat(b.supIntervenir).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
           )}
         </div>
       </div>
@@ -643,7 +599,6 @@ function FichaDatosPredio({ b, editable = false, onFieldChange }) {
   );
 }
 
-// ─── AUTO-SAVE CONSTANTS ──────────────────────────────────────────────────────
 const AUTOSAVE_KEY = 'giu_presupuesto_en_progreso';
 
 const defaultInfoAdicional = {
@@ -666,49 +621,36 @@ const defaultInfoAdicional = {
 function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId, preloadedConcepts }) {
   const { conceptos: catalog } = useAppContext();
 
-  // ── Restore draft from localStorage on mount ──
-  const savedDraft = useRef(null);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const autosaveTimer = useRef(null);
-  const isInitialMount = useRef(true);
+  // Limpieza explícita de cualquier borrador en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("proyecto_draft");
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("presupuesto_draft");
+    localStorage.removeItem("giu_presupuesto_en_progreso");
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("tarea_draft");
+    localStorage.removeItem("catalogo_draft");
+  }, []);
 
-  // Read saved draft once on initial render
-  if (savedDraft.current === null) {
-    try {
-      const raw = localStorage.getItem(AUTOSAVE_KEY);
-      savedDraft.current = raw ? JSON.parse(raw) : false;
-    } catch {
-      savedDraft.current = false;
-    }
-  }
-
-  const draft = savedDraft.current;
-  const hasDraft = draft && typeof draft === 'object';
-
-  // Initialize state — prefer draft values over defaults
-  const [proyectoId, setProyectoId] = useState(
-    preselectedProjectId || (hasDraft ? draft.proyectoId || '' : '')
-  );
-  const [titulo, setTitulo] = useState(hasDraft ? draft.titulo || '' : '');
-  const [version, setVersion] = useState(hasDraft ? draft.version || '1.00' : '1.00');
+  // Initialize state cleanly
+  const [proyectoId, setProyectoId] = useState(preselectedProjectId || '');
+  const [titulo, setTitulo] = useState('');
+  const [version, setVersion] = useState('1.00');
 
   // Metadata of property
-  const [propietario, setPropietario] = useState(hasDraft ? draft.propietario || '' : '');
-  const [direccion, setDireccion] = useState(hasDraft ? draft.direccion || '' : '');
-  const [supPredio, setSupPredio] = useState(hasDraft ? draft.supPredio || '' : '');
-  const [supConstExistente, setSupConstExistente] = useState(hasDraft ? draft.supConstExistente || '0.00' : '0.00');
-  const [supIntervenir, setSupIntervenir] = useState(hasDraft ? draft.supIntervenir || '' : '');
-  const [uso, setUso] = useState(hasDraft ? draft.uso || '' : '');
-  const [clasificacion, setClasificacion] = useState(hasDraft ? draft.clasificacion || '' : '');
-  const [zonaPrimaria, setZonaPrimaria] = useState(hasDraft ? draft.zonaPrimaria || '' : '');
-  const [tipoVialidad, setTipoVialidad] = useState(hasDraft ? draft.tipoVialidad || '' : '');
-  const [estimacion, setEstimacion] = useState(hasDraft ? draft.estimacion || '' : '');
-  const [costoDirectoConstruccion, setCostoDirectoConstruccion] = useState(hasDraft ? draft.costoDirectoConstruccion || '' : '');
+  const [propietario, setPropietario] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [supPredio, setSupPredio] = useState('');
+  const [supConstExistente, setSupConstExistente] = useState('0.00');
+  const [supIntervenir, setSupIntervenir] = useState('');
+  const [uso, setUso] = useState('');
+  const [clasificacion, setClasificacion] = useState('');
+  const [zonaPrimaria, setZonaPrimaria] = useState('');
+  const [tipoVialidad, setTipoVialidad] = useState('');
+  const [costoDirectoConstruccion, setCostoDirectoConstruccion] = useState('');
 
   // Auxiliary information JSON
-  const [infoAdicional, setInfoAdicional] = useState(
-    hasDraft && draft.infoAdicional ? { ...defaultInfoAdicional, ...draft.infoAdicional } : { ...defaultInfoAdicional }
-  );
+  const [infoAdicional, setInfoAdicional] = useState({ ...defaultInfoAdicional });
 
   const handleInfoAdicionalChange = (key, val) => {
     setInfoAdicional(prev => ({ ...prev, [key]: val }));
@@ -724,92 +666,12 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     else if (field === 'clasificacion') setClasificacion(value);
     else if (field === 'zonaPrimaria') setZonaPrimaria(value);
     else if (field === 'tipoVialidad') setTipoVialidad(value);
-    else if (field === 'estimacion') setEstimacion(value);
   };
 
   const [conceptosList, setConceptosList] = useState(
-    preloadedConcepts && preloadedConcepts.length > 0
-      ? preloadedConcepts
-      : (hasDraft && draft.conceptosList ? draft.conceptosList : [])
+    preloadedConcepts && preloadedConcepts.length > 0 ? preloadedConcepts : []
   );
   const [guardado, setGuardado] = useState(false);
-
-  // Show restoration banner if draft was loaded
-  useEffect(() => {
-    if (hasDraft && !preselectedProjectId) {
-      setDraftRestored(true);
-    }
-  }, []);
-
-  // ── Auto-save: persist form state to localStorage (debounced 500ms) ──
-  const saveDraftToStorage = useCallback(() => {
-    const draftData = {
-      proyectoId,
-      titulo,
-      version,
-      propietario,
-      direccion,
-      supPredio,
-      supConstExistente,
-      supIntervenir,
-      uso,
-      clasificacion,
-      zonaPrimaria,
-      tipoVialidad,
-      estimacion,
-      costoDirectoConstruccion,
-      infoAdicional,
-      conceptosList,
-      _savedAt: new Date().toISOString()
-    };
-    try {
-      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draftData));
-    } catch (e) {
-      console.warn('[AutoSave] Error al guardar borrador:', e);
-    }
-  }, [proyectoId, titulo, version, propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion, costoDirectoConstruccion, infoAdicional, conceptosList]);
-
-  useEffect(() => {
-    // Skip auto-save on initial mount to avoid overwriting draft with restored values
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(() => {
-      saveDraftToStorage();
-    }, 500);
-    return () => {
-      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    };
-  }, [saveDraftToStorage]);
-
-  // ── Clear draft helper ──
-  const clearDraft = useCallback(() => {
-    localStorage.removeItem(AUTOSAVE_KEY);
-    setDraftRestored(false);
-  }, []);
-
-  // ── Reset form to blank and clear draft ──
-  const handleLimpiarBorrador = () => {
-    clearDraft();
-    setProyectoId('');
-    setTitulo('');
-    setVersion('1.00');
-    setPropietario('');
-    setDireccion('');
-    setSupPredio('');
-    setSupConstExistente('0.00');
-    setSupIntervenir('');
-    setUso('');
-    setClasificacion('');
-    setZonaPrimaria('');
-    setTipoVialidad('');
-    setEstimacion('');
-    setCostoDirectoConstruccion('');
-    setInfoAdicional({ ...defaultInfoAdicional });
-    setConceptosList([]);
-  };
 
   const handleProyectoChange = (e) => {
     const selectedId = e.target.value;
@@ -822,7 +684,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     );
 
     if (proyectoSeleccionado) {
-      setTitulo(`Presupuesto Gestoría — ${proyectoSeleccionado.nombre || ''}`);
+      if (!titulo) setTitulo('Presupuesto de Gestión');
 
       const clientObj = (clientes || []).find(c => String(c.id) === String(proyectoSeleccionado.clienteId) || c.id === proyectoSeleccionado.clienteId);
       const propietarioNombre = clientObj?.nombre || proyectoSeleccionado.cliente?.nombre || proyectoSeleccionado.clienteNombre || '';
@@ -844,7 +706,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
         p.id === proyectoId || p.id === valNum || p.idNumerico === valNum
       );
       if (selectedProj) {
-        if (!titulo) setTitulo(`Presupuesto Gestoría — ${selectedProj.nombre || ''}`);
+        if (!titulo) setTitulo('Presupuesto de Gestión');
         if (!direccion) setDireccion(selectedProj.direccionPrincipal || selectedProj.ubicacion || '');
 
         const client = (clientes || []).find(c => String(c.id) === String(selectedProj.clienteId) || c.id === selectedProj.clienteId);
@@ -888,11 +750,10 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     if (!canSave) return;
     const nuevo = {
       proyectoId,
+      titulo,
       version,
       estado: 'Borrador',
-      titulo,
-      fecha: fmt(hoy),
-      clienteId: cliente ? cliente.id : (selProyecto ? selProyecto.clienteId : null),
+      fecha: new Date().toISOString().split('T')[0],
       conceptos: conceptosList,
       propietario,
       direccion,
@@ -903,17 +764,15 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       clasificacion,
       zonaPrimaria,
       tipoVialidad,
-      estimacion,
       costoDirectoConstruccion: costDirectConstVal,
       infoAdicionalJson: JSON.stringify(infoAdicional)
     };
     onGuardar(nuevo);
-    clearDraft(); // Limpiar borrador temporal de localStorage tras guardar exitosamente
+    clearDraft();
     setGuardado(true);
     setTimeout(() => onCancelar(), 1500);
   };
 
-  // Wrap onCancelar to also clear draft
   const handleCancelar = () => {
     clearDraft();
     onCancelar();
@@ -921,34 +780,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
   return (
     <div style={{ maxWidth: '100%', padding: '0 10px' }}>
-      {/* ── Draft Restoration Banner ── */}
-      {draftRestored && (
-        <div className="autosave-banner" style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 18px',
-          marginBottom: 14,
-          borderRadius: 'var(--radius-sm)',
-          background: 'linear-gradient(135deg, rgba(76, 166, 106, 0.12), rgba(76, 166, 106, 0.06))',
-          border: '1px solid rgba(76, 166, 106, 0.35)',
-          animation: 'fadeInDown 0.4s ease-out'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
-              Se ha restaurado tu trabajo no guardado anterior.
-            </span>
-          </div>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={handleLimpiarBorrador}
-            style={{ fontSize: 11, padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
-          >
-            <Icon name="close" size={12} /> Limpiar / Empezar de nuevo
-          </button>
-        </div>
-      )}
-
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div>
           <div className="page-title">Nuevo Presupuesto de Gestoría</div>
@@ -974,7 +805,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
               clasificacion,
               zonaPrimaria,
               tipoVialidad,
-              estimacion,
               costoDirectoConstruccion,
               infoAdicionalJson: JSON.stringify(infoAdicional)
             };
@@ -998,18 +828,39 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       <div className="card" style={{ marginBottom: 20, padding: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 0.5fr', gap: 16 }}>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Proyecto Vinculado *</label>
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Proyecto Vinculado
+            </label>
             <select className="form-control" value={proyectoId} onChange={handleProyectoChange}>
               <option value="">— Selecciona un proyecto para importar datos —</option>
               {proyectos.map(p => <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Título del Presupuesto *</label>
-            <input className="form-control" placeholder="Ej: Presupuesto Base de Gestoría" value={titulo} onChange={e => setTitulo(e.target.value)} />
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Título del Presupuesto
+            </label>
+            <select
+              name="tituloPresupuesto"
+              className="form-control"
+              value={titulo}
+              onChange={e => setTitulo(e.target.value)}
+            >
+              <option value="" disabled>-- Selecciona el Título del Presupuesto --</option>
+              <option value="Presupuesto de Gestión">Presupuesto de Gestión</option>
+              <option value="Presupuesto de Trámites">Presupuesto de Trámites</option>
+              <option value="Presupuesto de Estudios">Presupuesto de Estudios</option>
+              <option value="Presupuesto de Proyecto">Presupuesto de Proyecto</option>
+              <option value="Presupuesto de Gestión, Trámites y Estudios">Presupuesto de Gestión, Trámites y Estudios</option>
+              {titulo && !["Presupuesto de Gestión", "Presupuesto de Trámites", "Presupuesto de Estudios", "Presupuesto de Proyecto", "Presupuesto de Gestión, Trámites y Estudios"].includes(titulo) && (
+                <option value={titulo}>{titulo}</option>
+              )}
+            </select>
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Versión *</label>
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Versión
+            </label>
             <input className="form-control" style={{ fontFamily: 'DM Mono', fontWeight: 'bold', textAlign: 'center' }} value={version} onChange={e => setVersion(e.target.value)} />
           </div>
         </div>
@@ -1017,7 +868,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
       {/* Property metadata */}
       <FichaDatosPredio
-        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion }}
+        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad }}
         editable={true}
         onFieldChange={handleFieldChange}
       />
@@ -1026,7 +877,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       <ConceptBuilder
         catalog={catalog}
         onAddConcept={handleAddConcept}
-        onImportConcepts={(imported) => setConceptosList(prev => [...prev, ...imported.map((c, i) => ({ ...c, no: prev.length + i + 1 }))])}
         equipo={EQUIPO}
       />
 
@@ -1409,11 +1259,30 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <div className="card" style={{ marginBottom: 20, padding: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 700 }}>Título del Presupuesto</label>
-              <input className="form-control" value={titulo} onChange={e => handleFieldChange('titulo', e.target.value)} />
+              <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+                Título del Presupuesto
+              </label>
+              <select
+                name="tituloPresupuesto"
+                className="form-control"
+                value={titulo}
+                onChange={e => handleFieldChange('titulo', e.target.value)}
+              >
+                <option value="" disabled>-- Selecciona el Título del Presupuesto --</option>
+                <option value="Presupuesto de Gestión">Presupuesto de Gestión</option>
+                <option value="Presupuesto de Trámites">Presupuesto de Trámites</option>
+                <option value="Presupuesto de Estudios">Presupuesto de Estudios</option>
+                <option value="Presupuesto de Proyecto">Presupuesto de Proyecto</option>
+                <option value="Presupuesto de Gestión, Trámites y Estudios">Presupuesto de Gestión, Trámites y Estudios</option>
+                {titulo && !["Presupuesto de Gestión", "Presupuesto de Trámites", "Presupuesto de Estudios", "Presupuesto de Proyecto", "Presupuesto de Gestión, Trámites y Estudios"].includes(titulo) && (
+                  <option value={titulo}>{titulo}</option>
+                )}
+              </select>
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 700 }}>Versión</label>
+              <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+                Versión
+              </label>
               <input className="form-control" style={{ fontFamily: 'DM Mono', fontWeight: 'bold' }} value={version} onChange={e => handleFieldChange('version', e.target.value)} />
             </div>
           </div>
@@ -1422,7 +1291,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
 
       {/* Property metadata card */}
       <FichaDatosPredio
-        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion }}
+        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad }}
         editable={isBorrador}
         onFieldChange={handleFieldChange}
       />
@@ -1432,7 +1301,6 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <ConceptBuilder
           catalog={catalog}
           onAddConcept={handleAddConcept}
-          onImportConcepts={(imported) => handleConceptosChange([...conceptosList, ...imported.map((c, i) => ({ ...c, no: conceptosList.length + i + 1 }))])}
           equipo={EQUIPO}
         />
       )}
@@ -1618,21 +1486,18 @@ export function Presupuestos() {
     setTareas
   } = useAppContext();
 
-  // Check if a draft exists in localStorage to auto-open 'nuevo' tab
-  const hasSavedDraft = useRef(false);
-  if (!hasSavedDraft.current) {
-    try {
-      const raw = localStorage.getItem(AUTOSAVE_KEY);
-      hasSavedDraft.current = raw ? true : false;
-    } catch {
-      hasSavedDraft.current = false;
-    }
-  }
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("proyecto_draft");
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("presupuesto_draft");
+    localStorage.removeItem("giu_presupuesto_en_progreso");
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("tarea_draft");
+    localStorage.removeItem("catalogo_draft");
+  }, []);
 
-  const [tab, setTab] = useState(() => {
-    if (hasSavedDraft.current) return 'nuevo';
-    return 'agrupado';
-  }); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
+  const [tab, setTab] = useState('agrupado'); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
   const [viendoId, setViendoId] = useState(null);
   const [q, setQ] = useState('');
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
@@ -2263,6 +2128,7 @@ export function Presupuestos() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

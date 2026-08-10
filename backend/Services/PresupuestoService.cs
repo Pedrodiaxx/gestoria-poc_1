@@ -175,7 +175,6 @@ namespace Backend.Services
                 Clasificacion = p.Clasificacion ?? "",
                 ZonaPrimaria = p.ZonaPrimaria ?? "",
                 TipoVialidad = p.TipoVialidad ?? "",
-                Estimacion = p.Estimacion ?? "",
                 CostoDirectoConstruccion = costoDirectoConst,
                 InfoAdicionalJson = p.InfoAdicionalJson ?? "",
 

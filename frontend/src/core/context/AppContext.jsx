@@ -156,7 +156,7 @@ export const AppContextProvider = ({
   const [presupuestos, setPresupuestos] = useState([]);
   const [tareas, setTareas] = useState([]);
 
-  // Sincronización exclusiva con el backend remoto (PostgreSQL en Render)
+  // Sincronización exclusiva con el backend local (PostgreSQL)
   // La API es la ÚNICA fuente de verdad para todas las entidades de negocio.
   useEffect(() => {
     if (!session) return;

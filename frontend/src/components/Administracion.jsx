@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
@@ -23,6 +23,12 @@ export default function Administracion() {
     saveUserEdit,
     deleteUser
   } = useAppContext();
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("usuario_draft");
+    localStorage.removeItem("admin_draft");
+  }, []);
 
   const [adminTab, setAdminTab] = useState('conceptos');
   const [userCategory, setUserCategory] = useState('equipo'); // 'equipo' | 'clientes'

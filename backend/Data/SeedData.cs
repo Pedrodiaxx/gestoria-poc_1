@@ -120,7 +120,6 @@ namespace Data
                     Clasificacion = "Bajo Impacto",
                     ZonaPrimaria = "2",
                     TipoVialidad = "LOCAL",
-                    Estimacion = "Normal",
                     CostoDirectoConstruccion = 77400000.00,
                     InfoAdicionalJson = infoAdicionalJson
                 });

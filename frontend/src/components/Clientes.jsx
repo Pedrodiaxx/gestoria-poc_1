@@ -21,6 +21,12 @@ export function Clientes() {
     updateProyecto
   } = useAppContext();
 
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("giu_cliente_en_progreso");
+  }, []);
+
   const [qClientes, setQClientes] = useState('');
   const [showAddClienteModal, setShowAddClienteModal] = useState(false);
   const [showAddClientDropdown, setShowAddClientDropdown] = useState(false);
@@ -464,7 +470,7 @@ export function Clientes() {
   };
 
   return (
-    <div style={{ background: '#FAFAFA', minHeight: '100vh', padding: '24px', color: '#18181B', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+    <div style={{ background: '#F8FAF8', minHeight: '100vh', padding: '24px', color: '#18181B', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
       {/* Module Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
@@ -491,7 +497,7 @@ export function Clientes() {
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
             }}
           >
-            <Icon name="plus" size={15} /> + Nuevo Cliente
+            <Icon name="plus" size={16} /> Nuevo Cliente
           </button>
           <button
             className="btn"

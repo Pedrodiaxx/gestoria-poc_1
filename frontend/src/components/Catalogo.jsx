@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money } from '../data/mockData';
@@ -8,6 +8,12 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   const context = useAppContext();
   const list = propsConceptos || context.conceptos;
   const setConceptos = propsSetConceptos || context.setConceptos;
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("catalogo_draft");
+    localStorage.removeItem("giu_concepto_en_progreso");
+  }, []);
 
   // Hook: carga y creación de conceptos delegada a la capa de servicios
   const { crearConcepto } = useConceptos(setConceptos);

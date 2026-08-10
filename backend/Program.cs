@@ -8,31 +8,40 @@ Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. CONEXIÓN A POSTGRESQL EN RENDER (INTOCABLE)
+// 1. CONEXIÓN A POSTGRESQL (RENDER)
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null
+        );
+    }));
 
-// 2. CORS PARA REACT FRONTEND (INTOCABLE)
+// 2. CONFIGURACIÓN COMPLETA DE CORS (Soporte para Vercel y Localhost)
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 // 3. REGISTRO DE CONTROLADORES
 builder.Services.AddControllers();
 
-// 4. INYECCIÓN DE DEPENDENCIAS — REPOSITORIOS (Capa de Datos)
+// 4. INYECCIÓN DE DEPENDENCIAS
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProyectoRepository, ProyectoRepository>();
 builder.Services.AddScoped<IPresupuestoRepository, PresupuestoRepository>();
 builder.Services.AddScoped<ITareaRepository, TareaRepository>();
 builder.Services.AddScoped<IConceptoRepository, ConceptoRepository>();
 
-// 5. INYECCIÓN DE DEPENDENCIAS — SERVICIOS (Lógica de Negocio)
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<PresupuestoService>();
@@ -47,7 +56,6 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    // Asegurar esquema en PostgreSQL (Crear tabla Roles y remover columna Email de Usuarios)
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
@@ -57,7 +65,19 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoPrincipal\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoComplementario\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"ImpactoPrincipal\" text;");
-        Console.WriteLine("[Startup] Esquema PostgreSQL actualizado (Roles asegurado, Email removido, UsoPrincipal, UsoComplementario e ImpactoPrincipal asegurados).");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsosComplementariosJson\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"ZonaPrimaria\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"DireccionPrincipal\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"DireccionesComplementariasJson\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"VialidadPrincipal\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"VialidadComplementaria\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"AreaCompatibilidad\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"ZonaCompatibilidadEspecifica\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Alcance\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" integer;");
+        Console.WriteLine("[Startup] Esquema PostgreSQL actualizado.");
     }
     catch (Exception ex)
     {
@@ -73,7 +93,6 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Error al sembrar la base de datos: {ex.Message}");
     }
 
-    // Reajustar secuencias de PostgreSQL al MAX(Id) actual de cada tabla
     try
     {
         var seqService = services.GetRequiredService<SequenceResetService>();
@@ -86,10 +105,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseHttpsRedirection();
-app.UseCors(); // Activar la política de CORS
+// PIPELINE DE RED EN PRODUCTION (RENDER)
+app.UseRouting();
 
-// 6. MAPEAR CONTROLADORES (reemplaza todas las Minimal APIs)
+// Habilitar CORS explícito antes de controladores y SIN UseHttpsRedirection
+app.UseCors("AllowAll");
+
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

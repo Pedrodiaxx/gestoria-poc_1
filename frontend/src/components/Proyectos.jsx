@@ -967,8 +967,29 @@ export const GIROS_IMPACTO_MAP = {
 
 // ─── HELPER: TITLE CASE ──────────────────────────────────────────────────────
 const toTitleCase = (str) => {
-  if (!str) return str;
-  return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+  if (!str) return '';
+
+  // 1. Convertir todo a minúsculas
+  let formatted = str.toLowerCase();
+
+  // 2. Capitalizar la primera letra de cada palabra (soporta á, é, í, ó, ú, ñ)
+  formatted = formatted.replace(/(?:^|\s|\/|-)(\p{L})/gu, (match, letter) => {
+    return match.replace(letter, letter.toUpperCase());
+  });
+
+  // 3. Reglas especiales para Siglas y Acrónimos entre paréntesis
+  // Mantiene (AI), (ATC), (AR), (PDUM), (ZCO) totalmente en MAYÚSCULAS
+  formatted = formatted.replace(/\(([^)]+)\)/g, (match, p1) => `(${p1.toUpperCase()})`);
+
+  // 4. Preposiciones y conectores comunes en minúsculas si no son la primera palabra
+  const preposiciones = ['De', 'Del', 'Y', 'En', 'Para', 'Con', 'O', 'A'];
+  preposiciones.forEach((prep) => {
+    const regex = new RegExp(`\\b${prep}\\b`, 'g');
+    formatted = formatted.replace(regex, prep.toLowerCase());
+  });
+
+  // Asegurar que la primera letra del string completo SIEMPRE quede en Mayúscula
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
 // ─── ERROR BOUNDARY COMPONENT ────────────────────────────────────────────────
@@ -1092,6 +1113,12 @@ function ProyectosContent() {
     session,
     usuarios = []
   } = useAppContext();
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("proyecto_draft");
+    localStorage.removeItem("giu_proyecto_en_progreso");
+  }, []);
 
   const [q, setQ] = useState('');
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
@@ -1394,29 +1421,32 @@ function ProyectoCard({ proyecto: p, clientes, setActive, onClick, onEliminar, m
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: 11,
-            background: bgCol,
-            color: col,
-            padding: '2px 8px',
-            borderRadius: 10,
-            fontWeight: 500
-          }}>
-            {tipo?.nombre || 'Gestión General'}
-          </span>
-          {cli && (
-            <span style={{
-              fontSize: 11,
-              background: 'var(--surface2)',
-              color: 'var(--text-2)',
-              padding: '2px 8px',
-              borderRadius: 10
-            }}>
-              {cli.nombre}
-            </span>
-          )}
-        </div>
+        {(cli || p?.direccionPrincipal) && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {cli && (
+              <span style={{
+                fontSize: 11,
+                background: 'var(--surface2)',
+                color: 'var(--text-2)',
+                padding: '2px 8px',
+                borderRadius: 10
+              }}>
+                {cli.nombre}
+              </span>
+            )}
+            {p?.direccionPrincipal && (
+              <span style={{
+                fontSize: 11,
+                background: 'var(--surface2)',
+                color: 'var(--text-2)',
+                padding: '2px 8px',
+                borderRadius: 10
+              }}>
+                {p.direccionPrincipal}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Card Body */}

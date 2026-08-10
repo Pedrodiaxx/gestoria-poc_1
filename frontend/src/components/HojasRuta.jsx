@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
@@ -14,6 +14,12 @@ import { finalizarHojaDeRuta } from '../services/hojasDeRutaService';
 
 export function HojasRuta() {
   const { session = {}, clientes = [], usuarios = [], presupuestos = [] } = useAppContext();
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("giu_hoja_ruta_en_progreso");
+  }, []);
 
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 

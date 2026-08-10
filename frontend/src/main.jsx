@@ -61,6 +61,7 @@ const budgetRepository = new LocalStorageRepository('giu_presupuestos', initialP
 const projectRepository = new LocalStorageRepository('giu_proyectos', PROYECTOS_MOCK);
 const taskRepository = new LocalStorageRepository('giu_tareas', []);
 
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppContextProvider
