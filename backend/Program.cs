@@ -77,6 +77,18 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" integer;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" DROP COLUMN IF EXISTS \"Estimacion\";");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Direccion\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Propietario\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupPredio\" double precision;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupConstExistente\" double precision;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupIntervenir\" double precision;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Uso\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Clasificacion\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"ZonaPrimaria\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"TipoVialidad\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"CostoDirectoConstruccion\" double precision;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"InfoAdicionalJson\" text;");
         Console.WriteLine("[Startup] Esquema PostgreSQL actualizado.");
     }
     catch (Exception ex)

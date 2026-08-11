@@ -20,8 +20,16 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int? clienteId, [FromQuery] string? rol)
         {
-            var resultado = await _service.GetAllAsync(clienteId, rol);
-            return Ok(resultado);
+            try
+            {
+                var resultado = await _service.GetAllAsync(clienteId, rol);
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PresupuestosController Error]: {ex}");
+                return StatusCode(500, new { error = ex.Message, detail = ex.InnerException?.Message });
+            }
         }
 
         [HttpGet("{id}")]
