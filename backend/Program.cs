@@ -8,6 +8,10 @@ Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar el puerto dinámico asignado por Render (o 5158 en local)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5158";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 // 1. CONEXIÓN A POSTGRESQL (RENDER)
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -76,7 +80,8 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Alcance\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" integer;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ALTER COLUMN \"ProyectoId\" TYPE text USING \"ProyectoId\"::text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" DROP COLUMN IF EXISTS \"Estimacion\";");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Direccion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Propietario\" text;");
