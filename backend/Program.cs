@@ -8,33 +8,8 @@ Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar el puerto dinámico asignado por Render (o 5158 en local)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5158";
-builder.WebHost.UseUrls($"http://*:{port}");
-
 // 1. CONEXIÓN A POSTGRESQL (RENDER)
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
-
-var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (!string.IsNullOrEmpty(envDatabaseUrl) && envDatabaseUrl.StartsWith("postgres://"))
-{
-    try
-    {
-        var uri = new Uri(envDatabaseUrl);
-        var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Startup] Error al parsear DATABASE_URL: {ex.Message}");
-    }
-}
-
-if (string.IsNullOrEmpty(connectionString))
-{
-    connectionString = "Host=dpg-d96i1nmq1p3s73c6b6fg-a.ohio-postgres.render.com;Port=5432;Database=gestioria_db;Username=gestioria_db_user;Password=01ybJYJdNgQMG2b22L9n08isQYne8FRF;SSL Mode=Require;Trust Server Certificate=true;Keepalive=30;Timeout=30;";
-}
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
@@ -45,7 +20,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         );
     }));
 
-// 2. CONFIGURACIÓN COMPLETA DE CORS (Soporte para Vercel y Localhost)
+// 2. CONFIGURACIÓN COMPLETA DE CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -76,7 +51,12 @@ builder.Services.AddScoped<SequenceResetService>();
 
 var app = builder.Build();
 
-// Inicializar y sembrar base de datos si está vacía
+// 5. APLICAR CORS DE INMEDIATO EN EL PIPELINE (ANTES DE CUALQUIER OTRA COSA)
+app.UseCors("AllowAll");
+app.UseRouting();
+app.UseAuthorization();
+
+// 6. ACTUALIZACIÓN AUTOMÁTICA DE ESQUEMA EN POSTGRESQL
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -87,6 +67,9 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"Cotizaciones\" CASCADE;");
         await dbContext.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"Roles\" (\"Id\" text PRIMARY KEY, \"Label\" text NOT NULL);");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" DROP COLUMN IF EXISTS \"Email\";");
+        
+        // Columnas faltantes detectadas en los logs
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Estimacion\" numeric;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoPrincipal\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoComplementario\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"ImpactoPrincipal\" text;");
@@ -101,28 +84,13 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Alcance\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"FechaInicio\" timestamp without time zone DEFAULT CURRENT_TIMESTAMP;");
-        await dbContext.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"HojasDeRuta\" CASCADE;");
-        await dbContext.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"HojasDeRuta\" (\"Id\" text PRIMARY KEY, \"Tipo\" text, \"ClienteId\" integer, \"ProyectoId\" text, \"Folio\" text, \"PresupuestoId\" text, \"AsignadoA\" text, \"Prioridad\" text, \"FechaInicio\" text, \"PasoActual\" integer, \"Estatus\" text, \"FechaFinalizacion\" text, \"Notas\" text);");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ALTER COLUMN \"ProyectoId\" TYPE text USING \"ProyectoId\"::text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" DROP COLUMN IF EXISTS \"Estimacion\";");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Direccion\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Propietario\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupPredio\" double precision;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupConstExistente\" double precision;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"SupIntervenir\" double precision;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Uso\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"Clasificacion\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"ZonaPrimaria\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"TipoVialidad\" text;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"CostoDirectoConstruccion\" double precision;");
-        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" ADD COLUMN IF NOT EXISTS \"InfoAdicionalJson\" text;");
-        Console.WriteLine("[Startup] Esquema PostgreSQL actualizado.");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" integer;");
+        
+        Console.WriteLine("[Startup] Esquema PostgreSQL actualizado correctamente.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Startup] Error al actualizar esquema PostgreSQL: {ex.Message}");
+        Console.WriteLine($"[Startup] Error al actualizar esquema: {ex.Message}");
     }
 
     try
@@ -131,14 +99,13 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error al sembrar la base de datos: {ex.Message}");
+        Console.WriteLine($"Error al sembrar datos: {ex.Message}");
     }
 
     try
     {
         var seqService = services.GetRequiredService<SequenceResetService>();
         await seqService.ResetAllSequencesAsync();
-        Console.WriteLine("[Startup] Secuencias de PostgreSQL reajustadas correctamente.");
     }
     catch (Exception ex)
     {
@@ -146,39 +113,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Middleware para capturar cualquier error no controlado y devolver detalles JSON con cabeceras CORS
-app.Use(async (context, next) =>
-{
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[GLOBAL ERROR]: {ex}");
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-        context.Response.Headers["Access-Control-Allow-Methods"] = "*";
-        context.Response.Headers["Access-Control-Allow-Headers"] = "*";
-
-        var errorResponse = System.Text.Json.JsonSerializer.Serialize(new
-        {
-            message = ex.Message,
-            innerError = ex.InnerException?.Message,
-            stackTrace = ex.StackTrace
-        });
-        await context.Response.WriteAsync(errorResponse);
-    }
-});
-
-// PIPELINE DE RED EN PRODUCTION (RENDER)
-app.UseRouting();
-
-// Habilitar CORS explícito antes de controladores y SIN UseHttpsRedirection
-app.UseCors("AllowAll");
-
-app.UseAuthorization();
 app.MapControllers();
-
 app.Run();
