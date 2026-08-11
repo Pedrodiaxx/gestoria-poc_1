@@ -117,6 +117,32 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Middleware para capturar cualquier error no controlado y devolver detalles JSON con cabeceras CORS
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[GLOBAL ERROR]: {ex}");
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "*";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "*";
+
+        var errorResponse = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            message = ex.Message,
+            innerError = ex.InnerException?.Message,
+            stackTrace = ex.StackTrace
+        });
+        await context.Response.WriteAsync(errorResponse);
+    }
+});
+
 // PIPELINE DE RED EN PRODUCTION (RENDER)
 app.UseRouting();
 
