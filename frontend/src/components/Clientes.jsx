@@ -514,22 +514,20 @@ export function Clientes() {
               border: '1px solid #E4E4E7',
               fontWeight: 500,
               height: 38,
-              padding: '0 16px',
-              minWidth: 105,
+              padding: '0 20px',
               borderRadius: 8,
               fontSize: 13,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
-              gap: 7,
               cursor: 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
               transition: 'all 0.2s ease',
               whiteSpace: 'nowrap'
             }}
           >
-            <Icon name="tag" size={15} color="#52525B" /> Estatus
+            Estatus
           </button>
 
           <button
@@ -541,22 +539,20 @@ export function Clientes() {
               border: '1px solid #E4E4E7',
               fontWeight: 500,
               height: 38,
-              padding: '0 16px',
-              minWidth: 105,
+              padding: '0 20px',
               borderRadius: 8,
               fontSize: 13,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
-              gap: 7,
               cursor: 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
               transition: 'all 0.2s ease',
               whiteSpace: 'nowrap'
             }}
           >
-            <Icon name="file-text" size={15} color="#52525B" /> Importar
+            Importar
           </button>
         </div>
       </div>
