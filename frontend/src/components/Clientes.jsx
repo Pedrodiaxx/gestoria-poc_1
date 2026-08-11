@@ -478,64 +478,72 @@ export function Clientes() {
           <p style={{ fontSize: 13, color: '#71717A', margin: '4px 0 0 0' }}>Gestión comercial y relaciones con clientes</p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button
-            className="btn"
+            className="btn btn-primary-emerald"
             onClick={() => setShowAddClienteModal(true)}
             style={{
-              background: '#1E5631',
+              background: 'linear-gradient(135deg, #1E5631 0%, #153E23 100%)',
               color: '#FFFFFF',
               border: 'none',
-              fontWeight: 500,
-              padding: '8px 16px',
-              borderRadius: 6,
+              fontWeight: 600,
+              height: 38,
+              padding: '0 18px',
+              borderRadius: 8,
               fontSize: 13,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+              boxShadow: '0 2px 6px rgba(30, 86, 49, 0.25)',
+              transition: 'all 0.2s ease'
             }}
           >
-            <Icon name="plus" size={16} /> Nuevo Cliente
+            <Icon name="plus" size={15} /> Nuevo Cliente
           </button>
           <button
-            className="btn"
+            className="btn btn-secondary-action"
             onClick={() => setShowManageStatuses(true)}
             style={{
               background: '#FFFFFF',
               color: '#3F3F46',
               border: '1px solid #E4E4E7',
               fontWeight: 500,
-              padding: '8px 14px',
-              borderRadius: 6,
+              height: 38,
+              padding: '0 15px',
+              borderRadius: 8,
               fontSize: 13,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              cursor: 'pointer'
+              gap: 7,
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease'
             }}
           >
-            <Icon name="cog" size={14} /> Estatus
+            <Icon name="tag" size={15} color="#616161" /> Estatus
           </button>
           <button
-            className="btn"
+            className="btn btn-secondary-action"
             onClick={handleMockImport}
             style={{
               background: '#FFFFFF',
               color: '#3F3F46',
               border: '1px solid #E4E4E7',
               fontWeight: 500,
-              padding: '8px 14px',
-              borderRadius: 6,
+              height: 38,
+              padding: '0 15px',
+              borderRadius: 8,
               fontSize: 13,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              cursor: 'pointer'
+              gap: 7,
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease'
             }}
           >
-            <Icon name="file" size={14} /> Importar
+            <Icon name="file-text" size={15} color="#616161" /> Importar
           </button>
         </div>
       </div>
