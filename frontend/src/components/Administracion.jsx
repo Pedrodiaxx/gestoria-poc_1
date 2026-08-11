@@ -276,8 +276,8 @@ export default function Administracion() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Módulo Administrativo</div>
-        <div className="page-subtitle">Administración de catálogo de trámites y control de usuarios</div>
+        <div className="page-title">Panel de Administración</div>
+        <div className="page-subtitle">Administración de conceptos de trámites y control de usuarios</div>
       </div>
 
       {/* Tabs */}
@@ -286,7 +286,7 @@ export default function Administracion() {
           className={`btn ${adminTab === 'conceptos' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setAdminTab('conceptos')}
         >
-          Catálogo Trámites
+          Conceptos de Trámites
         </button>
         <button
           className={`btn ${adminTab === 'usuarios' ? 'btn-primary' : 'btn-ghost'}`}

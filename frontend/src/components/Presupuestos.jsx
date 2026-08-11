@@ -1924,7 +1924,7 @@ export function Presupuestos() {
             Presupuestos
           </button>
           <button className={`btn ${tab === 'catalogo' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('catalogo')}>
-            Catálogo Conceptos
+            Conceptos
           </button>
           {session.rol !== 'cliente' && (
             <button className="btn btn-primary" onClick={() => { setPreloadedConcepts([]); setTab('nuevo'); }}>
@@ -2101,7 +2101,7 @@ export function Presupuestos() {
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon name="list" size={15} style={{ color: 'var(--text-3)' }} />
-            Catálogo de Conceptos
+            Conceptos
             <span className="badge badge-gray">{filteredCatalogo.length}</span>
           </div>
           <div className="w-full overflow-x-auto rounded-lg border border-slate-200">

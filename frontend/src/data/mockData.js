@@ -540,7 +540,7 @@ export const AVAILABLE_MODULES = [
   { id: 'presupuestos', label: 'Presupuestos' },
   { id: 'administracion', label: 'Administración' },
   { id: 'tareas', label: 'Tareas Diarias' },
-  { id: 'catalogo', label: 'Catálogo' },
+  { id: 'catalogo', label: 'Conceptos' },
   { id: 'proyectos', label: 'Proyectos' },
   { id: 'tramites', label: 'Hojas de Ruta' },
   { id: 'clientes', label: 'Clientes' },

@@ -72,7 +72,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-title">Catálogo de Conceptos</div>
+          <div className="page-title">Conceptos</div>
           <div className="page-subtitle">{list.length} conceptos disponibles para presupuestos</div>
         </div>
         {showAddButton && (

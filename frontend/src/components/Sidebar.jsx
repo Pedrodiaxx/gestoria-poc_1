@@ -175,7 +175,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     { id: 'presupuestos', label: 'Presupuestos', icon: 'dollar' },
     { id: 'administracion', label: 'Administración', icon: 'shield' },
     { id: 'clientes', label: 'Clientes', icon: 'user' },
-    { id: 'catalogo', label: 'Catálogo', icon: 'file' },
+    { id: 'catalogo', label: 'Conceptos', icon: 'file' },
     { id: 'proyectos', label: 'Proyectos', icon: 'map' },
     { id: 'tramites', label: 'Hojas de Ruta', icon: 'map' },
     { id: 'tareas', label: 'Tareas Diarias', icon: 'task' },
