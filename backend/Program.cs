@@ -14,6 +14,27 @@ builder.WebHost.UseUrls($"http://*:{port}");
 
 // 1. CONEXIÓN A POSTGRESQL (RENDER)
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+
+var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrEmpty(envDatabaseUrl) && envDatabaseUrl.StartsWith("postgres://"))
+{
+    try
+    {
+        var uri = new Uri(envDatabaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Error al parsear DATABASE_URL: {ex.Message}");
+    }
+}
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = "Host=dpg-d96i1nmq1p3s73c6b6fg-a.ohio-postgres.render.com;Port=5432;Database=gestioria_db;Username=gestioria_db_user;Password=01ybJYJdNgQMG2b22L9n08isQYne8FRF;SSL Mode=Require;Trust Server Certificate=true;Keepalive=30;Timeout=30;";
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
