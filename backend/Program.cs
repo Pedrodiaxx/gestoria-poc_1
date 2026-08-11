@@ -80,6 +80,8 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Alcance\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"FechaInicio\" timestamp without time zone DEFAULT CURRENT_TIMESTAMP;");
+        await dbContext.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"HojasDeRuta\" (\"Id\" serial PRIMARY KEY, \"ProyectoId\" text, \"ContenidoJson\" text, \"FechaCreacion\" timestamp without time zone DEFAULT CURRENT_TIMESTAMP);");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ALTER COLUMN \"ProyectoId\" TYPE text USING \"ProyectoId\"::text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Presupuestos\" DROP COLUMN IF EXISTS \"Estimacion\";");
