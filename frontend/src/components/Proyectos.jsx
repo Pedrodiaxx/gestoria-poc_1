@@ -1278,7 +1278,7 @@ function ProyectosContent() {
           className="form-control"
           value={filtroEstatus}
           onChange={e => setFiltroEstatus(e.target.value)}
-          style={{ width: 160 }}
+          style={{ width: 160, textAlign: 'center', textAlignLast: 'center', cursor: 'pointer' }}
         >
           <option value="todos">Todos los Estatus</option>
           {Object.entries(ESTATUS_CONFIG).map(([key, val]) => (
@@ -1290,7 +1290,7 @@ function ProyectosContent() {
           className="form-control"
           value={filtroTipo}
           onChange={e => setFiltroTipo(e.target.value)}
-          style={{ width: 200 }}
+          style={{ width: 200, textAlign: 'center', textAlignLast: 'center', cursor: 'pointer' }}
         >
           <option value="todos">Todos los Tipos</option>
           {tiposUnicos.map(tipo => (

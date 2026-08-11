@@ -491,16 +491,20 @@ export function Clientes() {
               padding: '0 18px',
               borderRadius: 8,
               fontSize: 13,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
               gap: 8,
               cursor: 'pointer',
               boxShadow: '0 2px 6px rgba(30, 86, 49, 0.25)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
             }}
           >
             <Icon name="plus" size={15} /> Nuevo Cliente
           </button>
+
           <button
             className="btn btn-secondary-action"
             onClick={() => setShowManageStatuses(true)}
@@ -510,19 +514,24 @@ export function Clientes() {
               border: '1px solid #E4E4E7',
               fontWeight: 500,
               height: 38,
-              padding: '0 15px',
+              padding: '0 16px',
+              minWidth: 105,
               borderRadius: 8,
               fontSize: 13,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
               gap: 7,
               cursor: 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
             }}
           >
-            <Icon name="tag" size={15} color="#616161" /> Estatus
+            <Icon name="tag" size={15} color="#52525B" /> Estatus
           </button>
+
           <button
             className="btn btn-secondary-action"
             onClick={handleMockImport}
@@ -532,18 +541,22 @@ export function Clientes() {
               border: '1px solid #E4E4E7',
               fontWeight: 500,
               height: 38,
-              padding: '0 15px',
+              padding: '0 16px',
+              minWidth: 105,
               borderRadius: 8,
               fontSize: 13,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
               gap: 7,
               cursor: 'pointer',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
             }}
           >
-            <Icon name="file-text" size={15} color="#616161" /> Importar
+            <Icon name="file-text" size={15} color="#52525B" /> Importar
           </button>
         </div>
       </div>
