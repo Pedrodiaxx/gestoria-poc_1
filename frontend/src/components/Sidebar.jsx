@@ -226,15 +226,6 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
             >
               <Icon name={n.icon} size={15} />
               <span>{n.label}</span>
-
-              {/* Indicador visual de que tiene flyout */}
-              {isPresupuestos && session.rol !== 'cliente' && (
-                <Icon
-                  name="arrowright"
-                  size={10}
-                  style={{ marginLeft: 'auto', opacity: 0.4, color: 'currentColor' }}
-                />
-              )}
             </div>
           );
         })}
