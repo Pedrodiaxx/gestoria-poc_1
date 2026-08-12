@@ -835,6 +835,8 @@ export function Clientes() {
             position: 'sticky',
             top: 20,
             maxHeight: 'calc(100vh - 40px)',
+            overflowY: 'auto'
+          }}>
             {/* Header / Action Bar de Detalle: Editar Cliente */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E4E4E7' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#18181B', display: 'flex', alignItems: 'center', gap: 6 }}>
