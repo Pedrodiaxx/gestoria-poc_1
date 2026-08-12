@@ -32,21 +32,44 @@ export function Clientes() {
   const [showAddClientDropdown, setShowAddClientDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
+  const [editingCliente, setEditingCliente] = useState(null);
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
-    tipo: 'empresa', personaTipo: 'moral', apoderado: '',
+    tipo: 'empresa', personaTipo: 'moral', apoderado: '', apoderadoLegal: '',
     rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
-    estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
+    estatus: 'activo', proyectos: [], responsable: 'Gabriel'
   });
 
   // Hook: carga de clientes delegada a la capa de servicios
-  const { crearCliente, actualizarCampoCliente, eliminarCliente } = useClientes(setClientes, clientes);
+  const { crearCliente, actualizarCliente, actualizarCampoCliente, eliminarCliente } = useClientes(setClientes, clientes);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedRows, setImportedRows] = useState(0);
   const fileInputRef = useRef(null);
   const [showManageStatuses, setShowManageStatuses] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleOpenEditModal = (c) => {
+    setEditingCliente(c);
+    setNuevoCliente({
+      id: c.id,
+      nombre: c.nombre || '',
+      nombreComercial: c.nombreComercial || '',
+      contacto: c.contacto || '',
+      email: c.email || '',
+      tel: c.tel || c.telefono || '',
+      tipo: c.tipo || 'empresa',
+      personaTipo: c.personaTipo || c.tipo || 'moral',
+      apoderado: c.apoderado || c.apoderadoLegal || '',
+      apoderadoLegal: c.apoderadoLegal || c.apoderado || '',
+      rfc: c.rfc || c.rfcFiscal || '',
+      ciudad: c.ciudad || '',
+      direccionFiscal: c.direccionFiscal || '',
+      estatus: c.estatus || 'activo',
+      responsable: c.responsable || 'Gabriel'
+    });
+    setShowAddClienteModal(true);
+  };
 
   // Project selector states
   const [proyectoSearch, setProyectoSearch] = useState('');
@@ -296,13 +319,14 @@ export function Clientes() {
 
     setIsSubmitting(true);
     const datosParaBackend = {
+      id: nuevoCliente.id,
       nombre: nuevoCliente.nombre,
       nombreComercial: nuevoCliente.nombreComercial || '',
       apoderadoLegal: nuevoCliente.apoderado || nuevoCliente.apoderadoLegal || '',
       rfc: nuevoCliente.rfc || '',
       ciudad: nuevoCliente.ciudad || '',
       direccionFiscal: nuevoCliente.direccionFiscal || '',
-      responsable: nuevoCliente.responsable || '',
+      responsable: nuevoCliente.responsable || 'Gabriel',
       contacto: nuevoCliente.contacto || '',
       email: nuevoCliente.email || '',
       telefono: nuevoCliente.tel || nuevoCliente.telefono || '',
@@ -311,20 +335,27 @@ export function Clientes() {
     };
 
     try {
-      // Delegamos la creación al hook → servicio de red → backend
-      await crearCliente(datosParaBackend);
+      if (editingCliente) {
+        await actualizarCliente(editingCliente.id, datosParaBackend);
+        if (selectedClient && selectedClient.id === editingCliente.id) {
+          setSelectedClient(prev => ({ ...prev, ...datosParaBackend }));
+        }
+      } else {
+        await crearCliente(datosParaBackend);
+      }
 
       setShowAddClienteModal(false);
+      setEditingCliente(null);
       setNuevoCliente({
         nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
         tipo: 'empresa', personaTipo: 'moral', apoderado: '', apoderadoLegal: '',
         rfc: '', ciudad: '', direccionFiscal: '',
-        estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
+        estatus: 'activo', proyectos: [], responsable: 'Gabriel'
       });
       setProyectoSearch('');
     } catch (error) {
-      console.error("Hubo un problema al conectar con el Backend:", error);
-      alert("No se pudo conectar con el servidor. Revisa la consola.");
+      console.error("Hubo un problema al guardar el cliente:", error);
+      alert("No se pudo guardar el cliente en el servidor. Revisa la consola.");
     } finally {
       setIsSubmitting(false);
     }
@@ -734,32 +765,58 @@ export function Clientes() {
                       ))}
                     </div>
 
-                    {/* Delete Button (PARTE INFERIOR DERECHA) */}
-                    <button
-                      className="btn btn-ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClient(c.id);
-                      }}
-                      style={{
-                        padding: 6,
-                        color: '#DC2626',
-                        background: 'transparent',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justify: 'center',
-                        flexShrink: 0,
-                        transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(254, 226, 226, 0.8)'; e.currentTarget.style.color = '#B91C1C'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#DC2626'; }}
-                      title="Eliminar cliente"
-                    >
-                      <Icon name="trash" size={14} />
-                    </button>
+                    {/* Actions Container */}
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(c);
+                        }}
+                        style={{
+                          padding: 6,
+                          color: '#1E5631',
+                          background: '#EBF3EE',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Editar cliente"
+                      >
+                        <Icon name="edit" size={14} />
+                      </button>
+
+                      <button
+                        className="btn btn-ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClient(c.id);
+                        }}
+                        style={{
+                          padding: 6,
+                          color: '#DC2626',
+                          background: 'transparent',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(254, 226, 226, 0.8)'; e.currentTarget.style.color = '#B91C1C'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#DC2626'; }}
+                        title="Eliminar cliente"
+                      >
+                        <Icon name="trash" size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -778,8 +835,35 @@ export function Clientes() {
             position: 'sticky',
             top: 20,
             maxHeight: 'calc(100vh - 40px)',
-            overflowY: 'auto'
-          }}>
+            {/* Header / Action Bar de Detalle: Editar Cliente */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E4E4E7' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#18181B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={15} style={{ color: '#1E5631' }} />
+                <span>Perfil de Cliente</span>
+              </div>
+              <button
+                className="btn"
+                onClick={() => handleOpenEditModal(selectedClient)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  background: 'linear-gradient(135deg, #1E5631 0%, #153E23 100%)',
+                  border: 'none',
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(30, 86, 49, 0.2)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Icon name="edit" size={13} /> Editar Cliente
+              </button>
+            </div>
+
             {/* Section 1: DATOS FISCALES Y COMERCIALES */}
             <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F4F4F5' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
@@ -1004,11 +1088,11 @@ export function Clientes() {
         </div>
       )}
 
-      {/* Add Client Modal */}
+      {/* Add / Edit Client Modal */}
       {showAddClienteModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddClienteModal(false)}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowAddClienteModal(false); setEditingCliente(null); } }}>
           <div className="modal">
-            <div className="modal-title">Registrar Nuevo Cliente</div>
+            <div className="modal-title">{editingCliente ? `Editar Cliente: ${editingCliente.nombre}` : 'Registrar Nuevo Cliente'}</div>
 
             {/* Row 1: Nombre + Nombre Comercial */}
             <div className="form-grid-2">
@@ -1313,14 +1397,14 @@ export function Clientes() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-              <button className="btn btn-secondary" onClick={() => { setShowAddClienteModal(false); setShowAddStatusInput(false); setNewStatusLabel(''); }}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setShowAddClienteModal(false); setEditingCliente(null); setShowAddStatusInput(false); setNewStatusLabel(''); }}>Cancelar</button>
               <button
                 className="btn btn-primary"
                 onClick={handleAddCliente}
                 disabled={!nuevoCliente.nombre || isSubmitting}
                 style={{ opacity: (!nuevoCliente.nombre || isSubmitting) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> {isSubmitting ? 'Registrando...' : 'Registrar'}
+                <Icon name="check" size={14} /> {isSubmitting ? 'Guardando...' : (editingCliente ? 'Guardar Cambios' : 'Registrar Cliente')}
               </button>
             </div>
           </div>
@@ -1527,7 +1611,7 @@ export function Clientes() {
             </div>
 
             <div style={{ fontSize: 13, color: '#3F3F46', marginBottom: 20, lineHeight: 1.5 }}
-                 dangerouslySetInnerHTML={{ __html: clientsToDelete.message }} />
+              dangerouslySetInnerHTML={{ __html: clientsToDelete.message }} />
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button

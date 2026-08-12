@@ -83,5 +83,22 @@ export function useClientes(setClientes, currentClientesList = []) {
     }
   };
 
-  return { crearCliente, actualizarCampoCliente, eliminarCliente };
+  const actualizarCliente = async (id, datosActualizados) => {
+    try {
+      const dto = await updateCliente(id, datosActualizados);
+      const objetoFinal = { ...datosActualizados, ...(dto || {}) };
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? objetoFinal : c));
+      }
+      return objetoFinal;
+    } catch (error) {
+      console.error(`Error al actualizar cliente ${id}:`, error);
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? datosActualizados : c));
+      }
+      return datosActualizados;
+    }
+  };
+
+  return { crearCliente, actualizarCliente, actualizarCampoCliente, eliminarCliente };
 }
