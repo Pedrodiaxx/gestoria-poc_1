@@ -843,31 +843,44 @@ export function Clientes() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="user" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre del Contacto:</span>
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Contacto:</span>
                   <span style={{ color: '#27272A', fontWeight: 500 }}>
                     {selectedClient.contacto && selectedClient.contacto !== 'S/N' ? selectedClient.contacto : '—'}
                   </span>
                 </div>
 
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="map" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Ciudad:</span>
+                  <span style={{ color: '#27272A', fontWeight: 600 }}>
+                    {selectedClient.ciudad || '—'}
+                  </span>
+                </div>
+
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <Icon name="map" size={14} style={{ color: '#A1A1AA', marginTop: 2, flexShrink: 0 }} />
-                  <div style={{ color: '#27272A', lineHeight: 1.4 }}>
-                    {selectedClient.direccionFiscal || selectedClient.ciudad || '—'}
+                  <Icon name="file-text" size={14} style={{ color: '#A1A1AA', marginTop: 2, flexShrink: 0 }} />
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Dirección Fiscal:</span>
+                    <span style={{ color: '#27272A', lineHeight: 1.4 }}>
+                      {selectedClient.direccionFiscal || '—'}
+                    </span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="mail" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Correo:</span>
                   <span style={{ color: '#2563EB', fontWeight: 500 }}>{selectedClient.email || '—'}</span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="phone" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Teléfono:</span>
                   <span style={{ color: '#27272A' }}>{selectedClient.tel || selectedClient.telefono || '—'}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Apoderado / Representante Legal:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Apoderado Legal:</span>
                   <span style={{ color: '#27272A', fontWeight: 500 }}>{selectedClient.apoderadoLegal || selectedClient.apoderado || '—'}</span>
                 </div>
               </div>

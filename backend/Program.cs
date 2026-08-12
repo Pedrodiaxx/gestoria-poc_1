@@ -69,6 +69,18 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Usuarios\" DROP COLUMN IF EXISTS \"Email\";");
         
         // Columnas faltantes detectadas en los logs
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Ciudad\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"NombreComercial\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"ApoderadoLegal\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Rfc\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"DireccionFiscal\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Contacto\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Email\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Telefono\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Estatus\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Clientes\" ADD COLUMN IF NOT EXISTS \"Tipo\" text;");
+
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Estimacion\" numeric;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoPrincipal\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"UsoComplementario\" text;");
