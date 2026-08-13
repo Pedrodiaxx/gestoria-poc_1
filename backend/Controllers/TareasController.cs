@@ -30,7 +30,7 @@ namespace Backend.Controllers
             var dto = await _service.CreateAsync(nuevaTarea);
             return Created($"/api/tareas/{dto.Id}", dto);
         }
-ngjilgilgujgilhl
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] TareaDiaria tarea)
         {

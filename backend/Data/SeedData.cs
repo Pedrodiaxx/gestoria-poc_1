@@ -161,7 +161,6 @@ namespace Data
                     Id = "usr-admin-1",
                     Nombre = "Gabriel",
                     Contrasenia = "123456789",
-                    id= '89c7e013-404a-4765-9d03-17a4f9e851cb',
                     Rol = "admin",
                     ModulosJson = "[\"presupuestos\",\"administracion\",\"tareas\",\"catalogo\",\"proyectos\",\"clientes\"]",
                     Avatar = "G",
