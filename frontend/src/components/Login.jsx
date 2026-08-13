@@ -15,22 +15,17 @@ export default function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
 
   // Autocomplete / Suggestions states
-  const [savedEmails, setSavedEmails] = useState(() => {
-    const saved = localStorage.getItem('giu_saved_emails');
+  const [savedUsers, setSavedUsers] = useState(() => {
+    const saved = localStorage.getItem('giu_saved_users') || localStorage.getItem('giu_saved_emails');
     const parsed = saved ? JSON.parse(saved) : [];
-    // Purgar de raíz los correos mock de prueba antiguos
-    const cleaned = parsed.filter(email => 
-      email.toLowerCase() !== 'laura@gestoria.com' && 
-      email.toLowerCase() !== 'pnoriega@gmail.com'
-    );
-    localStorage.setItem('giu_saved_emails', JSON.stringify(cleaned));
+    const cleaned = parsed.filter(u => typeof u === 'string' && !u.includes('@'));
+    localStorage.setItem('giu_saved_users', JSON.stringify(cleaned));
     return cleaned;
   });
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Signup specific states
   const [signupNombre, setSignupNombre] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
   const [error, setError] = useState('');
@@ -42,18 +37,18 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    const emailClean = username.trim().toLowerCase();
+    const userClean = username.trim();
     const pClean = password.trim();
 
     try {
       setError('');
-      const loggedUser = await loginService(emailClean, pClean);
+      const loggedUser = await loginService(userClean, pClean);
       
-      setSavedEmails(prev => {
-        const exists = prev.some(email => email.toLowerCase() === emailClean);
+      setSavedUsers(prev => {
+        const exists = prev.some(u => u.toLowerCase() === userClean.toLowerCase());
         if (!exists) {
-          const next = [emailClean, ...prev];
-          localStorage.setItem('giu_saved_emails', JSON.stringify(next));
+          const next = [userClean, ...prev];
+          localStorage.setItem('giu_saved_users', JSON.stringify(next));
           return next;
         }
         return prev;
@@ -61,13 +56,13 @@ export default function Login({ onLogin }) {
 
       loginAction(loggedUser);
     } catch (err) {
-      setError(err.message || 'Credenciales inválidas. Revisa el correo y contraseña.');
+      setError(err.message || 'Credenciales inválidas. Revisa el usuario y contraseña.');
     }
   };
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
-    if (!signupNombre || !signupEmail || !signupPassword || !signupConfirm) {
+    if (!signupNombre || !signupPassword || !signupConfirm) {
       setError('Por favor completa todos los campos de registro.');
       return;
     }
@@ -77,28 +72,27 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    const emailClean = signupEmail.trim().toLowerCase();
+    const nameClean = signupNombre.trim();
 
     try {
       setError('');
       const newUserPayload = {
-        nombre: signupNombre.trim(),
-        email: emailClean,
+        nombre: nameClean,
         contrasenia: signupPassword.trim(),
         rol: 'cliente',
         modulos: ['presupuestos', 'cotizaciones'],
-        avatar: signupNombre.trim().split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U',
+        avatar: nameClean.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'U',
         color: ['#2A5F3F', '#1A5276', '#5B2C6F', '#B87A0A', '#8E44AD', '#34495E', '#16A085'][Math.floor(Math.random() * 7)]
       };
 
       const createdUser = await createUsuario(newUserPayload);
 
-      setSavedEmails(prev => {
-        const cleanEmail = createdUser.email.trim();
-        const exists = prev.some(email => email.toLowerCase() === cleanEmail.toLowerCase());
+      setSavedUsers(prev => {
+        const cleanUser = (createdUser?.nombre || nameClean).trim();
+        const exists = prev.some(u => u.toLowerCase() === cleanUser.toLowerCase());
         if (!exists) {
-          const next = [cleanEmail, ...prev];
-          localStorage.setItem('giu_saved_emails', JSON.stringify(next));
+          const next = [cleanUser, ...prev];
+          localStorage.setItem('giu_saved_users', JSON.stringify(next));
           return next;
         }
         return prev;
@@ -110,8 +104,8 @@ export default function Login({ onLogin }) {
     }
   };
 
-  const filteredSuggestions = savedEmails.filter(email =>
-    email.toLowerCase().includes(username.toLowerCase())
+  const filteredSuggestions = savedUsers.filter(u =>
+    u.toLowerCase().includes(username.toLowerCase())
   );
 
   return (
@@ -134,12 +128,14 @@ export default function Login({ onLogin }) {
         {!isSignup ? (
           <form onSubmit={handleLoginSubmit} className="login-form">
             <div className="form-group">
-              <label className="form-label">Correo Electrónico</label>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={13} /> Nombre de Usuario
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Ej: Gabrielcoc@gmail.com"
+                  placeholder="Ej: pedrini"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
@@ -230,25 +226,13 @@ export default function Login({ onLogin }) {
         ) : (
           <form onSubmit={handleSignupSubmit} className="login-form">
             <div className="form-group">
-              <label className="form-label">Nombre Completo</label>
+              <label className="form-label">Nombre de Usuario (Login)</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Ej: Gabriel Ochoa"
+                placeholder="Ej: pedrini o Gabriel"
                 value={signupNombre}
                 onChange={e => setSignupNombre(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Correo Electrónico</label>
-              <input
-                type="email"
-                className="form-control"
-                placeholder="Ej: cliente@correo.com"
-                value={signupEmail}
-                onChange={e => setSignupEmail(e.target.value)}
                 style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
               />
             </div>

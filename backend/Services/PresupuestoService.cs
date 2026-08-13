@@ -23,17 +23,18 @@ namespace Backend.Services
 
         /// <summary>
         /// Obtiene todos los presupuestos con seguridad por rol.
-        /// REGLA DE NEGOCIO: Si rol == "cliente", filtra los presupuestos
-        /// que pertenezcan a proyectos del clienteId.
+        /// REGLA DE NEGOCIO: Si clienteId está presente o rol == "cliente",
+        /// filtra únicamente los presupuestos que pertenezcan a proyectos del cliente.
         /// </summary>
         public async Task<List<PresupuestoDTO>> GetAllAsync(int? clienteId, string? rol)
         {
             List<string>? filtroProyectoIds = null;
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase) || clienteId.HasValue;
 
-            if (rol == "cliente" && clienteId.HasValue)
+            if (isCliente && clienteId.HasValue)
             {
                 // Obtener los IDs numéricos de proyectos del cliente
-                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId);
+                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId.Value);
                 filtroProyectoIds = proyectosCliente
                     .SelectMany(pr => new[]
                     {
@@ -47,6 +48,32 @@ namespace Backend.Services
             var proyectos = await _proyectoRepo.GetAllAsync();
 
             return presupuestos.Select(p => MapToDTO(p, proyectos)).ToList();
+        }
+
+        /// <summary>
+        /// Obtiene un presupuesto por ID validando que pertenezca al cliente si el rol es 'cliente'.
+        /// </summary>
+        public async Task<PresupuestoDTO?> GetByIdAsync(int id, int? clienteId, string? rol)
+        {
+            var p = await _presupuestoRepo.GetByIdAsync(id);
+            if (p == null) return null;
+
+            bool isCliente = string.Equals(rol, "cliente", StringComparison.OrdinalIgnoreCase);
+            if (isCliente && clienteId.HasValue)
+            {
+                var proyectosCliente = await _proyectoRepo.GetAllAsync(clienteId.Value);
+                var proyectoIdsPermitidos = proyectosCliente
+                    .SelectMany(pr => new[] { $"PRY-{pr.Id.ToString().PadLeft(3, '0')}", pr.Id.ToString() })
+                    .ToList();
+
+                if (string.IsNullOrEmpty(p.ProyectoId) || !proyectoIdsPermitidos.Contains(p.ProyectoId))
+                {
+                    return null; // Acceso denegado: el presupuesto no pertenece a los proyectos del cliente
+                }
+            }
+
+            var proyectos = await _proyectoRepo.GetAllAsync();
+            return MapToDTO(p, proyectos);
         }
 
         /// <summary>
@@ -96,77 +123,103 @@ namespace Backend.Services
         // ──────────────────────────────────────────────────────────────────
         private static PresupuestoDTO MapToDTO(Presupuesto p, List<Proyecto> proyectos)
         {
-            // Resolver proyecto asociado
-            var proy = proyectos.FirstOrDefault(pr =>
-                $"PRY-{pr.Id.ToString().PadLeft(3, '0')}" == p.ProyectoId ||
-                pr.Id.ToString() == p.ProyectoId);
-
-            // Badge y label de estado
-            string badge, label;
-            switch (p.Estado?.ToLowerInvariant())
+            try
             {
-                case "aprobado": badge = "badge-green"; label = "Aprobado"; break;
-                case "en-revision": badge = "badge-blue"; label = "En Revisión"; break;
-                case "rechazado": badge = "badge-red"; label = "Rechazado"; break;
-                default: badge = "badge-amber"; label = "Borrador"; break;
+                // Resolver proyecto asociado
+                var proy = proyectos?.FirstOrDefault(pr =>
+                    $"PRY-{pr.Id.ToString().PadLeft(3, '0')}" == p.ProyectoId ||
+                    pr.Id.ToString() == p.ProyectoId);
+
+                // Badge y label de estado
+                string badge, label;
+                switch (p.Estado?.ToLowerInvariant())
+                {
+                    case "aprobado": badge = "badge-green"; label = "Aprobado"; break;
+                    case "en-revision": badge = "badge-blue"; label = "En Revisión"; break;
+                    case "rechazado": badge = "badge-red"; label = "Rechazado"; break;
+                    default: badge = "badge-amber"; label = "Borrador"; break;
+                }
+
+                // Deserializar conceptos
+                var conceptos = DeserializeConceptos(p.ConceptosJson) ?? new List<ConceptoPresupuestoDTO>();
+
+                // Cálculos financieros
+                double subtotalHonorarios = conceptos.Where(c => c != null).Sum(c => c.Honorarios);
+                double ivaHonorarios = subtotalHonorarios * 0.16;
+                double totalHonorarios = subtotalHonorarios + ivaHonorarios;
+                double totalDerechos = conceptos.Where(c => c != null).Sum(c => c.PagoDerechos);
+                double totalExtras = conceptos.Where(c => c != null).Sum(c => c.Extra);
+                double totalGeneral = totalHonorarios + totalDerechos + totalExtras;
+
+                double costoDirectoConst = p.CostoDirectoConstruccion ?? 0;
+                double pctGestion = costoDirectoConst > 0 ? (totalGeneral / costoDirectoConst) * 100 : 0;
+
+                string fechaStr = "";
+                try
+                {
+                    fechaStr = p.Fecha != default ? p.Fecha.ToString("yyyy-MM-dd") : DateTime.Now.ToString("yyyy-MM-dd");
+                }
+                catch
+                {
+                    fechaStr = DateTime.Now.ToString("yyyy-MM-dd");
+                }
+
+                return new PresupuestoDTO
+                {
+                    Id = $"PRES-{p.Id.ToString().PadLeft(4, '0')}",
+                    IdNumerico = p.Id,
+                    ProyectoId = p.ProyectoId ?? "",
+                    ProyectoNombre = proy?.Nombre ?? "",
+                    Titulo = p.Titulo ?? "",
+                    Estado = p.Estado ?? "borrador",
+                    EstadoBadge = badge,
+                    EstadoLabel = label,
+                    Version = p.Version ?? "V1.0",
+                    Fecha = fechaStr,
+
+                    // Nuevos metadatos del predio (caso real)
+                    Direccion = p.Direccion ?? "",
+                    Propietario = p.Propietario ?? "",
+                    SupPredio = p.SupPredio ?? 0,
+                    SupConstExistente = p.SupConstExistente ?? 0,
+                    SupIntervenir = p.SupIntervenir ?? 0,
+                    Uso = p.Uso ?? "",
+                    Clasificacion = p.Clasificacion ?? "",
+                    ZonaPrimaria = p.ZonaPrimaria ?? "",
+                    TipoVialidad = p.TipoVialidad ?? "",
+                    CostoDirectoConstruccion = costoDirectoConst,
+                    InfoAdicionalJson = p.InfoAdicionalJson ?? "",
+
+                    // Totales detallados
+                    SubtotalHonorarios = subtotalHonorarios,
+                    IvaHonorarios = ivaHonorarios,
+                    TotalHonorarios = totalHonorarios,
+                    TotalDerechos = totalDerechos,
+                    TotalExtras = totalExtras,
+                    TotalGeneral = totalGeneral,
+                    PorcentajeGestion = pctGestion,
+
+                    // Campos heredados/compatibilidad
+                    TotalDirecto = p.TotalDirecto,
+                    TotalIndirecto = p.TotalIndirecto,
+
+                    Conceptos = conceptos
+                };
             }
-
-            // Deserializar conceptos
-            var conceptos = DeserializeConceptos(p.ConceptosJson);
-
-            // Cálculos financieros
-            double subtotalHonorarios = conceptos.Sum(c => c.Honorarios);
-            double ivaHonorarios = subtotalHonorarios * 0.16;
-            double totalHonorarios = subtotalHonorarios + ivaHonorarios;
-            double totalDerechos = conceptos.Sum(c => c.PagoDerechos);
-            double totalExtras = conceptos.Sum(c => c.Extra);
-            double totalGeneral = totalHonorarios + totalDerechos + totalExtras;
-
-            double costoDirectoConst = p.CostoDirectoConstruccion ?? 0;
-            double pctGestion = costoDirectoConst > 0 ? (totalGeneral / costoDirectoConst) * 100 : 0;
-
-            return new PresupuestoDTO
+            catch (Exception ex)
             {
-                Id = $"PRES-{p.Id.ToString().PadLeft(4, '0')}",
-                IdNumerico = p.Id,
-                ProyectoId = p.ProyectoId ?? "",
-                ProyectoNombre = proy?.Nombre ?? "",
-                Titulo = p.Titulo ?? "",
-                Estado = p.Estado ?? "borrador",
-                EstadoBadge = badge,
-                EstadoLabel = label,
-                Version = p.Version ?? "V1.0",
-                Fecha = p.Fecha.ToString("yyyy-MM-dd"),
-
-                // Nuevos metadatos del predio (caso real)
-                Direccion = p.Direccion ?? "",
-                Propietario = p.Propietario ?? "",
-                SupPredio = p.SupPredio ?? 0,
-                SupConstExistente = p.SupConstExistente ?? 0,
-                SupIntervenir = p.SupIntervenir ?? 0,
-                Uso = p.Uso ?? "",
-                Clasificacion = p.Clasificacion ?? "",
-                ZonaPrimaria = p.ZonaPrimaria ?? "",
-                TipoVialidad = p.TipoVialidad ?? "",
-                Estimacion = p.Estimacion ?? "",
-                CostoDirectoConstruccion = costoDirectoConst,
-                InfoAdicionalJson = p.InfoAdicionalJson ?? "",
-
-                // Totales detallados
-                SubtotalHonorarios = subtotalHonorarios,
-                IvaHonorarios = ivaHonorarios,
-                TotalHonorarios = totalHonorarios,
-                TotalDerechos = totalDerechos,
-                TotalExtras = totalExtras,
-                TotalGeneral = totalGeneral,
-                PorcentajeGestion = pctGestion,
-
-                // Campos heredados/compatibilidad
-                TotalDirecto = p.TotalDirecto,
-                TotalIndirecto = p.TotalIndirecto,
-
-                Conceptos = conceptos
-            };
+                Console.WriteLine($"[MapToDTO Error]: {ex.Message}");
+                return new PresupuestoDTO
+                {
+                    Id = $"PRES-{p.Id.ToString().PadLeft(4, '0')}",
+                    IdNumerico = p.Id,
+                    Titulo = p.Titulo ?? "Presupuesto",
+                    Estado = "borrador",
+                    EstadoBadge = "badge-amber",
+                    EstadoLabel = "Borrador",
+                    Version = p.Version ?? "1.0"
+                };
+            }
         }
 
         private static List<ConceptoPresupuestoDTO> DeserializeConceptos(string? json)

@@ -50,25 +50,23 @@ export function useClientes(setClientes, currentClientesList = []) {
     const backendField = field === 'tel' ? 'telefono' : field;
 
     const clienteActualizado = {
-      id: clienteExistente.id,
-      nombre: clienteExistente.nombre || "",
-      contacto: clienteExistente.contacto || "",
-      email: clienteExistente.email || "",
-      telefono: clienteExistente.telefono || clienteExistente.tel || "",
-      estatus: clienteExistente.estatus || "activo",
-      tipo: clienteExistente.tipo || "empresa",
-      [backendField]: value // Reemplazar con el nuevo valor
+      ...clienteExistente,
+      [backendField]: value,
+      [field]: value
     };
 
     try {
       const dto = await updateCliente(id, clienteActualizado);
       if (setClientes) {
-        setClientes(prev => prev.map(c => c.id === id ? dto : c));
+        setClientes(prev => prev.map(c => c.id === id ? { ...c, ...clienteActualizado, ...(dto || {}) } : c));
       }
       return dto;
     } catch (error) {
       console.error(`Error al actualizar campo ${field} del cliente ${id}:`, error);
-      throw error;
+      // Aun si falla el endpoint backend, actualizar estado local para que la UI responda inmediatamente
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? clienteActualizado : c));
+      }
     }
   };
 
@@ -85,5 +83,22 @@ export function useClientes(setClientes, currentClientesList = []) {
     }
   };
 
-  return { crearCliente, actualizarCampoCliente, eliminarCliente };
+  const actualizarCliente = async (id, datosActualizados) => {
+    try {
+      const dto = await updateCliente(id, datosActualizados);
+      const objetoFinal = { ...datosActualizados, ...(dto || {}) };
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? objetoFinal : c));
+      }
+      return objetoFinal;
+    } catch (error) {
+      console.error(`Error al actualizar cliente ${id}:`, error);
+      if (setClientes) {
+        setClientes(prev => prev.map(c => c.id === id ? datosActualizados : c));
+      }
+      return datosActualizados;
+    }
+  };
+
+  return { crearCliente, actualizarCliente, actualizarCampoCliente, eliminarCliente };
 }

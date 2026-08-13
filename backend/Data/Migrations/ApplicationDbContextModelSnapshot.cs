@@ -30,28 +30,41 @@ namespace backend.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ApoderadoLegal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Ciudad")
+                        .HasColumnType("text");
+
                     b.Property<string>("Contacto")
-                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DireccionFiscal")
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Estatus")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("NombreComercial")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Responsable")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Rfc")
+                        .HasColumnType("text");
+
                     b.Property<string>("Telefono")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Tipo")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -83,31 +96,58 @@ namespace backend.Data.Migrations
                     b.ToTable("Conceptos");
                 });
 
-            modelBuilder.Entity("Data.Cotizacion", b =>
+            modelBuilder.Entity("Data.HojaDeRuta", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AsignadoA")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ClienteId")
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Cliente")
+                    b.Property<string>("Estatus")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ConceptosJson")
+                    b.Property<string>("FechaFinalizacion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FechaInicio")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<string>("Folio")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<double>("Total")
-                        .HasColumnType("double precision");
+                    b.Property<string>("Notas")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PasoActual")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PresupuestoId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Prioridad")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProyectoId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Cotizaciones");
+                    b.ToTable("HojasDeRuta");
                 });
 
             modelBuilder.Entity("Data.Presupuesto", b =>
@@ -133,9 +173,6 @@ namespace backend.Data.Migrations
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Estimacion")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Fecha")
@@ -196,11 +233,26 @@ namespace backend.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Alcance")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AreaCompatibilidad")
+                        .HasColumnType("text");
+
                     b.Property<int>("Avance")
                         .HasColumnType("integer");
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DireccionPrincipal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DireccionesComplementariasJson")
+                        .HasColumnType("text");
 
                     b.Property<string>("Estatus")
                         .IsRequired()
@@ -208,6 +260,9 @@ namespace backend.Data.Migrations
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ImpactoPrincipal")
+                        .HasColumnType("text");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -217,9 +272,47 @@ namespace backend.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Responsable")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UsoComplementario")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UsoPrincipal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UsosComplementariosJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VialidadComplementaria")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VialidadPrincipal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ZonaCompatibilidadEspecifica")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ZonaPrimaria")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.ToTable("Proyectos");
+                });
+
+            modelBuilder.Entity("Data.Rol", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("Data.TareaDiaria", b =>
@@ -242,6 +335,9 @@ namespace backend.Data.Migrations
 
                     b.Property<string>("Prioridad")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProyectoId")
                         .HasColumnType("text");
 
                     b.Property<string>("Titulo")
@@ -270,10 +366,6 @@ namespace backend.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Contrasenia")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
 

@@ -20,7 +20,26 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int? clienteId, [FromQuery] string? rol)
         {
-            var resultado = await _service.GetAllAsync(clienteId, rol);
+            try
+            {
+                var resultado = await _service.GetAllAsync(clienteId, rol);
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ProyectosController Error]: {ex}");
+                return StatusCode(500, new { error = ex.Message, detail = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id, [FromQuery] int? clienteId, [FromQuery] string? rol)
+        {
+            var resultado = await _service.GetByIdAsync(id, clienteId, rol);
+            if (resultado == null)
+            {
+                return NotFound("Proyecto no encontrado o no tiene permisos para consultarlo.");
+            }
             return Ok(resultado);
         }
 
@@ -34,10 +53,7 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Proyecto proyecto)
         {
-            if (id != proyecto.Id)
-            {
-                return BadRequest("El ID de la ruta no coincide con el del cuerpo.");
-            }
+            proyecto.Id = id;
             var dto = await _service.UpdateAsync(proyecto);
             return Ok(dto);
         }

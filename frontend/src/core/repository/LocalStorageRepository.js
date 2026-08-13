@@ -4,7 +4,7 @@ import { IRepository } from './IRepository';
  * LocalStorageRepository — Solo persiste entidades de autenticación local
  * (usuarios y roles). Las entidades de negocio (clientes, cotizaciones,
  * proyectos, presupuestos, tareas, conceptos) se cargan exclusivamente
- * desde la API remota (PostgreSQL en Render).
+ * desde la API remota (PostgreSQL).
  */
 export class LocalStorageRepository extends IRepository {
   constructor(key, defaultValue) {

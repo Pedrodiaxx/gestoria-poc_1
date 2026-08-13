@@ -24,7 +24,6 @@ namespace Data
         public string? Clasificacion { get; set; }
         public string? ZonaPrimaria { get; set; }
         public string? TipoVialidad { get; set; }
-        public string? Estimacion { get; set; }
         public double? CostoDirectoConstruccion { get; set; }
         public string? InfoAdicionalJson { get; set; }
     }

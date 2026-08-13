@@ -10,5 +10,6 @@ namespace Data
         public bool Hecho { get; set; }
         public DateTime Fecha { get; set; }
         public string AsignadoA { get; set; }
+        public string? ProyectoId { get; set; }
     }
 }

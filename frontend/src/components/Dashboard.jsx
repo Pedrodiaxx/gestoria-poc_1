@@ -11,55 +11,46 @@ const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 
 export function Dashboard() {
-  const { session, cotizaciones, conceptos, clientes, tareas, setActive } = useAppContext();
+  const { session, presupuestos, proyectos, clientes, tareas, setActive } = useAppContext();
 
-  const getConcepto = (clave) => conceptos.find(c => c.clave === clave);
   const getCliente = (id) => clientes.find(c => c.id === id);
 
-  const cotTotal = (cot) => cot.conceptos.reduce((s, c) => {
-    const con = getConcepto(c.clave);
-    return s + (con ? con.precio * c.cantidad : 0);
-  }, 0);
-
-  const cotAbonado = (cot) => cot.abonos.reduce((s, a) => s + a, 0);
-  const cotSaldo = (cot) => cotTotal(cot) - cotAbonado(cot);
-
-  const clientCotizaciones = session.rol === 'cliente'
-    ? cotizaciones.filter(c => c.clienteId === session.clienteId)
-    : cotizaciones;
+  const clientPresupuestos = session.rol === 'cliente'
+    ? presupuestos.filter(p => p.clienteId === session.clienteId)
+    : presupuestos;
 
   const clientTramites = session.rol === 'cliente'
     ? TRAMITES_MOCK.filter(t => t.clienteId === session.clienteId)
     : TRAMITES_MOCK;
 
-  const totalCotizado = clientCotizaciones.reduce((s, c) => s + cotTotal(c), 0);
-  const totalAbonado = clientCotizaciones.reduce((s, c) => s + cotAbonado(c), 0);
-  const pendienteCobro = clientCotizaciones.reduce((s, c) => s + Math.max(0, cotSaldo(c)), 0);
+  const totalPresupuestos = clientPresupuestos.length;
+  const aprobados = clientPresupuestos.filter(p => p.estado === 'aprobado' || !p.isBorrador).length;
+  const totalProyectos = proyectos.length;
   const tareasHoy = session.rol === 'cliente' ? 0 : (tareas || []).filter(t => t.fecha === fmt(hoy) && !t.completada).length;
   const tramitesActivos = clientTramites.length;
 
   return (
-    <div>
+    <div className="module-container">
       <div className="page-header">
         <div className="page-title">{session.rol === 'cliente' ? 'Mi Portal de Gestiones' : 'Dashboard General'}</div>
-        <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el estatus de tus trámites y pagos' : 'Vista ejecutiva'} · {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        <div className="page-subtitle">{session.rol === 'cliente' ? 'Consulta el estatus de tus trámites y presupuestos' : 'Vista ejecutiva'} · {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
       </div>
 
       <div className="metric-grid metric-grid-4">
         <div className="metric-card">
-          <div className="metric-label">Total Cotizado</div>
-          <div className="metric-value" style={{ color: 'var(--text)' }}>{money(totalCotizado)}</div>
-          <div className="metric-sub">{clientCotizaciones.length} cotizaciones</div>
+          <div className="metric-label">Total Presupuestos</div>
+          <div className="metric-value" style={{ color: 'var(--text)' }}>{totalPresupuestos}</div>
+          <div className="metric-sub">registrados en la plataforma</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Total Abonado</div>
-          <div className="metric-value text-green">{money(totalAbonado)}</div>
-          <div className="metric-sub">{totalCotizado > 0 ? Math.round(totalAbonado / totalCotizado * 100) : 0}% del total</div>
+          <div className="metric-label">Presupuestos Aprobados</div>
+          <div className="metric-value text-green">{aprobados}</div>
+          <div className="metric-sub">vínculados a proyectos</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Saldo Pendiente</div>
-          <div className="metric-value text-amber">{money(pendienteCobro)}</div>
-          <div className="metric-sub">por liquidar</div>
+          <div className="metric-label">Total Proyectos</div>
+          <div className="metric-value text-amber">{totalProyectos}</div>
+          <div className="metric-sub">en seguimiento</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Trámites Activos</div>
@@ -70,27 +61,25 @@ export function Dashboard() {
 
       <div className="two-col">
         <div className="card">
-          <div className="card-title">Cotizaciones Recientes</div>
-          {clientCotizaciones.slice(0, 5).map(c => {
-            const cli = getCliente(c.clienteId);
-            const saldo = cotSaldo(c);
+          <div className="card-title">Presupuestos Recientes</div>
+          {clientPresupuestos.slice(0, 5).map(p => {
+            const cli = getCliente(p.clienteId);
             return (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{c.id}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{cli?.nombre}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.id} - {p.titulo}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{cli?.nombre || p.propietario || 'Cliente General'}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{money(cotTotal(c))}</div>
-                  <span className={`badge ${saldo <= 0 ? 'badge-green' : saldo < cotTotal(c) ? 'badge-amber' : 'badge-red'}`} style={{ fontSize: 10 }}>
-                    {saldo <= 0 ? 'Liquidada' : saldo < cotTotal(c) ? 'Parcial' : 'Sin abono'}
+                  <span className={`badge ${p.isBorrador ? 'badge-amber' : 'badge-green'}`} style={{ fontSize: 10 }}>
+                    {p.isBorrador ? 'Borrador' : 'Aprobado'}
                   </span>
                 </div>
               </div>
             );
           })}
-          <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setActive('cotizaciones')}>
-            {session.rol === 'cliente' ? 'Ver mis cotizaciones →' : 'Ver todas →'}
+          <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setActive('presupuestos')}>
+            {session.rol === 'cliente' ? 'Ver mis presupuestos →' : 'Ver todos →'}
           </button>
         </div>
 

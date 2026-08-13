@@ -46,7 +46,6 @@ namespace Backend.Services
             {
                 "Clientes",
                 "Conceptos",
-                "Cotizaciones",
                 "Presupuestos",
                 "Proyectos",
                 "TareasDiarias"

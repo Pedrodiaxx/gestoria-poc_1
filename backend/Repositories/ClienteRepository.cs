@@ -14,7 +14,7 @@ namespace Backend.Repositories
 
         public async Task<List<Cliente>> GetAllAsync()
         {
-            return await _db.Clientes.ToListAsync();
+            return await _db.Clientes.OrderByDescending(c => c.Id).ToListAsync();
         }
 
         public async Task<Cliente?> GetByIdAsync(int id)

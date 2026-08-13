@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
@@ -13,7 +13,13 @@ import {
 import { finalizarHojaDeRuta } from '../services/hojasDeRutaService';
 
 export function HojasRuta() {
-  const { session = {}, clientes = [], usuarios = [], presupuestos = [], cotizaciones = [] } = useAppContext();
+  const { session = {}, clientes = [], usuarios = [], presupuestos = [] } = useAppContext();
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("giu_hoja_ruta_en_progreso");
+  }, []);
 
   const getCliente = (id) => (clientes || []).find(c => c?.id === id);
 
@@ -50,6 +56,7 @@ export function HojasRuta() {
   const [tramitesList, setTramitesList] = useState(initialList);
   const [selectedTramite, setSelectedTramite] = useState(initialList[0] || null);
   const [pasoActual, setPasoActual] = useState(initialList[0]?.pasoActual || 1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const seleccionar = (t) => {
     setSelectedTramite(t);
@@ -109,20 +116,6 @@ export function HojasRuta() {
       };
     }
 
-    const foundC = (cotizaciones || []).find(c => c.id === matchId || c.proyectoId === projId);
-    if (foundC) {
-      return {
-        id: foundC.id,
-        folio: foundC.id,
-        estatus: foundC.estatus === 'liquidada' ? 'liquidada' : 'en-proceso',
-        honorarios: 28500,
-        pagoDerechos: 14200,
-        extras: 2500,
-        total: 45200,
-        conceptosCount: foundC.conceptos?.length || 3
-      };
-    }
-
     return {
       id: t.presupuestoId || 'COT-001',
       folio: t.presupuestoId || 'COT-001',
@@ -174,17 +167,20 @@ export function HojasRuta() {
 
   const handleFinalizarRuta = async (id) => {
     const targetId = id || selectedTramite?.id;
-    if (!targetId) return;
+    if (!targetId || isSubmitting) return;
 
     const fechaCierre = new Date().toLocaleString('es-MX', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
 
+    setIsSubmitting(true);
     try {
       await finalizarHojaDeRuta(targetId);
     } catch (err) {
       console.warn("Actualizando hoja de ruta localmente:", err);
+    } finally {
+      setIsSubmitting(false);
     }
 
     const nuevoPaso = totalPasos + 1;
@@ -455,16 +451,19 @@ export function HojasRuta() {
                 <button
                   className="btn"
                   onClick={() => handleFinalizarRuta(selectedTramite.id)}
+                  disabled={isSubmitting}
                   style={{
                     background: 'var(--green)',
                     color: '#fff',
                     border: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 6
+                    gap: 6,
+                    opacity: isSubmitting ? 0.7 : 1,
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <Icon name="checkcircle" size={14} /> Finalizar Ruta
+                  <Icon name="checkcircle" size={14} /> {isSubmitting ? 'Finalizando...' : 'Finalizar Ruta'}
                 </button>
               )}
             </div>

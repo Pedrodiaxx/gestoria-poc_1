@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money } from '../data/mockData';
@@ -8,6 +8,12 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   const context = useAppContext();
   const list = propsConceptos || context.conceptos;
   const setConceptos = propsSetConceptos || context.setConceptos;
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("catalogo_draft");
+    localStorage.removeItem("giu_concepto_en_progreso");
+  }, []);
 
   // Hook: carga y creación de conceptos delegada a la capa de servicios
   const { crearConcepto } = useConceptos(setConceptos);
@@ -66,7 +72,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-title">Catálogo de Conceptos</div>
+          <div className="page-title">Conceptos</div>
           <div className="page-subtitle">{list.length} conceptos disponibles para presupuestos</div>
         </div>
         {showAddButton && (
@@ -81,8 +87,8 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
           <Icon name="search" size={14} />
           <input className="form-control search-input" placeholder="Buscar por clave o descripción…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
-        <div className="table-wrap">
-          <table>
+        <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
               <tr>
                 <th>Clave</th>

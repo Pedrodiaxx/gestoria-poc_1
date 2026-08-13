@@ -5,14 +5,14 @@ import {
   Sidebar,
   Dashboard,
   Catalogo,
-  Cotizaciones,
   Presupuestos,
   HojasRuta,
   Proyectos,
   Clientes,
   TareasDiarias,
   Administracion,
-  Login
+  Login,
+  PortalCliente
 } from './components';
 import { getDefaultModulos } from './data/mockData';
 
@@ -24,7 +24,6 @@ export default function App() {
     clientes,
     usuarios,
     conceptos,
-    cotizaciones,
     tareas,
     handleLogin,
     handleLogout
@@ -52,9 +51,11 @@ export default function App() {
       const userModulos = session.modulos && session.modulos.length > 0
         ? session.modulos
         : getDefaultModulos(session.rol);
-      // Hojas de Ruta ('tramites') está siempre disponible para todos los usuarios autenticados
-      const allowed = [...userModulos, 'tramites'];
-      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'cotizaciones', 'proyectos', 'clientes'];
+      // Hojas de Ruta ('tramites') y 'clientes' están siempre disponibles para usuarios staff
+      const allowed = session.rol === 'cliente' 
+        ? [...userModulos, 'tramites']
+        : [...userModulos, 'tramites', 'clientes'];
+      const restrictedTabs = ['presupuestos', 'administracion', 'tareas', 'catalogo', 'proyectos', 'clientes'];
       if (restrictedTabs.includes(active) && !allowed.includes(active)) {
         const nextActive = allowed.length > 0 ? allowed[0] : 'dashboard';
         setActive(nextActive);
@@ -66,8 +67,13 @@ export default function App() {
     return <Login onLogin={handleLogin} />;
   }
 
+  // Users with role 'cliente' go directly to the Client Portal
+  if (session.rol === 'cliente') {
+    return <PortalCliente />;
+  }
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ overflowX: 'hidden' }}>
       {/* Mobile header — only visible ≤768px via CSS */}
       <div className="mobile-header">
         <button className="mobile-header-burger" onClick={() => setSidebarOpen(prev => !prev)} aria-label="Abrir menú">
@@ -91,11 +97,10 @@ export default function App() {
       />
 
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined }}>
+      <main className="main-content" style={{ padding: active === 'home' ? '0' : undefined, overflowX: 'hidden' }}>
         {active === 'home' && <Home setActive={setActive} />}
-        {active === 'dashboard' && <Dashboard cotizaciones={cotizaciones} tareas={tareas} setActive={setActive} session={session} />}
+        {active === 'dashboard' && <Dashboard tareas={tareas} setActive={setActive} session={session} />}
         {active === 'catalogo' && <Catalogo />}
-        {active === 'cotizaciones' && <Cotizaciones />}
         {active === 'presupuestos' && <Presupuestos />}
         {active === 'tramites' && <HojasRuta session={session} />}
         {active === 'proyectos' && <Proyectos />}

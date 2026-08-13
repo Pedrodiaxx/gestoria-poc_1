@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from './common/Icon';
 import { EQUIPO, TRAMITES_MOCK, TRAMITES_TIPOS } from '../data/mockData';
 import { useAppContext } from '../core/context';
@@ -42,6 +42,12 @@ const getTeamMembers = (usuariosList = []) => {
 export default function TareasDiarias() {
   const { tareas = [], setTareas, usuarios = [] } = useAppContext();
   const teamMembers = getTeamMembers(usuarios);
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("tarea_draft");
+    localStorage.removeItem("giu_tarea_en_progreso");
+  }, []);
 
   const [filtroUser, setFiltroUser] = useState('todos');
   const [showNueva, setShowNueva] = useState(false);
@@ -102,7 +108,7 @@ export default function TareasDiarias() {
       setNueva({ titulo: '', tramiteId: 'TRM-001', asignadoA: teamMembers[0]?.id || 'u1', prioridad: 'media', fecha: fmt(hoy) });
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
-      alert("No se pudo conectar con el servidor de Render. Revisa la consola.");
+      alert("No se pudo conectar con el servidor backend local. Revisa la consola.");
     }
   };
 

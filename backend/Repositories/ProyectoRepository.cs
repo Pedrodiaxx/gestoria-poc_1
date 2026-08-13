@@ -38,6 +38,34 @@ namespace Backend.Repositories
 
         public async Task<Proyecto> UpdateAsync(Proyecto proyecto)
         {
+            var existing = await _db.Proyectos.FirstOrDefaultAsync(p => p.Id == proyecto.Id);
+            if (existing != null)
+            {
+                existing.Nombre = proyecto.Nombre;
+                existing.ClienteId = proyecto.ClienteId;
+                existing.Estatus = proyecto.Estatus;
+                existing.Prioridad = proyecto.Prioridad;
+                existing.Avance = proyecto.Avance;
+                existing.UsoPrincipal = proyecto.UsoPrincipal;
+                existing.UsoComplementario = proyecto.UsoComplementario;
+                existing.ImpactoPrincipal = proyecto.ImpactoPrincipal;
+                existing.UsosComplementariosJson = proyecto.UsosComplementariosJson;
+                existing.ZonaPrimaria = proyecto.ZonaPrimaria;
+                existing.DireccionPrincipal = proyecto.DireccionPrincipal;
+                existing.DireccionesComplementariasJson = proyecto.DireccionesComplementariasJson;
+                existing.VialidadPrincipal = proyecto.VialidadPrincipal;
+                existing.VialidadComplementaria = proyecto.VialidadComplementaria;
+                existing.Alcance = proyecto.Alcance;
+                existing.Descripcion = proyecto.Descripcion;
+                existing.Responsable = proyecto.Responsable;
+                if (proyecto.FechaInicio != default)
+                {
+                    existing.FechaInicio = proyecto.FechaInicio;
+                }
+                await _db.SaveChangesAsync();
+                return existing;
+            }
+
             _db.Entry(proyecto).State = EntityState.Modified;
             await _db.SaveChangesAsync();
             return proyecto;
