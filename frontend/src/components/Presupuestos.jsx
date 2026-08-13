@@ -477,7 +477,7 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
 // ─── HELPER FUNCTION FOR TITLE CASE ─────────────────────────────────────────
 function toTitleCase(str) {
   if (!str) return '';
-  
+
   // 1. Convertir todo a minúsculas
   let formatted = str.toLowerCase();
 
@@ -1784,7 +1784,7 @@ export function Presupuestos() {
 
   const handleEliminarPresupuesto = async (id, idNumerico) => {
     const targetId = idNumerico || id;
-    
+
     const result = await Swal.fire({
       title: '¿Estás seguro?',
       text: "¿Estás seguro de que deseas eliminar esta versión del presupuesto? Esta acción no se puede deshacer.",
@@ -1938,7 +1938,7 @@ export function Presupuestos() {
       <div className="search-wrap mb-6" style={{ maxWidth: 400 }}>
         <Icon name="search" size={14} />
         <input className="form-control search-input" placeholder="Buscar por proyecto, id o concepto…" value={q} onChange={e => setQ(e.target.value)} />
-      </div>
+      </div >
 
       {tab === 'agrupado' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -2063,7 +2063,7 @@ export function Presupuestos() {
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                      <button 
+                                      <button
                                         onClick={(e) => { e.stopPropagation(); descargarPresupuestoPDF(b, proj); }}
                                         className="p-1.5 text-slate-600 hover:text-emerald-600 transition-colors"
                                         style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)' }}
@@ -2072,8 +2072,8 @@ export function Presupuestos() {
                                         <Icon name="download" size={14} />
                                       </button>
                                       {session.rol !== 'cliente' && (
-                                        <button 
-                                          className="btn btn-ghost btn-sm" 
+                                        <button
+                                          className="btn btn-ghost btn-sm"
                                           style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
                                           onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
                                           title="Eliminar Presupuesto"
