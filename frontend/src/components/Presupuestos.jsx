@@ -2042,14 +2042,18 @@ export function Presupuestos() {
                                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                                   onMouseLeave={e => e.currentTarget.style.background = ''}
                                 >
-                                  <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)' }}>V{b.version}</td>
+                                  <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)' }}>
+                                    {(b.version || '').toUpperCase().startsWith('V') ? b.version.toUpperCase() : `V${b.version || '1.0'}`}
+                                  </td>
                                   <td style={{ padding: '12px' }}>
                                     <div style={{ fontWeight: 600 }}>{b.titulo}</div>
                                     <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>ID: {b.id}</div>
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center', color: 'var(--text-2)' }}>{b.fecha}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                                    <span className={`badge ${statusMap[b.estado] || 'badge-gray'}`}>{b.estado}</span>
+                                    <span className={`badge ${b.estadoBadge || (String(b.estado).toLowerCase() === 'aprobado' ? 'badge-green' : 'badge-amber')}`}>
+                                      {b.estadoLabel || (String(b.estado).toLowerCase() === 'aprobado' ? 'Aprobado' : (b.estado || 'Borrador'))}
+                                    </span>
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, fontFamily: 'DM Mono', color: b.isBaseline ? 'var(--accent)' : 'var(--text)' }}>
                                     {money(totalCost)}

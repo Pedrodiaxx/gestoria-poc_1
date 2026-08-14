@@ -107,7 +107,9 @@ namespace Backend.Services
                 Fecha = t.Fecha.ToString("yyyy-MM-dd"),
                 AsignadoA = t.AsignadoA ?? "u1",
                 Columna = columna,
-                ProyectoId = t.ProyectoId ?? ""
+                ProyectoId = t.ProyectoId ?? "",
+                Etapa = t.Etapa ?? "",
+                PresupuestoId = t.PresupuestoId
             };
         }
     }

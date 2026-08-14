@@ -39,5 +39,11 @@ namespace Data.DTOs
 
         /// <summary>ID o Folio del proyecto asociado (ej: "PRY-001").</summary>
         public string? ProyectoId { get; set; } = string.Empty;
+
+        /// <summary>Etapa administrativa del trámite (Uso de Suelo, Licencia de Construcción, etc.)</summary>
+        public string? Etapa { get; set; } = string.Empty;
+
+        /// <summary>ID del presupuesto del que se originó esta tarea al ser aprobado.</summary>
+        public int? PresupuestoId { get; set; }
     }
 }

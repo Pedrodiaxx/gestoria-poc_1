@@ -11,5 +11,9 @@ namespace Data
         public DateTime Fecha { get; set; }
         public string AsignadoA { get; set; }
         public string? ProyectoId { get; set; }
+        /// <summary>Etapa administrativa del trámite (Uso de Suelo, Licencia de Construcción, etc.)</summary>
+        public string? Etapa { get; set; }
+        /// <summary>ID del presupuesto del que se originó esta tarea al ser aprobado</summary>
+        public int? PresupuestoId { get; set; }
     }
 }

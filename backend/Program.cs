@@ -97,6 +97,8 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Descripcion\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Proyectos\" ADD COLUMN IF NOT EXISTS \"Responsable\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"ProyectoId\" integer;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"Etapa\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"PresupuestoId\" integer;");
         
         Console.WriteLine("[Startup] Esquema PostgreSQL actualizado correctamente.");
     }
