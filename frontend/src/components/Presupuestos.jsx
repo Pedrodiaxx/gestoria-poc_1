@@ -779,7 +779,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
   };
 
   return (
-    <div style={{ maxWidth: '100%', padding: '0 10px' }}>
+    <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div>
           <div className="page-title">Nuevo Presupuesto de Gestoría</div>
@@ -958,30 +958,30 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div className="form-grid-2">
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
-              <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
+          <div className="terms-grid">
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS LEGALES NECESARIOS</label>
-              <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS LEGALES NECESARIOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DERECHOS Y GASTOS</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DERECHOS Y GASTOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>FORMA DE PAGO</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>FORMA DE PAGO</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>LOS TRABAJOS NO INCLUYEN</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>LOS TRABAJOS NO INCLUYEN</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>NOTAS ADICIONALES</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>NOTAS ADICIONALES</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
             </div>
           </div>
         </div>
@@ -992,7 +992,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
           Bloque de Firmas
         </div>
-        <div style={{ display: 'inline-grid', gridTemplateColumns: '1fr', gap: 6, width: 300, margin: '10px auto 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, width: '100%', maxWidth: 360, margin: '10px auto 0', boxSizing: 'border-box' }}>
           <input className="form-control" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 12 }} value={infoAdicional.firmadoPor} onChange={e => handleInfoAdicionalChange('firmadoPor', e.target.value)} placeholder="Nombre del Responsable" />
           <input className="form-control" style={{ textAlign: 'center', fontSize: 11 }} value={infoAdicional.firmadoCargo} onChange={e => handleInfoAdicionalChange('firmadoCargo', e.target.value)} placeholder="Cargo (Ej: Director General)" />
           <input className="form-control" style={{ textAlign: 'center', fontSize: 10, fontFamily: 'DM Mono' }} value={infoAdicional.firmadoCedula} onChange={e => handleInfoAdicionalChange('firmadoCedula', e.target.value)} placeholder="Registro / Cédula Profesional" />
@@ -1166,7 +1166,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   const isBorrador = p.estado === 'Borrador';
 
   return (
-    <div style={{ maxWidth: '100%', padding: '0 10px' }}>
+    <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div>
           <div className="page-title" style={{ fontSize: 19 }}>Detalle de Presupuesto: {titulo}</div>
@@ -1215,42 +1215,46 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         </div>
       </div>
 
-      {/* Actions Toolbar */}
-      <div className="card" style={{ padding: 14, marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>Acciones Disponibles:</span>
+      {/* Actions Toolbar - Executive Modern Clean Layout */}
+      <div className="budget-actions-toolbar">
+        <div className="budget-actions-left">
+          <span className="budget-actions-label">Acciones Disponibles:</span>
+          {p.estado === 'Borrador' && (
+            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
+              <Icon name="send" size={13} /> Enviar al Cliente
+            </button>
+          )}
+
+          {p.estado === 'Enviado' && (
+            <>
+              <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
+                <Icon name="check" size={13} /> Aprobar Presupuesto
+              </button>
+              <button className="btn btn-sm btn-ghost" onClick={() => onCambiarEstatus(p.id, 'Rechazado')} style={{ color: 'var(--red)' }}>
+                <Icon name="x" size={13} /> Rechazar
+              </button>
+            </>
+          )}
+
+          {p.estado === 'Aprobado' && !p.isBaseline && (
+            <button className="btn btn-sm btn-primary" onClick={() => onMarcarBaseline(p.id)} style={{ background: 'var(--accent)', color: '#fff' }}>
+              <Icon name="bookmark" size={13} /> Establecer como Línea Base
+            </button>
+          )}
+
+          {(p.estado === 'Aprobado' || p.estado === 'Enviado' || p.estado === 'Rechazado') && (
+            <button className="btn btn-sm btn-secondary" onClick={() => onAjustar(p)}>
+              <Icon name="plus" size={13} /> Crear Nueva Versión
+            </button>
+          )}
+        </div>
 
         {p.estado === 'Borrador' && (
-          <>
-            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
-              Enviar al Cliente
+          <div className="budget-actions-right">
+            <button className="btn btn-sm btn-ghost btn-danger-ghost" onClick={() => onEliminar(p.id, p.idNumerico)}>
+              <Icon name="trash" size={13} /> Eliminar Presupuesto
             </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => onEliminar(p.id, p.idNumerico)} style={{ color: 'var(--red)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="trash" size={14} /> Eliminar Presupuesto
-            </button>
-          </>
-        )}
-
-        {p.estado === 'Enviado' && (
-          <>
-            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
-              Aprobar Presupuesto
-            </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => onCambiarEstatus(p.id, 'Rechazado')} style={{ color: 'var(--red)' }}>
-              Rechazar
-            </button>
-          </>
-        )}
-
-        {p.estado === 'Aprobado' && !p.isBaseline && (
-          <button className="btn btn-sm btn-primary" onClick={() => onMarcarBaseline(p.id)} style={{ background: 'var(--accent)', color: '#fff' }}>
-            Establecer como Línea Base
-          </button>
-        )}
-
-        {(p.estado === 'Aprobado' || p.estado === 'Enviado' || p.estado === 'Rechazado') && (
-          <button className="btn btn-sm btn-secondary" onClick={() => onAjustar(p)}>
-            Crear Nueva Versión
-          </button>
+          </div>
         )}
       </div>
 
@@ -1386,51 +1390,51 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div className="form-grid-2">
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
+          <div className="terms-grid">
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.documentosTecnicos}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS LEGALES NECESARIOS</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS LEGALES NECESARIOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.documentosLegales}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DERECHOS Y GASTOS</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DERECHOS Y GASTOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.derechosGastos}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>FORMA DE PAGO</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>FORMA DE PAGO</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.formaPago}</p>
               )}
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>LOS TRABAJOS NO INCLUYEN</label>
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>LOS TRABAJOS NO INCLUYEN</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.exclusiones}</p>
               )}
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>NOTAS ADICIONALES</label>
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>NOTAS ADICIONALES</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.notas}</p>
               )}
@@ -1444,7 +1448,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
           Bloque de Firmas Autorizadas
         </div>
-        <div style={{ display: 'inline-grid', gridTemplateColumns: '1fr', gap: 6, width: 300, margin: '10px auto 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, width: '100%', maxWidth: 360, margin: '10px auto 0', boxSizing: 'border-box' }}>
           {isBorrador ? (
             <>
               <input className="form-control" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 12 }} value={infoAdicional.firmadoPor} onChange={e => handleInfoAdicionalChange('firmadoPor', e.target.value)} />

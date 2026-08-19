@@ -38,7 +38,10 @@ namespace Backend.Services
             {
                 Id = c.Id,
                 Clave = c.Clave ?? "",
+                Nombre = c.Nombre ?? "",
                 Descripcion = c.Descripcion ?? "",
+                Unidad = c.Unidad ?? "m²",
+                Cantidad = c.Cantidad,
                 Precio = c.Precio
             };
         }

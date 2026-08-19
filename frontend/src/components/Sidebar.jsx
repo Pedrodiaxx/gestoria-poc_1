@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { getDefaultModulos } from '../data/mockData';
-import logoImg from '../logo.png';
+import logoImg from '../assets/logo-metallic-plaque.png';
 
 // ─── Flyout Portal (renderiza en document.body para evitar clipping del sidebar) ──
 function PresupuestosFlyout({ anchorRef, visible, onOpen, onClose, allowed, session, clientes, conceptos, proyectos, setActive, setSidebarOpen }) {

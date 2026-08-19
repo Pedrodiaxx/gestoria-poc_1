@@ -501,117 +501,62 @@ export function Clientes() {
   };
 
   return (
-    <div style={{ background: '#F8FAF8', minHeight: '100vh', padding: '24px', color: '#18181B', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+    <div className="clientes-module-wrap">
       {/* Module Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0, color: '#18181B', letterSpacing: '-0.01em' }}>Directorio de Clientes</h1>
-          <p style={{ fontSize: 13, color: '#71717A', margin: '4px 0 0 0' }}>Gestión comercial y relaciones con clientes</p>
+      <div className="clientes-header-row">
+        <div className="clientes-header-info">
+          <h1 className="clientes-header-title">Directorio de Clientes</h1>
+          <p className="clientes-header-subtitle">Gestión comercial y relaciones con clientes</p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="clientes-header-actions">
           <button
-            className="btn btn-primary-emerald"
+            className="btn btn-primary-emerald clientes-btn-main"
             onClick={() => setShowAddClienteModal(true)}
-            style={{
-              background: 'linear-gradient(135deg, #1E5631 0%, #153E23 100%)',
-              color: '#FFFFFF',
-              border: 'none',
-              fontWeight: 600,
-              height: 38,
-              padding: '0 18px',
-              borderRadius: 8,
-              fontSize: 13,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              gap: 8,
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(30, 86, 49, 0.25)',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
-            }}
           >
             <Icon name="plus" size={15} /> Nuevo Cliente
           </button>
 
           <button
-            className="btn btn-secondary-action"
+            className="btn btn-secondary-action clientes-btn-sec"
             onClick={() => setShowManageStatuses(true)}
-            style={{
-              background: '#FFFFFF',
-              color: '#3F3F46',
-              border: '1px solid #E4E4E7',
-              fontWeight: 500,
-              height: 38,
-              padding: '0 20px',
-              borderRadius: 8,
-              fontSize: 13,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
-            }}
           >
             Estatus
           </button>
 
           <button
-            className="btn btn-secondary-action"
+            className="btn btn-secondary-action clientes-btn-sec"
             onClick={handleMockImport}
-            style={{
-              background: '#FFFFFF',
-              color: '#3F3F46',
-              border: '1px solid #E4E4E7',
-              fontWeight: 500,
-              height: 38,
-              padding: '0 20px',
-              borderRadius: 8,
-              fontSize: 13,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
-            }}
           >
             Importar
           </button>
         </div>
       </div>
 
-      {/* Master-Detail Main Grid Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? '1fr 380px' : '1fr', gap: 20, alignItems: 'start' }}>
+      {/* Master-Detail Main Responsive Grid Layout */}
+      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`}>
 
         {/* LEFT PANEL (Master Panel - Client Cards & Search) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="clientes-master-col">
 
-          {/* 3 KPI Summary Cards - Clean Minimalist Style */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 8, border: '1px solid #E4E4E7', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5 }}>TOTAL CLIENTES</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#18181B', marginTop: 4, lineHeight: 1 }}>{totalClientes}</div>
-              <div style={{ fontSize: 11, color: '#A1A1AA', marginTop: 6 }}>registrados en la plataforma</div>
+          {/* 3 KPI Summary Cards - Fully Responsive */}
+          <div className="clientes-kpi-grid">
+            <div className="clientes-kpi-card">
+              <div className="clientes-kpi-label">TOTAL CLIENTES</div>
+              <div className="clientes-kpi-value">{totalClientes}</div>
+              <div className="clientes-kpi-sub">registrados en la plataforma</div>
             </div>
 
-            <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 8, border: '1px solid #E4E4E7', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5 }}>CLIENTES ACTIVOS</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#1E5631', marginTop: 4, lineHeight: 1 }}>{totalActivosCount}</div>
-              <div style={{ fontSize: 11, color: '#A1A1AA', marginTop: 6 }}>en seguimiento activo</div>
+            <div className="clientes-kpi-card">
+              <div className="clientes-kpi-label">CLIENTES ACTIVOS</div>
+              <div className="clientes-kpi-value text-emerald">{totalActivosCount}</div>
+              <div className="clientes-kpi-sub">en seguimiento activo</div>
             </div>
 
-            <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 8, border: '1px solid #E4E4E7', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5 }}>LEADS REGISTRADOS</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#475569', marginTop: 4, lineHeight: 1 }}>{totalLeadsCount}</div>
-              <div style={{ fontSize: 11, color: '#A1A1AA', marginTop: 6 }}>prospectos iniciales</div>
+            <div className="clientes-kpi-card">
+              <div className="clientes-kpi-label">LEADS REGISTRADOS</div>
+              <div className="clientes-kpi-value text-slate">{totalLeadsCount}</div>
+              <div className="clientes-kpi-sub">prospectos iniciales</div>
             </div>
           </div>
 
@@ -826,19 +771,9 @@ export function Clientes() {
 
         {/* RIGHT PANEL (Detail Drawer - Selected Client) */}
         {selectedClient && (
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: 8,
-            border: '1px solid #E4E4E7',
-            padding: 20,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-            position: 'sticky',
-            top: 20,
-            maxHeight: 'calc(100vh - 40px)',
-            overflowY: 'auto'
-          }}>
+          <div className="clientes-detail-panel">
             {/* Header / Action Bar de Detalle: Editar Cliente */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E4E4E7' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E4E4E7', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#18181B', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon name="user" size={15} style={{ color: '#1E5631' }} />
                 <span>Perfil de Cliente</span>
@@ -854,12 +789,13 @@ export function Clientes() {
                   background: 'linear-gradient(135deg, #1E5631 0%, #153E23 100%)',
                   border: 'none',
                   borderRadius: 6,
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(30, 86, 49, 0.2)',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0
                 }}
               >
                 <Icon name="edit" size={13} /> Editar Cliente

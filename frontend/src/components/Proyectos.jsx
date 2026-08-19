@@ -1220,17 +1220,17 @@ function ProyectosContent() {
           <div className="page-title">Proyectos</div>
           <div className="page-subtitle">Todos los proyectos y gestiones en curso · actualizado al {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="page-header-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button
             className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             onClick={() => setActive && setActive('tramites')}
           >
             <Icon name="map" size={14} /> Ver Hojas de Ruta
           </button>
           <button
             className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             onClick={() => setMostrarNuevoProyecto(true)}
           >
             <Icon name="plus" size={14} /> Nuevo Proyecto
@@ -1263,8 +1263,8 @@ function ProyectosContent() {
       </div>
 
       {/* Filtros y búsqueda */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 380 }}>
+      <div className="filter-bar">
+        <div className="search-wrap filter-search">
           <Icon name="search" size={14} />
           <input
             className="form-control search-input"
@@ -1274,29 +1274,29 @@ function ProyectosContent() {
           />
         </div>
 
-        <select
-          className="form-control"
-          value={filtroEstatus}
-          onChange={e => setFiltroEstatus(e.target.value)}
-          style={{ width: 160, textAlign: 'center', textAlignLast: 'center', cursor: 'pointer' }}
-        >
-          <option value="todos">Todos los Estatus</option>
-          {Object.entries(ESTATUS_CONFIG).map(([key, val]) => (
-            <option key={key} value={key}>{val.label}</option>
-          ))}
-        </select>
+        <div className="filter-selects">
+          <select
+            className="form-control filter-select"
+            value={filtroEstatus}
+            onChange={e => setFiltroEstatus(e.target.value)}
+          >
+            <option value="todos">Todos los Estatus</option>
+            {Object.entries(ESTATUS_CONFIG).map(([key, val]) => (
+              <option key={key} value={key}>{val.label}</option>
+            ))}
+          </select>
 
-        <select
-          className="form-control"
-          value={filtroTipo}
-          onChange={e => setFiltroTipo(e.target.value)}
-          style={{ width: 200, textAlign: 'center', textAlignLast: 'center', cursor: 'pointer' }}
-        >
-          <option value="todos">Todos los Tipos</option>
-          {tiposUnicos.map(tipo => (
-            <option key={tipo} value={tipo}>{TRAMITES_TIPOS[tipo]?.nombre || tipo}</option>
-          ))}
-        </select>
+          <select
+            className="form-control filter-select"
+            value={filtroTipo}
+            onChange={e => setFiltroTipo(e.target.value)}
+          >
+            <option value="todos">Todos los Tipos</option>
+            {tiposUnicos.map(tipo => (
+              <option key={tipo} value={tipo}>{TRAMITES_TIPOS[tipo]?.nombre || tipo}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Results count */}
@@ -1306,7 +1306,7 @@ function ProyectosContent() {
       </div>
 
       {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
         {filtered.map(p => (
           <ProyectoCard
             key={p.id || p.idNumerico || Math.random()}

@@ -41,6 +41,8 @@ export const Icon = ({ name, size = 16, style = {} }) => {
     zap: <><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></>,
     'external-link': <><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></>,
     arrowright: <><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>,
+    login: <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></>,
+    enter: <><path d="M9 10L4 15l5 5" /><path d="M20 4v7a4 4 0 0 1-4 4H4" /></>,
   };
 
   return (

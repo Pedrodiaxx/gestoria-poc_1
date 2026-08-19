@@ -83,15 +83,22 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
     setExpanded(prev => ({ ...initialExpanded, ...prev }));
   }, [grupos.length]);
 
-  const resolveProyectoNombre = (proyectoId) => {
-    if (!proyectoId || proyectoId === 'sin-proyecto') return 'Sin Proyecto Asignado';
+  const resolveProyectoInfo = (proyectoId) => {
+    if (!proyectoId || proyectoId === 'sin-proyecto') {
+      return { id: 'Sin Proyecto', nombre: 'Tareas Generales' };
+    }
     const proy = (proyectos || []).find(p =>
       `PRY-${String(p.id).padStart(3, '0')}` === proyectoId ||
-      String(p.id) === proyectoId ||
+      String(p.id) === String(proyectoId) ||
       p.folio === proyectoId
     );
-    if (proy) return `${proyectoId} — ${proy.nombre || proy.Nombre || ''}`;
-    return proyectoId;
+    if (proy) {
+      return {
+        id: proyectoId.startsWith('PRY-') ? proyectoId : `PRY-${String(proy.id).padStart(3, '0')}`,
+        nombre: proy.nombre || proy.Nombre || 'Proyecto de Gestión'
+      };
+    }
+    return { id: proyectoId, nombre: 'Proyecto de Gestión' };
   };
 
   const toggle = async (tarea) => {
@@ -120,10 +127,10 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
 
   if (grupos.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-3)' }}>
-        <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>✓</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-2)' }}>No hay tareas en el Planner</div>
-        <div style={{ fontSize: 13, marginTop: 6 }}>
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+        <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>📋</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#1E293B' }}>No hay tareas en el Planner</div>
+        <div style={{ fontSize: 13, marginTop: 6, color: '#64748B', maxWidth: 440, margin: '6px auto 0' }}>
           Aprueba un Presupuesto para generar automáticamente las tareas operativas vinculadas al Proyecto.
         </div>
       </div>
@@ -131,7 +138,7 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
       {grupos.map(([proyectoId, tareasGrupo]) => {
         const totalTareas = tareasGrupo.length;
         const completadas = tareasGrupo.filter(t => t.hecho || t.completada).length;
@@ -146,173 +153,225 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
           etapas[etapa].push(t);
         });
 
-        const nombreProyecto = resolveProyectoNombre(proyectoId);
+        const proyInfo = resolveProyectoInfo(proyectoId);
 
         return (
           <div
             key={proyectoId}
             style={{
               background: '#FFFFFF',
-              border: '1px solid #E4E4E7',
+              border: '1px solid #E2E8F0',
               borderRadius: 10,
               overflow: 'hidden',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              transition: 'box-shadow 0.15s ease'
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
             }}
           >
-            {/* Header del grupo */}
+            {/* Header Sobrio del Proyecto */}
             <div
               onClick={() => setExpanded(prev => ({ ...prev, [proyectoId]: !prev[proyectoId] }))}
               style={{
-                padding: '14px 18px',
+                padding: '14px 20px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                justifyContent: 'space-between',
+                gap: 16,
                 cursor: 'pointer',
-                background: isExpanded ? '#FAFAFA' : '#FFFFFF',
-                borderBottom: isExpanded ? '1px solid #F0F0F2' : 'none',
-                transition: 'background 0.15s ease'
+                background: '#FFFFFF',
+                borderBottom: isExpanded ? '1px solid #E2E8F0' : 'none',
+                transition: 'background 0.15s ease',
+                flexWrap: 'wrap'
               }}
             >
-              {/* Chevron */}
-              <div style={{
-                width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-3)', transition: 'transform 0.2s ease',
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
-              }}>
-                <Icon name="chevronright" size={14} />
+              {/* Left: Chevron + Project Info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 260, flex: 1 }}>
+                <div style={{
+                  width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#64748B', transition: 'transform 0.2s ease', flexShrink: 0,
+                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                }}>
+                  <Icon name="chevronright" size={14} />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontFamily: 'DM Mono, monospace',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#475569',
+                      background: '#F1F5F9',
+                      padding: '2px 7px',
+                      borderRadius: 4,
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      {proyInfo.id}
+                    </span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>
+                      {proyInfo.nombre}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>
+                    {completadas} de {totalTareas} tareas completadas
+                  </div>
+                </div>
               </div>
 
-              {/* Nombre del proyecto */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#18181B', lineHeight: 1.3 }}>
-                  {nombreProyecto}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{completadas} de {totalTareas} conceptos completados</span>
-                  <span style={{
-                    background: pct === 100 ? '#D1FAE5' : pct > 50 ? '#FEF3C7' : '#FEE2E2',
-                    color: pct === 100 ? '#065F46' : pct > 50 ? '#92400E' : '#991B1B',
-                    padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700
-                  }}>{pct}%</span>
-                </div>
-              </div>
-
-              {/* Barra de progreso */}
-              <div style={{ width: 100, flexShrink: 0 }}>
-                <div style={{ height: 6, background: '#E4E4E7', borderRadius: 99, overflow: 'hidden' }}>
+              {/* Right: Slim Progress Bar + Clean Percentage */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                <div style={{ width: 120, height: 6, background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden' }}>
                   <div style={{
                     height: '100%',
                     width: `${pct}%`,
-                    background: pct === 100
-                      ? 'linear-gradient(90deg, #10B981, #059669)'
-                      : 'linear-gradient(90deg, #2A5F3F, #1E5631)',
-                    borderRadius: 99,
-                    transition: 'width 0.4s ease'
+                    background: pct === 100 ? '#15803D' : '#16A34A',
+                    borderRadius: 9999,
+                    transition: 'width 0.3s ease'
                   }} />
                 </div>
-              </div>
-
-              {/* Contador badge */}
-              <div style={{
-                background: '#F4F4F5', color: '#52525B',
-                borderRadius: 99, fontSize: 11, fontWeight: 600,
-                padding: '2px 10px', flexShrink: 0
-              }}>
-                {completadas}/{totalTareas}
+                <span style={{ fontSize: 13, fontWeight: 700, color: pct === 100 ? '#15803D' : '#0F172A', minWidth: 36, textAlign: 'right' }}>
+                  {pct}%
+                </span>
               </div>
             </div>
 
-            {/* Contenido expandido: etapas + conceptos */}
+            {/* Contenido expandido: Secciones por Etapa Administrativa */}
             {isExpanded && (
-              <div style={{ padding: '8px 18px 14px' }}>
-                {Object.entries(etapas).map(([etapa, items]) => {
-                  const estilo = getEtapaStyle(etapa);
+              <div>
+                {Object.entries(etapas).map(([etapa, items], idx) => {
                   const completadasEtapa = items.filter(t => t.hecho || t.completada).length;
+                  const totalEtapa = items.length;
 
                   return (
-                    <div key={etapa} style={{ marginTop: 14 }}>
-                      {/* Header de etapa */}
+                    <div key={etapa} style={{ borderTop: idx > 0 ? '1px solid #E2E8F0' : 'none' }}>
+                      {/* Encabezado sutil de Etapa */}
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-                        paddingBottom: 6, borderBottom: `1px solid ${estilo.border}`
+                        background: '#F8FAFC',
+                        borderBottom: '1px solid #E2E8F0',
+                        padding: '8px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
                       }}>
                         <span style={{
-                          background: estilo.bg, color: estilo.text, border: `1px solid ${estilo.border}`,
-                          padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, letterSpacing: 0.3
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#64748B',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
                         }}>
                           {etapa}
                         </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                          {completadasEtapa}/{items.length}
+                        <span style={{ fontSize: 11, color: '#64748B', fontWeight: 500 }}>
+                          {completadasEtapa}/{totalEtapa}
                         </span>
                       </div>
 
-                      {/* Lista de conceptos */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {items.map(t => {
+                      {/* Lista de Filas / Renglones Uniformes */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {items.map((t, tIdx) => {
                           const hecho = t.hecho || t.completada;
                           const gestor = resolveUser(t.asignadoA, usuarios);
 
                           return (
                             <div
                               key={t.id}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                                padding: '8px 10px', borderRadius: 7,
-                                background: hecho ? '#F9FAFB' : '#FFFFFF',
-                                border: '1px solid',
-                                borderColor: hecho ? '#E4E4E7' : '#EBEBEB',
-                                transition: 'all 0.15s ease',
-                                cursor: 'pointer',
-                                opacity: hecho ? 0.75 : 1
-                              }}
                               onClick={() => toggle(t)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 16,
+                                padding: '11px 20px',
+                                minHeight: 46,
+                                background: '#FFFFFF',
+                                borderBottom: tIdx < items.length - 1 ? '1px solid #F1F5F9' : 'none',
+                                transition: 'background 0.15s ease',
+                                cursor: 'pointer'
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
                             >
-                              {/* Checkbox */}
-                              <div style={{
-                                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                                border: `2px solid ${hecho ? '#10B981' : '#D4D4D8'}`,
-                                background: hecho ? '#10B981' : 'transparent',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                transition: 'all 0.2s ease'
-                              }}>
-                                {hecho && <Icon name="check" size={11} style={{ color: '#fff' }} />}
-                              </div>
-
-                              {/* Título */}
-                              <div style={{
-                                flex: 1, fontSize: 13, fontWeight: 500, color: hecho ? '#71717A' : '#18181B',
-                                textDecoration: hecho ? 'line-through' : 'none',
-                                transition: 'color 0.2s ease'
-                              }}>
-                                {t.titulo}
-                              </div>
-
-                              {/* Gestor */}
-                              {gestor && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                                  <div style={{
-                                    width: 22, height: 22, borderRadius: '50%',
-                                    background: gestor.color || '#2A5F3F',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: '#fff', fontSize: 9, fontWeight: 700
-                                  }}>
-                                    {(gestor.avatar || 'G').slice(0, 2)}
-                                  </div>
-                                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{gestor.nombre}</span>
+                              {/* Left: Checkmark + Título */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                                {/* Checkmark circular */}
+                                <div
+                                  style={{
+                                    width: 20,
+                                    height: 20,
+                                    borderRadius: '50%',
+                                    flexShrink: 0,
+                                    border: `1.5px solid ${hecho ? '#15803D' : '#CBD5E1'}`,
+                                    background: hecho ? '#15803D' : 'transparent',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  {hecho && <Icon name="check" size={11} style={{ color: '#FFFFFF' }} />}
                                 </div>
-                              )}
 
-                              {/* Fecha */}
-                              {t.fecha && (
+                                {/* Título de la tarea */}
                                 <span style={{
-                                  fontSize: 10, color: t.fecha < todayStr && !hecho ? '#EF4444' : 'var(--text-3)',
-                                  fontFamily: 'DM Mono', flexShrink: 0
+                                  fontSize: 13.5,
+                                  fontWeight: 500,
+                                  color: hecho ? '#64748B' : '#1E293B',
+                                  textDecoration: hecho ? 'line-through' : 'none',
+                                  textDecorationColor: 'rgba(100, 116, 139, 0.4)',
+                                  lineHeight: 1.35,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
                                 }}>
-                                  {t.fecha}
+                                  {t.titulo}
                                 </span>
-                              )}
+                              </div>
+
+                              {/* Right: Fecha + Responsable */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+                                {/* Fecha simple en gris neutro */}
+                                {t.fecha && (
+                                  <span style={{
+                                    fontSize: 12,
+                                    color: t.fecha < todayStr && !hecho ? '#DC2626' : '#64748B',
+                                    fontFamily: 'DM Mono, monospace',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {t.fecha}
+                                  </span>
+                                )}
+
+                                {/* Responsable */}
+                                {gestor && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 120, justifyContent: 'flex-end' }}>
+                                    <div style={{
+                                      width: 22,
+                                      height: 22,
+                                      borderRadius: '50%',
+                                      background: '#1E5631',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#FFFFFF',
+                                      fontSize: 9,
+                                      fontWeight: 700,
+                                      flexShrink: 0
+                                    }}>
+                                      {(gestor.avatar || 'GA').slice(0, 2)}
+                                    </div>
+                                    <span style={{
+                                      fontSize: 12.5,
+                                      fontWeight: 500,
+                                      color: '#475569',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      maxWidth: 130
+                                    }}>
+                                      {gestor.nombre}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
