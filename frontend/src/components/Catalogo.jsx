@@ -114,60 +114,50 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
     );
 
     return (
-      <div style={{ width: '100%' }}>
+      <div className="module-container">
         {/* Navegación y Breadcrumbs */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button 
               className="btn btn-secondary" 
               onClick={() => setSelectedConcepto(null)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 13 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             >
               <Icon name="arrowleft" size={14} /> Volver al Catálogo
             </button>
             <span style={{ color: 'var(--text-3)', fontSize: 13 }}>/</span>
-            <span className="mono" style={{ background: 'var(--surface2)', padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 12, fontWeight: 700 }}>
+            <span className="badge badge-gray" style={{ fontWeight: 600 }}>
               {c.clave}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => copiarClave(c.clave)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
-            >
-              <Icon name={copiado ? "check" : "copy"} size={13} />
-              {copiado ? "¡Clave Copiada!" : "Copiar Clave"}
-            </button>
-          </div>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => copiarClave(c.clave)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Icon name={copiado ? "check" : "copy"} size={13} />
+            {copiado ? "¡Copiado!" : "Copiar Clave"}
+          </button>
         </div>
 
         {/* Header Hero del Concepto */}
-        <div className="card" style={{ marginBottom: 20, padding: '24px 28px' }}>
+        <div className="card" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ flex: 1, minWidth: 280 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span className="mono" style={{ 
-                  background: 'var(--accent-light)', 
-                  color: 'var(--accent)', 
-                  padding: '4px 10px', 
-                  borderRadius: 6, 
-                  fontWeight: 700, 
-                  fontSize: 13,
-                  border: '1px solid rgba(42,95,63,0.2)'
-                }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span className="badge badge-green" style={{ fontWeight: 600 }}>
                   {c.clave}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--text-3)' }}>•</span>
-                <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Icon name="checkcircle" size={12} /> Partida Activa en Catálogo
+                <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>
+                  Partida Activa en Catálogo
                 </span>
               </div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: '0 0 6px 0', lineHeight: 1.3 }}>
+              <h1 className="page-title" style={{ margin: '0 0 6px 0' }}>
                 {cTitulo}
               </h1>
-              <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0 }}>
+              <p className="page-subtitle" style={{ margin: 0 }}>
                 Ficha técnica analítica y desglose de costo unitario para cotizaciones de trámites y obras.
               </p>
             </div>
@@ -176,72 +166,57 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
             <div style={{ 
               background: 'var(--surface2)', 
               border: '1px solid var(--border)', 
-              borderRadius: 'var(--radius)', 
+              borderRadius: 'var(--radius-md)', 
               padding: '14px 20px', 
               textAlign: 'right',
-              minWidth: 200
+              minWidth: 190
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
-                Importe Total Estimado
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 4 }}>
+                Importe Total
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)', fontFamily: 'DM Mono', lineHeight: 1.1 }}>
+              <div className="tabular-nums" style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent)', lineHeight: 1.1 }}>
                 {money(cImporte)}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              <div className="tabular-nums" style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
                 {cCantidad} {cUnidad} × {money(cPrecio)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tarjetas KPI del Concepto */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-          gap: 14, 
-          marginBottom: 20 
-        }}>
-          <div className="card" style={{ padding: '16px 20px', margin: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: 6 }}>
-              Clave de Partida
-            </div>
-            <div className="mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+        {/* Tarjetas KPI del Concepto usando el sistema metric-grid nativo */}
+        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', marginBottom: 20 }}>
+          <div className="metric-card">
+            <div className="metric-label">Clave de Partida</div>
+            <div className="metric-value" style={{ fontSize: 18, color: 'var(--text)' }}>
               {c.clave}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', margin: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: 6 }}>
-              Unidad de Medida
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+          <div className="metric-card">
+            <div className="metric-label">Unidad de Medida</div>
+            <div className="metric-value" style={{ fontSize: 18, color: 'var(--text)' }}>
               {cUnidad}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', margin: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: 6 }}>
-              Cantidad Base
-            </div>
-            <div className="mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+          <div className="metric-card">
+            <div className="metric-label">Cantidad Base</div>
+            <div className="metric-value tabular-nums" style={{ fontSize: 18, color: 'var(--text)' }}>
               {cCantidad}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', margin: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: 6 }}>
-              Precio Unitario
-            </div>
-            <div className="mono" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+          <div className="metric-card">
+            <div className="metric-label">Precio Unitario</div>
+            <div className="metric-value tabular-nums" style={{ fontSize: 18, color: 'var(--text)' }}>
               {money(cPrecio)}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', margin: 0, background: 'var(--accent-light)', borderColor: 'rgba(42,95,63,0.2)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 6 }}>
-              Suma Total ($)
-            </div>
-            <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)' }}>
+          <div className="metric-card" style={{ background: 'var(--accent-light)', borderColor: 'rgba(42,95,63,0.2)' }}>
+            <div className="metric-label" style={{ color: 'var(--accent-text)' }}>Suma Total ($)</div>
+            <div className="metric-value tabular-nums" style={{ fontSize: 20, color: 'var(--accent)', fontWeight: 700 }}>
               {money(cImporte)}
             </div>
           </div>
@@ -249,78 +224,64 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
 
         {/* Retícula de Desglose Estilo Excel (Standard GIU) */}
         <div className="card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                Desglose Analítico de la Partida
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                Tabla matricial de especificaciones, rendimientos y cálculo de importes.
-              </div>
+          <div style={{ marginBottom: 14 }}>
+            <div className="card-title" style={{ margin: 0 }}>
+              Desglose Analítico de la Partida
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+              Tabla matricial de especificaciones, rendimientos y cálculo de importes.
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+          <div className="table-wrap">
+            <table>
               <thead>
-                <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left', width: 140, borderRight: '1px solid var(--border)' }}>
-                    Clave
-                  </th>
-                  <th style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left', borderRight: '1px solid var(--border)' }}>
-                    Descripción del Concepto / Partida
-                  </th>
-                  <th style={{ padding: '10px 10px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'center', width: 100, borderRight: '1px solid var(--border)' }}>
-                    Unidad
-                  </th>
-                  <th style={{ padding: '10px 10px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'center', width: 90, borderRight: '1px solid var(--border)' }}>
-                    Cantidad
-                  </th>
-                  <th style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'right', width: 140, borderRight: '1px solid var(--border)' }}>
-                    Precio Unitario
-                  </th>
-                  <th style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'right', width: 140, background: 'var(--surface2)' }}>
-                    Importe ($)
-                  </th>
+                <tr>
+                  <th style={{ width: 140 }}>Clave</th>
+                  <th>Descripción del Concepto / Partida</th>
+                  <th style={{ textAlign: 'center', width: 100 }}>Unidad</th>
+                  <th style={{ textAlign: 'center', width: 90 }}>Cantidad</th>
+                  <th style={{ textAlign: 'right', width: 140 }}>Precio Unitario</th>
+                  <th style={{ textAlign: 'right', width: 140 }}>Importe ($)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ background: 'var(--surface)', verticalAlign: 'top' }}>
-                  <td style={{ padding: '12px 14px', borderRight: '1px solid var(--border)' }}>
-                    <span className="mono" style={{ background: 'var(--surface2)', padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 12, fontWeight: 600 }}>
+                <tr>
+                  <td>
+                    <span className="badge badge-gray" style={{ fontWeight: 600 }}>
                       {c.clave}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 14px', borderRight: '1px solid var(--border)' }}>
+                  <td>
                     {c.nombre && (
-                      <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 4, fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
                         {c.nombre}
                       </div>
                     )}
-                    <div style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ color: c.nombre ? 'var(--text-2)' : 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                       {c.descripcion || 'Sin descripción detallada registrada.'}
                     </div>
                   </td>
-                  <td style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid var(--border)', fontSize: 13, color: 'var(--text)' }}>
+                  <td style={{ textAlign: 'center', color: 'var(--text)' }}>
                     {cUnidad}
                   </td>
-                  <td style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid var(--border)', fontFamily: 'DM Mono', fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>
+                  <td className="tabular-nums" style={{ textAlign: 'center', color: 'var(--text)', fontWeight: 600 }}>
                     {cCantidad}
                   </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', borderRight: '1px solid var(--border)', fontFamily: 'DM Mono', fontSize: 13, color: 'var(--text)' }}>
+                  <td className="tabular-nums" style={{ textAlign: 'right', color: 'var(--text)' }}>
                     {money(cPrecio)}
                   </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'DM Mono', fontSize: 14, fontWeight: 700, color: 'var(--accent)', background: 'var(--surface2)' }}>
+                  <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--accent)' }}>
                     {money(cImporte)}
                   </td>
                 </tr>
               </tbody>
               <tfoot>
-                <tr style={{ background: 'var(--surface2)', borderTop: '2px solid var(--border)' }}>
-                  <td colSpan={5} style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--text)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    SUMA TOTAL DEL CONCEPTO:
+                <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface2)' }}>
+                  <td colSpan={5} style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-2)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                    Suma Total del Concepto:
                   </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, color: 'var(--accent)', fontFamily: 'DM Mono', fontSize: 16, background: 'var(--accent-light)', borderLeft: '1px solid var(--border)' }}>
+                  <td className="tabular-nums" style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: 'var(--accent)', fontSize: 15 }}>
                     {money(cImporte)}
                   </td>
                 </tr>
@@ -333,10 +294,10 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+              <div className="card-title" style={{ margin: 0 }}>
                 Presupuestos que utilizan este Concepto
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
                 Historial de cotizaciones y expedientes donde se encuentra referenciada esta clave.
               </div>
             </div>
@@ -347,43 +308,43 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
 
           {presupuestosRelacionados.length === 0 ? (
             <div style={{ 
-              padding: '28px 16px', 
+              padding: '24px 16px', 
               textAlign: 'center', 
               color: 'var(--text-3)', 
               background: 'var(--surface2)', 
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: 'var(--radius-md)',
               fontSize: 13 
             }}>
-              <Icon name="filetext" size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+              <Icon name="filetext" size={22} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
               <div>Este concepto está disponible y listo para agregarse a nuevos presupuestos y cotizaciones.</div>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-wrap">
+              <table>
                 <thead>
-                  <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left' }}>Folio</th>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left' }}>Cliente / Proyecto</th>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left' }}>Fecha</th>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'right' }}>Total Presupuesto</th>
+                  <tr>
+                    <th>Folio</th>
+                    <th>Cliente / Proyecto</th>
+                    <th>Fecha</th>
+                    <th style={{ textAlign: 'right' }}>Total Presupuesto</th>
                   </tr>
                 </thead>
                 <tbody>
                   {presupuestosRelacionados.map((p, idx) => (
-                    <tr key={p.id || p.folio || idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span className="mono" style={{ background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 12 }}>
+                    <tr key={p.id || p.folio || idx}>
+                      <td>
+                        <span className="badge badge-gray">
                           {p.folio || `#${p.id}`}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 12px', color: 'var(--text)', fontSize: 13 }}>
+                      <td style={{ color: 'var(--text)' }}>
                         <div style={{ fontWeight: 600 }}>{p.cliente || 'Cliente General'}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.proyecto || 'Proyecto'}</div>
                       </td>
-                      <td style={{ padding: '10px 12px', color: 'var(--text-2)', fontSize: 12 }}>
+                      <td style={{ color: 'var(--text-2)' }}>
                         {p.fecha ? p.fecha.substring(0, 10) : '—'}
                       </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: 600, color: 'var(--text)' }}>
+                      <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text)' }}>
                         {money(p.total || p.subtotal || 0)}
                       </td>
                     </tr>
@@ -401,7 +362,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   // VISTA: TABLA PRINCIPAL DEL CATÁLOGO DE CONCEPTOS
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div style={{ width: '100%' }}>
+    <div className="module-container">
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Conceptos</div>
@@ -424,14 +385,14 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
             onChange={e => setQ(e.target.value)}
           />
         </div>
-        <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+        <div className="table-wrap">
+          <table>
             <thead>
-              <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                <th style={{ width: 140, padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left' }}>Clave</th>
-                <th style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left' }}>Descripción del Trámite o Servicio</th>
-                <th style={{ textAlign: 'right', width: 160, padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase' }}>Precio Unitario</th>
-                <th style={{ width: 40, padding: '10px 8px', textAlign: 'center' }}></th>
+              <tr>
+                <th style={{ width: 140 }}>Clave</th>
+                <th>Descripción del Trámite o Servicio</th>
+                <th style={{ textAlign: 'right', width: 160 }}>Precio Unitario</th>
+                <th style={{ width: 40, textAlign: 'center' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -446,41 +407,28 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                   <tr 
                     key={c.clave || idx}
                     onClick={() => setSelectedConcepto(c)}
-                    style={{ 
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                      borderBottom: '1px solid var(--border)'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--surface2)'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ cursor: 'pointer' }}
                     title="Haz clic para ver el desglose detallado de este concepto"
                   >
-                    <td style={{ padding: '12px 14px' }}>
-                      <span className="mono" style={{ 
-                        background: 'var(--surface2)', 
-                        padding: '3px 8px', 
-                        borderRadius: 4, 
-                        border: '1px solid var(--border)',
-                        fontWeight: 600,
-                        fontSize: 12
-                      }}>
+                    <td>
+                      <span className="badge badge-gray" style={{ fontWeight: 600 }}>
                         {c.clave}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text)' }}>
+                    <td style={{ color: 'var(--text)' }}>
                       {c.nombre && (
                         <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
                           {c.nombre}
                         </div>
                       )}
-                      <div style={{ color: c.nombre ? 'var(--text-2)' : 'var(--text)', fontSize: 13 }}>
+                      <div style={{ color: c.nombre ? 'var(--text-2)' : 'var(--text)' }}>
                         {c.descripcion}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 600, fontFamily: 'DM Mono', color: 'var(--text)' }}>
+                    <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text)' }}>
                       {money(c.precio)}
                     </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'center', color: 'var(--text-3)' }}>
+                    <td style={{ textAlign: 'center', color: 'var(--text-3)' }}>
                       <Icon name="chevronright" size={14} />
                     </td>
                   </tr>
@@ -513,7 +461,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                   className="form-control"
                   placeholder="EJ: LIC-RES-03"
                   value={nuevaClave}
-                  style={{ textTransform: 'uppercase', fontFamily: 'DM Mono' }}
+                  style={{ textTransform: 'uppercase' }}
                   onChange={e => setNuevaClave(e.target.value)}
                 />
               </div>
@@ -531,22 +479,22 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
 
             {/* 2. Cuadrícula / Tabla Estilo Excel con diseño nativo GIU */}
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', marginBottom: 16 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table>
                 <thead>
-                  <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'left', borderRight: '1px solid var(--border)' }}>
+                  <tr style={{ background: 'var(--surface2)' }}>
+                    <th style={{ borderRight: '1px solid var(--border)' }}>
                       Descripción del Concepto / Partida
                     </th>
-                    <th style={{ padding: '8px 8px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'center', width: 95, borderRight: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'center', width: 95, borderRight: '1px solid var(--border)' }}>
                       Unidad
                     </th>
-                    <th style={{ padding: '8px 8px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'center', width: 80, borderRight: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'center', width: 80, borderRight: '1px solid var(--border)' }}>
                       Cantidad
                     </th>
-                    <th style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'right', width: 130, borderRight: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'right', width: 130, borderRight: '1px solid var(--border)' }}>
                       Precio Unitario
                     </th>
-                    <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', textAlign: 'right', width: 130, background: 'var(--surface2)' }}>
+                    <th style={{ textAlign: 'right', width: 130 }}>
                       Importe ($)
                     </th>
                   </tr>
@@ -587,41 +535,41 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                     {/* Celda 3: Cantidad */}
                     <td style={{ padding: '8px', borderRight: '1px solid var(--border)', textAlign: 'center' }}>
                       <input
-                        className="form-control"
+                        className="form-control tabular-nums"
                         type="number"
                         step="any"
                         placeholder="1"
                         value={nuevaCantidad}
                         onChange={e => setNuevaCantidad(e.target.value)}
-                        style={{ textAlign: 'center', fontFamily: 'DM Mono', fontSize: 13 }}
+                        style={{ textAlign: 'center', fontSize: 13 }}
                       />
                     </td>
 
                     {/* Celda 4: Precio Unitario */}
                     <td style={{ padding: '8px', borderRight: '1px solid var(--border)' }}>
                       <input
-                        className="form-control"
+                        className="form-control tabular-nums"
                         type="number"
                         step="any"
                         placeholder="0.00"
                         value={nuevoPrecio}
                         onChange={e => setNuevoPrecio(e.target.value)}
-                        style={{ textAlign: 'right', fontFamily: 'DM Mono', fontSize: 13 }}
+                        style={{ textAlign: 'right', fontSize: 13 }}
                       />
                     </td>
 
                     {/* Celda 5: Importe Calculado */}
-                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)', fontSize: 14, background: 'var(--surface2)' }}>
+                    <td className="tabular-nums" style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--accent)', fontSize: 14, background: 'var(--surface2)' }}>
                       {money(sumaTotalCalculada)}
                     </td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr style={{ background: 'var(--surface2)', borderTop: '1px solid var(--border)' }}>
-                    <td colSpan={4} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: 'var(--text)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <td colSpan={4} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                       SUMA TOTAL:
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: 'var(--accent)', fontFamily: 'DM Mono', fontSize: 15, background: 'var(--accent-light)' }}>
+                    <td className="tabular-nums" style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--accent)', fontSize: 15, background: 'var(--accent-light)' }}>
                       {money(sumaTotalCalculada)}
                     </td>
                   </tr>
@@ -650,5 +598,6 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
   );
 }
 export default Catalogo;
+
 
 
