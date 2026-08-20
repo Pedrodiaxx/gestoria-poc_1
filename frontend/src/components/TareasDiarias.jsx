@@ -8,19 +8,6 @@ const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
 const todayStr = fmt(hoy);
 
-const ETAPA_COLORS = {
-  'uso de suelo':          { bg: '#EFF6FF', border: '#BFDBFE', text: '#1D4ED8' },
-  'licencia de construcción': { bg: '#F0FDF4', border: '#BBF7D0', text: '#15803D' },
-  'fin de obra':           { bg: '#FFF7ED', border: '#FED7AA', text: '#C2410C' },
-  'funcionamiento':        { bg: '#FAF5FF', border: '#E9D5FF', text: '#7E22CE' },
-  'general':               { bg: '#F4F4F5', border: '#D4D4D8', text: '#52525B' },
-};
-
-const getEtapaStyle = (etapa = '') => {
-  const key = etapa.toLowerCase().trim();
-  return ETAPA_COLORS[key] || ETAPA_COLORS['general'];
-};
-
 const resolveUser = (id, usuariosList = []) => {
   if (!id) return null;
   const found = (usuariosList || []).find(u =>
@@ -34,7 +21,7 @@ const resolveUser = (id, usuariosList = []) => {
       id: found.id,
       nombre: found.nombre,
       avatar: found.avatar || (found.nombre ? found.nombre.slice(0, 2).toUpperCase() : 'U'),
-      color: found.color || '#2A5F3F'
+      color: found.color || 'var(--accent)'
     };
   }
   const staffUser = (usuariosList || []).find(u => u?.rol !== 'cliente');
@@ -43,12 +30,12 @@ const resolveUser = (id, usuariosList = []) => {
       id: staffUser.id,
       nombre: id !== 'Responsable' ? id : staffUser.nombre,
       avatar: id !== 'Responsable' ? id.slice(0, 2).toUpperCase() : (staffUser.avatar || 'GA'),
-      color: staffUser.color || '#2A5F3F'
+      color: staffUser.color || 'var(--accent)'
     };
   }
   const mockFound = EQUIPO.find(e => String(e?.id) === String(id));
   if (mockFound) return mockFound;
-  return { id, nombre: id || 'Gestor Asignado', avatar: (id || 'GA').slice(0, 2).toUpperCase(), color: '#2A5F3F' };
+  return { id, nombre: id || 'Gestor Asignado', avatar: (id || 'GA').slice(0, 2).toUpperCase(), color: 'var(--accent)' };
 };
 
 const getTeamMembers = (usuariosList = []) => {
@@ -58,7 +45,7 @@ const getTeamMembers = (usuariosList = []) => {
 };
 
 // ──────────────────────────────────────────────────────────────────────
-// VISTA PLANNER: Acordeones por Proyecto con checklist por Etapa
+// VISTA PLANNER: Acordeones por Proyecto con checklist por Etapa (GIU Style)
 // ──────────────────────────────────────────────────────────────────────
 function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }) {
   const [expanded, setExpanded] = useState({});
@@ -127,10 +114,10 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
 
   if (grupos.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
-        <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>📋</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#1E293B' }}>No hay tareas en el Planner</div>
-        <div style={{ fontSize: 13, marginTop: 6, color: '#64748B', maxWidth: 440, margin: '6px auto 0' }}>
+      <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-3)' }}>
+        <Icon name="task" size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>No hay tareas en el Planner</div>
+        <div style={{ fontSize: 13, marginTop: 6, color: 'var(--text-2)', maxWidth: 440, margin: '6px auto 0' }}>
           Aprueba un Presupuesto para generar automáticamente las tareas operativas vinculadas al Proyecto.
         </div>
       </div>
@@ -138,7 +125,7 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
   }
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {grupos.map(([proyectoId, tareasGrupo]) => {
         const totalTareas = tareasGrupo.length;
         const completadas = tareasGrupo.filter(t => t.hecho || t.completada).length;
@@ -156,37 +143,31 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
         const proyInfo = resolveProyectoInfo(proyectoId);
 
         return (
-          <div
-            key={proyectoId}
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: 10,
-              overflow: 'hidden',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
-            }}
-          >
-            {/* Header Sobrio del Proyecto */}
+          <div key={proyectoId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {/* Header del Proyecto */}
             <div
               onClick={() => setExpanded(prev => ({ ...prev, [proyectoId]: !prev[proyectoId] }))}
               style={{
-                padding: '14px 20px',
+                padding: '16px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 16,
                 cursor: 'pointer',
-                background: '#FFFFFF',
-                borderBottom: isExpanded ? '1px solid #E2E8F0' : 'none',
+                background: 'var(--surface)',
+                borderBottom: isExpanded ? '1px solid var(--border)' : 'none',
                 transition: 'background 0.15s ease',
                 flexWrap: 'wrap'
               }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--surface)'}
             >
               {/* Left: Chevron + Project Info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 260, flex: 1 }}>
                 <div style={{
-                  width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#64748B', transition: 'transform 0.2s ease', flexShrink: 0,
+                  color: 'var(--text-3)',
+                  transition: 'transform 0.2s ease',
+                  flexShrink: 0,
                   transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
                 }}>
                   <Icon name="chevronright" size={14} />
@@ -194,46 +175,37 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
 
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{
-                      fontFamily: 'DM Mono, monospace',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: '#475569',
-                      background: '#F1F5F9',
-                      padding: '2px 7px',
-                      borderRadius: 4,
-                      border: '1px solid #E2E8F0'
-                    }}>
+                    <span className={proyInfo.id === 'Sin Proyecto' ? 'badge badge-gray' : 'badge badge-green'}>
                       {proyInfo.id}
                     </span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                       {proyInfo.nombre}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>
                     {completadas} de {totalTareas} tareas completadas
                   </div>
                 </div>
               </div>
 
-              {/* Right: Slim Progress Bar + Clean Percentage */}
+              {/* Right: Progress Bar GIU */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                <div style={{ width: 120, height: 6, background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${pct}%`,
-                    background: pct === 100 ? '#15803D' : '#16A34A',
-                    borderRadius: 9999,
-                    transition: 'width 0.3s ease'
-                  }} />
+                <div className="progress-bar" style={{ width: 120 }}>
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${pct}%`,
+                      background: pct === 100 ? 'var(--accent)' : 'var(--accent)'
+                    }}
+                  />
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: pct === 100 ? '#15803D' : '#0F172A', minWidth: 36, textAlign: 'right' }}>
+                <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600, color: pct === 100 ? 'var(--accent)' : 'var(--text)', minWidth: 36, textAlign: 'right' }}>
                   {pct}%
                 </span>
               </div>
             </div>
 
-            {/* Contenido expandido: Secciones por Etapa Administrativa */}
+            {/* Contenido expandido: Secciones por Etapa */}
             {isExpanded && (
               <div>
                 {Object.entries(etapas).map(([etapa, items], idx) => {
@@ -241,11 +213,11 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
                   const totalEtapa = items.length;
 
                   return (
-                    <div key={etapa} style={{ borderTop: idx > 0 ? '1px solid #E2E8F0' : 'none' }}>
-                      {/* Encabezado sutil de Etapa */}
+                    <div key={etapa} style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}>
+                      {/* Encabezado de Etapa */}
                       <div style={{
-                        background: '#F8FAFC',
-                        borderBottom: '1px solid #E2E8F0',
+                        background: 'var(--surface2)',
+                        borderBottom: '1px solid var(--border)',
                         padding: '8px 20px',
                         display: 'flex',
                         alignItems: 'center',
@@ -254,18 +226,18 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
                         <span style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: '#64748B',
+                          color: 'var(--text-2)',
                           textTransform: 'uppercase',
-                          letterSpacing: '0.05em'
+                          letterSpacing: '0.6px'
                         }}>
                           {etapa}
                         </span>
-                        <span style={{ fontSize: 11, color: '#64748B', fontWeight: 500 }}>
+                        <span className="tabular-nums" style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>
                           {completadasEtapa}/{totalEtapa}
                         </span>
                       </div>
 
-                      {/* Lista de Filas / Renglones Uniformes */}
+                      {/* Lista de Filas */}
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {items.map((t, tIdx) => {
                           const hecho = t.hecho || t.completada;
@@ -282,41 +254,38 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
                                 gap: 16,
                                 padding: '11px 20px',
                                 minHeight: 46,
-                                background: '#FFFFFF',
-                                borderBottom: tIdx < items.length - 1 ? '1px solid #F1F5F9' : 'none',
+                                background: 'var(--surface)',
+                                borderBottom: tIdx < items.length - 1 ? '1px solid var(--border)' : 'none',
                                 transition: 'background 0.15s ease',
                                 cursor: 'pointer'
                               }}
-                              onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; }}
                             >
                               {/* Left: Checkmark + Título */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                                {/* Checkmark circular */}
                                 <div
                                   style={{
-                                    width: 20,
-                                    height: 20,
+                                    width: 18,
+                                    height: 18,
                                     borderRadius: '50%',
                                     flexShrink: 0,
-                                    border: `1.5px solid ${hecho ? '#15803D' : '#CBD5E1'}`,
-                                    background: hecho ? '#15803D' : 'transparent',
+                                    border: `2px solid ${hecho ? 'var(--accent)' : 'var(--border-strong)'}`,
+                                    background: hecho ? 'var(--accent)' : 'transparent',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     transition: 'all 0.15s ease'
                                   }}
                                 >
-                                  {hecho && <Icon name="check" size={11} style={{ color: '#FFFFFF' }} />}
+                                  {hecho && <Icon name="check" size={10} style={{ color: '#FFFFFF' }} />}
                                 </div>
 
-                                {/* Título de la tarea */}
                                 <span style={{
                                   fontSize: 13.5,
                                   fontWeight: 500,
-                                  color: hecho ? '#64748B' : '#1E293B',
+                                  color: hecho ? 'var(--text-3)' : 'var(--text)',
                                   textDecoration: hecho ? 'line-through' : 'none',
-                                  textDecorationColor: 'rgba(100, 116, 139, 0.4)',
                                   lineHeight: 1.35,
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
@@ -327,27 +296,24 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
                               </div>
 
                               {/* Right: Fecha + Responsable */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
-                                {/* Fecha simple en gris neutro */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                                 {t.fecha && (
-                                  <span style={{
+                                  <span className="tabular-nums" style={{
                                     fontSize: 12,
-                                    color: t.fecha < todayStr && !hecho ? '#DC2626' : '#64748B',
-                                    fontFamily: 'DM Mono, monospace',
+                                    color: t.fecha < todayStr && !hecho ? 'var(--red)' : 'var(--text-3)',
                                     whiteSpace: 'nowrap'
                                   }}>
                                     {t.fecha}
                                   </span>
                                 )}
 
-                                {/* Responsable */}
                                 {gestor && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 120, justifyContent: 'flex-end' }}>
-                                    <div style={{
-                                      width: 22,
-                                      height: 22,
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 110, justifyContent: 'flex-end' }}>
+                                    <span style={{
+                                      width: 20,
+                                      height: 20,
                                       borderRadius: '50%',
-                                      background: '#1E5631',
+                                      background: gestor.color || 'var(--accent)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
@@ -357,15 +323,14 @@ function PlannerView({ tareas, proyectos, usuarios, actualizarTarea, setTareas }
                                       flexShrink: 0
                                     }}>
                                       {(gestor.avatar || 'GA').slice(0, 2)}
-                                    </div>
+                                    </span>
                                     <span style={{
-                                      fontSize: 12.5,
-                                      fontWeight: 500,
-                                      color: '#475569',
+                                      fontSize: 12,
+                                      color: 'var(--text-2)',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap',
-                                      maxWidth: 130
+                                      maxWidth: 120
                                     }}>
                                       {gestor.nombre}
                                     </span>
@@ -477,7 +442,7 @@ export default function TareasDiarias() {
               <span className={`badge ${PrioColors[t.prioridad] || 'badge-gray'}`} style={{ fontSize: 10 }}>
                 {t.prioridad}
               </span>
-              <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)' }}>
+              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
                 {t.tramiteId || t.proyectoId}
               </span>
               {eq && (
@@ -501,7 +466,7 @@ export default function TareasDiarias() {
   };
 
   return (
-    <div>
+    <div className="module-container">
       {/* Header */}
       <div className="page-header flex items-center justify-between">
         <div>
@@ -523,44 +488,27 @@ export default function TareasDiarias() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid #E4E4E7' }}>
-        {[
-          { key: 'planner', label: 'Planner (Por Proyecto)', icon: 'check' },
-          { key: 'diarias', label: 'Tablero Diario (Kanban)', icon: 'clock' }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '8px 18px',
-              fontSize: 13,
-              fontWeight: activeTab === tab.key ? 700 : 500,
-              color: activeTab === tab.key ? '#18181B' : 'var(--text-3)',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === tab.key ? '2px solid #1E5631' : '2px solid transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all 0.15s ease',
-              marginBottom: -1
-            }}
-          >
-            <Icon name={tab.icon} size={13} />
-            {tab.label}
-            {tab.key === 'planner' && (
-              <span style={{
-                background: '#D1FAE5',
-                color: '#065F46',
-                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99
-              }}>
-                {tareas.length}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Tabs nativos de GIU */}
+      <div className="tabs">
+        <button
+          className={`tab-btn ${activeTab === 'planner' ? 'active' : ''}`}
+          onClick={() => setActiveTab('planner')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <Icon name="check" size={13} />
+          Planner (Por Proyecto)
+          <span className="badge badge-green" style={{ fontSize: 10, padding: '1px 6px' }}>
+            {tareas.length}
+          </span>
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'diarias' ? 'active' : ''}`}
+          onClick={() => setActiveTab('diarias')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <Icon name="clock" size={13} />
+          Tablero Diario (Kanban)
+        </button>
       </div>
 
       {/* VISTA PLANNER */}
@@ -574,7 +522,7 @@ export default function TareasDiarias() {
         />
       )}
 
-      {/* VISTA DIARIAS (Kanban original) */}
+      {/* VISTA DIARIAS (Kanban) */}
       {activeTab === 'diarias' && (
         <div className="three-col">
           <div className="task-col">
@@ -667,3 +615,4 @@ export default function TareasDiarias() {
     </div>
   );
 }
+
