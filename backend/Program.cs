@@ -100,6 +100,10 @@ using (var scope = app.Services.CreateScope())
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"Etapa\" text;");
         await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"TareasDiarias\" ADD COLUMN IF NOT EXISTS \"PresupuestoId\" integer;");
         
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Conceptos\" ADD COLUMN IF NOT EXISTS \"Nombre\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Conceptos\" ADD COLUMN IF NOT EXISTS \"Unidad\" text;");
+        await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE \"Conceptos\" ADD COLUMN IF NOT EXISTS \"Cantidad\" double precision;");
+
         Console.WriteLine("[Startup] Esquema PostgreSQL actualizado correctamente.");
     }
     catch (Exception ex)

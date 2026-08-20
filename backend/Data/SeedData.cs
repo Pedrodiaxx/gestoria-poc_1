@@ -12,8 +12,15 @@ namespace Data
             using var context = new ApplicationDbContext(
                 serviceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>());
 
-            // Check and migrate automatically if needed
-            context.Database.Migrate();
+            // Check and migrate automatically if needed with safe fallback
+            try
+            {
+                context.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SeedData] Aviso al aplicar migraciones: {ex.Message}");
+            }
 
             // Eliminar conceptos duplicados (conservar el primero por Id)
             try
