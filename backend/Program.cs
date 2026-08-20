@@ -6,10 +6,23 @@ using Backend.Services;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
 
+// Sanitizar ASPNETCORE_URLS si viene con formato markdown accidental de la UI de Render
+var rawUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? Environment.GetEnvironmentVariable("URLS");
+if (!string.IsNullOrWhiteSpace(rawUrls))
+{
+    var cleanUrls = SanitizeUrl(rawUrls);
+    Environment.SetEnvironmentVariable("ASPNETCORE_URLS", cleanUrls);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. CONEXIÓN A POSTGRESQL (RENDER)
-var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+var rawConn = builder.Configuration.GetConnectionString("PostgresConnection") 
+              ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+              ?? Environment.GetEnvironmentVariable("PostgresConnection");
+
+var connectionString = SanitizeConnectionString(rawConn);
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
@@ -133,3 +146,58 @@ using (var scope = app.Services.CreateScope())
 
 app.MapControllers();
 app.Run();
+
+static string SanitizeUrl(string raw)
+{
+    var trimmed = raw.Trim();
+    if (trimmed.StartsWith("[") && trimmed.Contains("](") && trimmed.EndsWith(")"))
+    {
+        var startIndex = trimmed.IndexOf("](") + 2;
+        trimmed = trimmed.Substring(startIndex, trimmed.Length - startIndex - 1).Trim();
+    }
+    else if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+    {
+        trimmed = trimmed.Trim('[', ']');
+    }
+    return trimmed;
+}
+
+static string SanitizeConnectionString(string? raw)
+{
+    if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+    var trimmed = raw.Trim();
+
+    // Limpiar sintaxis de enlace markdown si fue pegado accidentalmente: [texto](url)
+    if (trimmed.StartsWith("[") && trimmed.Contains("](") && trimmed.EndsWith(")"))
+    {
+        var startIndex = trimmed.IndexOf("](") + 2;
+        trimmed = trimmed.Substring(startIndex, trimmed.Length - startIndex - 1).Trim();
+    }
+    else if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+    {
+        trimmed = trimmed.Trim('[', ']');
+    }
+
+    // Convertir formato URI (postgres:// o postgresql://) a formato estándar de Npgsql
+    if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+        trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            var uri = new Uri(trimmed);
+            var userInfo = uri.UserInfo.Split(':');
+            var username = userInfo.Length > 0 ? userInfo[0] : "";
+            var password = userInfo.Length > 1 ? userInfo[1] : "";
+            var database = uri.AbsolutePath.TrimStart('/');
+            var port = uri.Port > 0 ? uri.Port : 5432;
+
+            return $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;Keepalive=30;Timeout=30;";
+        }
+        catch
+        {
+            // En caso de fallo de parsing URI, retornar string original
+        }
+    }
+
+    return trimmed;
+}

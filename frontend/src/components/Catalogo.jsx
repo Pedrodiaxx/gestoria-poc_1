@@ -406,9 +406,9 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                 filtered.map((c, idx) => (
                   <tr 
                     key={c.clave || idx}
-                    onClick={() => setSelectedConcepto(c)}
-                    style={{ cursor: 'pointer' }}
-                    title="Haz clic para ver el desglose detallado de este concepto"
+                    onDoubleClick={() => setSelectedConcepto(c)}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    title="Doble clic para ver el desglose detallado de este concepto"
                   >
                     <td>
                       <span className="badge badge-gray" style={{ fontWeight: 600 }}>
@@ -442,7 +442,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
       {/* Modal: Agregar Concepto en Cuadrícula Tabular Estilo Excel */}
       {showAddModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
-          <div className="modal" style={{ maxWidth: 840, width: '95%' }}>
+          <div className="modal" style={{ maxWidth: 840, width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             
             <div className="modal-title">Agregar Nuevo Concepto</div>
 
@@ -454,7 +454,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
             )}
 
             {/* 1. Clave del Concepto y Nombre / Título */}
-            <div className="form-grid-2" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 16 }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">Clave del Concepto *</label>
                 <input
@@ -477,18 +477,31 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
               </div>
             </div>
 
-            {/* 2. Cuadrícula / Tabla Estilo Excel con diseño nativo GIU */}
-            <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', marginBottom: 16 }}>
-              <table>
+            {/* 2. Cuadrícula / Tabla Estilo Excel con scroll horizontal responsivo en móvil */}
+            <div style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Desglose de Partida</span>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>↔ Desliza para ver todas las columnas</span>
+            </div>
+            <div
+              className="table-wrap"
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                marginBottom: 16
+              }}
+            >
+              <table style={{ minWidth: 680, width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'var(--surface2)' }}>
-                    <th style={{ borderRight: '1px solid var(--border)' }}>
+                    <th style={{ borderRight: '1px solid var(--border)', minWidth: 220 }}>
                       Descripción del Concepto / Partida
                     </th>
                     <th style={{ textAlign: 'center', width: 95, borderRight: '1px solid var(--border)' }}>
                       Unidad
                     </th>
-                    <th style={{ textAlign: 'center', width: 80, borderRight: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'center', width: 85, borderRight: '1px solid var(--border)' }}>
                       Cantidad
                     </th>
                     <th style={{ textAlign: 'right', width: 130, borderRight: '1px solid var(--border)' }}>
