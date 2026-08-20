@@ -501,31 +501,31 @@ export function Clientes() {
   };
 
   return (
-    <div className="clientes-module-wrap">
+    <div className="module-container">
       {/* Module Header */}
-      <div className="clientes-header-row">
-        <div className="clientes-header-info">
-          <h1 className="clientes-header-title">Directorio de Clientes</h1>
-          <p className="clientes-header-subtitle">Gestión comercial y relaciones con clientes</p>
+      <div className="page-header flex items-center justify-between">
+        <div>
+          <div className="page-title">Directorio de Clientes</div>
+          <div className="page-subtitle">Gestión comercial y relaciones con clientes</div>
         </div>
 
-        <div className="clientes-header-actions">
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            className="btn btn-primary-emerald clientes-btn-main"
+            className="btn btn-primary"
             onClick={() => setShowAddClienteModal(true)}
           >
-            <Icon name="plus" size={15} /> Nuevo Cliente
+            <Icon name="plus" size={14} /> Nuevo Cliente
           </button>
 
           <button
-            className="btn btn-secondary-action clientes-btn-sec"
+            className="btn btn-secondary"
             onClick={() => setShowManageStatuses(true)}
           >
             Estatus
           </button>
 
           <button
-            className="btn btn-secondary-action clientes-btn-sec"
+            className="btn btn-secondary"
             onClick={handleMockImport}
           >
             Importar
@@ -533,71 +533,57 @@ export function Clientes() {
         </div>
       </div>
 
+      {/* 3 KPI Summary Cards - Standard GIU metric-grid */}
+      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 20 }}>
+        <div className="metric-card">
+          <div className="metric-label">Total Clientes</div>
+          <div className="metric-value">{totalClientes}</div>
+          <div className="metric-sub">registrados en la plataforma</div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-label">Clientes Activos</div>
+          <div className="metric-value text-green">{totalActivosCount}</div>
+          <div className="metric-sub">en seguimiento activo</div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-label">Leads Registrados</div>
+          <div className="metric-value text-amber">{totalLeadsCount}</div>
+          <div className="metric-sub">prospectos iniciales</div>
+        </div>
+      </div>
+
       {/* Master-Detail Main Responsive Grid Layout */}
-      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`}>
+      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`} style={{ display: 'grid', gridTemplateColumns: selectedClient ? '1fr 380px' : '1fr', gap: 20 }}>
 
         {/* LEFT PANEL (Master Panel - Client Cards & Search) */}
         <div className="clientes-master-col">
 
-          {/* 3 KPI Summary Cards - Fully Responsive */}
-          <div className="clientes-kpi-grid">
-            <div className="clientes-kpi-card">
-              <div className="clientes-kpi-label">TOTAL CLIENTES</div>
-              <div className="clientes-kpi-value">{totalClientes}</div>
-              <div className="clientes-kpi-sub">registrados en la plataforma</div>
-            </div>
-
-            <div className="clientes-kpi-card">
-              <div className="clientes-kpi-label">CLIENTES ACTIVOS</div>
-              <div className="clientes-kpi-value text-emerald">{totalActivosCount}</div>
-              <div className="clientes-kpi-sub">en seguimiento activo</div>
-            </div>
-
-            <div className="clientes-kpi-card">
-              <div className="clientes-kpi-label">LEADS REGISTRADOS</div>
-              <div className="clientes-kpi-value text-slate">{totalLeadsCount}</div>
-              <div className="clientes-kpi-sub">prospectos iniciales</div>
-            </div>
-          </div>
-
-          {/* Search Input Bar */}
-          <div style={{ background: '#FFFFFF', padding: '8px 14px', borderRadius: 8, border: '1px solid #E4E4E7', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-            <Icon name="search" size={15} style={{ color: '#A1A1AA' }} />
+          {/* Search Input Bar - Standard GIU */}
+          <div className="search-wrap" style={{ maxWidth: 420, marginBottom: 12 }}>
+            <Icon name="search" size={14} />
             <input
               type="text"
+              className="form-control search-input"
               placeholder="Buscar por cliente, proyectos, estatus, correo..."
               value={qClientes}
               onChange={e => setQClientes(e.target.value)}
-              style={{
-                border: 'none',
-                outline: 'none',
-                width: '100%',
-                fontSize: 13,
-                background: 'transparent',
-                color: '#27272A'
-              }}
             />
-            {qClientes && (
-              <button onClick={() => setQClientes('')} style={{ background: 'none', border: 'none', color: '#A1A1AA', cursor: 'pointer' }}>
-                <Icon name="x" size={14} />
-              </button>
-            )}
           </div>
 
           {/* Results Summary Indicator */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#71717A', padding: '0 2px', marginTop: -10 }}>
-            <span>
-              {isSearching
-                ? `Mostrando ${filteredClientes.length} resultado(s) para "${qClientes}" de ${totalClientes} clientes.`
-                : totalClientes > 12
-                  ? `Mostrando los 12 clientes más recientes (de ${totalClientes} registrados). Usa la búsqueda para encontrar cualquier otro.`
-                  : `Mostrando ${filteredClientes.length} cliente(s).`
-              }
-            </span>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>
+            {isSearching
+              ? `Mostrando ${filteredClientes.length} resultado(s) para "${qClientes}" de ${totalClientes} clientes.`
+              : totalClientes > 12
+                ? `Mostrando los 12 clientes más recientes (de ${totalClientes} registrados). Usa la búsqueda para encontrar cualquier otro.`
+                : `Mostrando ${filteredClientes.length} cliente(s).`
+            }
           </div>
 
           {/* Client List Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? 'repeat(auto-fill, minmax(270px, 1fr))' : 'repeat(auto-fill, minmax(310px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? 'repeat(auto-fill, minmax(260px, 1fr))' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
             {filteredClientes.map(c => {
               const isSelected = selectedClient?.id === c.id;
               const isLead = c.estatus === 'lead' || c.estatus === 'Lead';
@@ -607,104 +593,79 @@ export function Clientes() {
                 <div
                   key={c.id}
                   onClick={() => setSelectedClientId(c.id)}
+                  className="card"
                   style={{
-                    background: isSelected ? '#E0EAE2' : '#ECF3EE',
-                    borderRadius: 12,
-                    border: isSelected ? '1.5px solid #1E5631' : '1px solid rgba(30, 86, 49, 0.35)',
-                    boxShadow: isSelected
-                      ? '0 0 0 3px rgba(30, 86, 49, 0.22), 0 2px 6px rgba(0,0,0,0.05)'
-                      : '0 0 0 2px rgba(30, 86, 49, 0.10), 0 1px 3px rgba(0,0,0,0.03)',
                     padding: 16,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    minHeight: 180,
+                    background: isSelected ? 'var(--surface2)' : 'var(--surface)',
+                    border: isSelected ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                    boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    position: 'relative'
+                    minHeight: 170,
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border)'; }}
                 >
                   {/* Top Content */}
                   <div>
                     {/* Header Row: Client Name & Badges */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
                       <div>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#092C15', lineHeight: 1.3 }} title="Nombre o Razón Social">{c.nombre}</div>
-                        <div style={{ fontSize: 12, color: '#2C4A34', marginTop: 2, fontWeight: 500 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }} title="Nombre o Razón Social">
+                          {c.nombre}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
                           {c.contacto && c.contacto !== 'S/N' ? `Contacto: ${c.contacto}` : 'Contacto: S/N'}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
-                        <span style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: 9999,
-                          background: isLead ? '#E2E8F0' : isActivo ? '#D1E7DD' : '#FEF3C7',
-                          color: isLead ? '#334155' : isActivo ? '#0F5132' : '#D97706',
-                          border: `1px solid ${isLead ? '#CBD5E1' : isActivo ? '#A3CFBB' : '#FDE68A'}`,
-                          letterSpacing: 0.3
-                        }}>
-                          {isLead ? 'LEAD' : isActivo ? 'CLIENTE ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
+                        <span className={`badge ${isLead ? 'badge-gray' : isActivo ? 'badge-green' : 'badge-amber'}`}>
+                          {isLead ? 'LEAD' : isActivo ? 'ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
                         </span>
-                        <span style={{
-                          fontSize: 10,
-                          fontWeight: 500,
-                          padding: '2px 7px',
-                          borderRadius: 9999,
-                          background: 'rgba(226, 232, 240, 0.75)',
-                          border: '1px solid #CBD5E1',
-                          color: '#475569',
-                          textTransform: 'uppercase'
-                        }}>
+                        <span className="badge badge-gray" style={{ textTransform: 'uppercase' }}>
                           {c.personaTipo || 'Moral'}
                         </span>
                       </div>
                     </div>
 
                     {/* Metadata Lines */}
-                    <div style={{ fontSize: 12, color: '#2C4A34', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
                       {c.email && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Icon name="mail" size={13} style={{ color: '#165B33', flexShrink: 0 }} />
+                          <Icon name="mail" size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
                           <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{c.email}</span>
                         </div>
                       )}
                       {c.tel && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Icon name="phone" size={13} style={{ color: '#165B33', flexShrink: 0 }} />
+                          <Icon name="phone" size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
                           <span>{c.tel}</span>
                         </div>
                       )}
                       {c.rfc && (
-                        <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#165B33', marginTop: 2 }}>
-                          RFC: {c.rfc}
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                          RFC: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{c.rfc}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Bottom Footer Row: Related Projects & Delete Button on Bottom Right */}
+                  {/* Bottom Footer Row: Related Projects & Delete Button */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     marginTop: 12,
                     paddingTop: 10,
-                    borderTop: '1px solid rgba(30, 86, 49, 0.18)',
+                    borderTop: '1px solid var(--border)',
                     gap: 8
                   }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1, overflow: 'hidden' }}>
                       {getRelatedProjectsForClient(c).map((proj, idx) => (
-                        <span key={idx} style={{
-                          fontSize: 11,
-                          background: '#FFFFFF',
-                          color: '#1E5631',
-                          padding: '2px 7px',
-                          borderRadius: 6,
-                          border: '1px solid rgba(30, 86, 49, 0.25)',
-                          fontWeight: 500
-                        }}>
+                        <span key={idx} className="badge badge-gray" style={{ fontSize: 10 }}>
                           {proj.nombre ? (proj.nombre.length > 20 ? proj.nombre.substring(0, 20) + '...' : proj.nombre) : proj}
                         </span>
                       ))}
@@ -713,53 +674,27 @@ export function Clientes() {
                     {/* Actions Container */}
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <button
-                        className="btn btn-ghost"
+                        className="btn btn-ghost btn-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenEditModal(c);
                         }}
-                        style={{
-                          padding: 6,
-                          color: '#1E5631',
-                          background: '#EBF3EE',
-                          border: 'none',
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          transition: 'all 0.15s ease'
-                        }}
+                        style={{ padding: '4px 6px' }}
                         title="Editar cliente"
                       >
-                        <Icon name="edit" size={14} />
+                        <Icon name="edit" size={13} />
                       </button>
 
                       <button
-                        className="btn btn-ghost"
+                        className="btn btn-ghost btn-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteClient(c.id);
                         }}
-                        style={{
-                          padding: 6,
-                          color: '#DC2626',
-                          background: 'transparent',
-                          border: 'none',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(254, 226, 226, 0.8)'; e.currentTarget.style.color = '#B91C1C'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#DC2626'; }}
+                        style={{ padding: '4px 6px', color: 'var(--red)' }}
                         title="Eliminar cliente"
                       >
-                        <Icon name="trash" size={14} />
+                        <Icon name="trash" size={13} />
                       </button>
                     </div>
                   </div>
@@ -771,84 +706,62 @@ export function Clientes() {
 
         {/* RIGHT PANEL (Detail Drawer - Selected Client) */}
         {selectedClient && (
-          <div className="clientes-detail-panel">
+          <div className="card" style={{ padding: 20, alignSelf: 'start', position: 'sticky', top: 20 }}>
             {/* Header / Action Bar de Detalle: Editar Cliente */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E4E4E7', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#18181B', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="user" size={15} style={{ color: '#1E5631' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={15} style={{ color: 'var(--accent)' }} />
                 <span>Perfil de Cliente</span>
               </div>
               <button
-                className="btn"
+                className="btn btn-primary btn-sm"
                 onClick={() => handleOpenEditModal(selectedClient)}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: '#FFFFFF',
-                  background: 'linear-gradient(135deg, #1E5631 0%, #153E23 100%)',
-                  border: 'none',
-                  borderRadius: 6,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(30, 86, 49, 0.2)',
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0
-                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <Icon name="edit" size={13} /> Editar Cliente
+                <Icon name="edit" size={12} /> Editar
               </button>
             </div>
 
             {/* Section 1: DATOS FISCALES Y COMERCIALES */}
-            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F4F4F5' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+            <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
                 DATOS FISCALES Y COMERCIALES
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre o Razón Social:</div>
-                  <div style={{ fontWeight: 600, color: '#18181B', fontSize: 14, marginTop: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Nombre o Razón Social:</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', marginTop: 1 }}>
                     {selectedClient.nombre || '—'}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Nombre Comercial:</div>
-                  <div style={{ color: '#27272A', fontWeight: 500 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Nombre Comercial:</div>
+                  <div style={{ color: 'var(--text-2)' }}>
                     {selectedClient.nombreComercial || selectedClient.nombre || '—'}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 2 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>Persona Física / Moral:</div>
-                    <div style={{ color: '#27272A', fontWeight: 500, marginTop: 1 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Persona Física / Moral:</div>
+                    <div style={{ color: 'var(--text)', marginTop: 1 }}>
                       Persona {selectedClient.personaTipo || selectedClient.tipo || 'Moral'}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500 }}>RFC:</div>
-                    <div style={{ color: '#27272A', fontFamily: 'DM Mono, monospace', fontWeight: 600, marginTop: 1 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>RFC:</div>
+                    <div style={{ color: 'var(--text)', fontWeight: 600, marginTop: 1 }}>
                       {selectedClient.rfc || selectedClient.rfcFiscal || '—'}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: 4 }}>
-                  <div style={{ fontSize: 11, color: '#71717A', fontWeight: 500, marginBottom: 4 }}>Estatus:</div>
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    padding: '3px 8px',
-                    borderRadius: 4,
-                    background: (selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? '#F1F5F9' : '#E6F4EA',
-                    color: (selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? '#475569' : '#1E5631'
-                  }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Estatus:</div>
+                  <span className={`badge ${(selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? 'badge-gray' : 'badge-green'}`}>
                     {(selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? 'LEAD' : 'CLIENTE ACTIVO'}
                   </span>
                 </div>
@@ -856,48 +769,41 @@ export function Clientes() {
             </div>
 
             {/* Section 2: CONTACTO & REPRESENTACIÓN */}
-            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F4F4F5' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Icon name="user" size={14} style={{ color: '#1E5631' }} />
+            <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={13} style={{ color: 'var(--accent)' }} />
                 <span>CONTACTO & REPRESENTACIÓN</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon name="user" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Contacto:</span>
-                  <span style={{ color: '#27272A', fontWeight: 500 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Contacto:</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>
                     {selectedClient.contacto && selectedClient.contacto !== 'S/N' ? selectedClient.contacto : '—'}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon name="map" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Ciudad:</span>
-                  <span style={{ color: '#27272A', fontWeight: 600 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Ciudad:</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>
                     {selectedClient.ciudad || '—'}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <Icon name="file-text" size={14} style={{ color: '#A1A1AA', marginTop: 2, flexShrink: 0 }} />
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Dirección Fiscal:</span>
-                    <span style={{ color: '#27272A', lineHeight: 1.4 }}>
-                      {selectedClient.direccionFiscal || '—'}
-                    </span>
-                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Dirección:</span>
+                  <span style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>
+                    {selectedClient.direccionFiscal || '—'}
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon name="mail" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Correo:</span>
-                  <span style={{ color: '#2563EB', fontWeight: 500 }}>{selectedClient.email || '—'}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Correo:</span>
+                  <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{selectedClient.email || '—'}</span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon name="phone" size={14} style={{ color: '#A1A1AA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Teléfono:</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Teléfono:</span>
                   <span style={{ color: '#27272A' }}>{selectedClient.tel || selectedClient.telefono || '—'}</span>
                 </div>
 
