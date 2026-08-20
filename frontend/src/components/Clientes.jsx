@@ -555,7 +555,7 @@ export function Clientes() {
       </div>
 
       {/* Master-Detail Main Responsive Grid Layout */}
-      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`} style={{ display: 'grid', gridTemplateColumns: selectedClient ? '1fr 380px' : '1fr', gap: 20 }}>
+      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`}>
 
         {/* LEFT PANEL (Master Panel - Client Cards & Search) */}
         <div className="clientes-master-col">
@@ -706,20 +706,30 @@ export function Clientes() {
 
         {/* RIGHT PANEL (Detail Drawer - Selected Client) */}
         {selectedClient && (
-          <div className="card" style={{ padding: 20, alignSelf: 'start', position: 'sticky', top: 20 }}>
-            {/* Header / Action Bar de Detalle: Editar Cliente */}
+          <div className="card clientes-detail-card" style={{ padding: 20 }}>
+            {/* Header / Action Bar de Detalle: Editar Cliente + Cerrar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon name="user" size={15} style={{ color: 'var(--accent)' }} />
                 <span>Perfil de Cliente</span>
               </div>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => handleOpenEditModal(selectedClient)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <Icon name="edit" size={12} /> Editar
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => handleOpenEditModal(selectedClient)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Icon name="edit" size={12} /> Editar
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setSelectedClientId(null)}
+                  title="Cerrar detalle"
+                  style={{ padding: '4px 8px', color: 'var(--text-3)' }}
+                >
+                  <Icon name="x" size={14} />
+                </button>
+              </div>
             </div>
 
             {/* Section 1: DATOS FISCALES Y COMERCIALES */}

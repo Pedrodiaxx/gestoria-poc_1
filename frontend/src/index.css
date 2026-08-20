@@ -2492,5 +2492,34 @@ select.form-control { cursor: pointer; }
   }
 }
 
+/* Clientes Responsive Layout (Mobile & Desktop) */
+.clientes-main-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
 
+@media (min-width: 1024px) {
+  .clientes-main-layout.has-detail {
+    grid-template-columns: 1fr 380px;
+  }
+  .clientes-detail-card {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
+}
 
+@media (max-width: 1023px) {
+  .clientes-main-layout.has-detail {
+    grid-template-columns: 1fr;
+  }
+  .clientes-detail-card {
+    position: static !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    margin-top: 20px;
+  }
+}
