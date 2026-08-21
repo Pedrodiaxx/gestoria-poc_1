@@ -1,28 +1,6 @@
-import { useEffect } from 'react';
-import { fetchProyectos, createProyecto, updateProyecto, deleteProyecto } from '../services/proyectosService';
+import { createProyecto, updateProyecto, deleteProyecto } from '../services/proyectosService';
 
-export function useProyectos(setProyectos, currentSession) {
-  useEffect(() => {
-    if (!setProyectos) return;
-    const cargarProyectos = async () => {
-      try {
-        const queryParams = {};
-        if (currentSession?.clienteId) queryParams.clienteId = currentSession.clienteId;
-        if (currentSession?.rol) queryParams.rol = currentSession.rol;
-
-        const datosApi = await fetchProyectos(queryParams);
-        if (datosApi && datosApi.length > 0) {
-          setProyectos(datosApi);
-        } else {
-          setProyectos(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los proyectos:", error);
-      }
-    };
-    cargarProyectos();
-  }, [setProyectos, currentSession]);
-
+export function useProyectos(setProyectos) {
   const crearProyecto = async (datosParaBackend) => {
     try {
       const proyectoCreado = await createProyecto(datosParaBackend);
@@ -36,8 +14,12 @@ export function useProyectos(setProyectos, currentSession) {
   const actualizarProyecto = async (id, datosParaBackend) => {
     try {
       const proyectoActualizado = await updateProyecto(id, datosParaBackend);
-      if (setProyectos) {
-        setProyectos(prev => prev.map(p => p.idNumerico === id ? proyectoActualizado : p));
+      if (setProyectos && proyectoActualizado) {
+        setProyectos(prev => (Array.isArray(prev) ? prev : []).map(p =>
+          (p.idNumerico === id || p.id === proyectoActualizado.id || p.id === `PRY-${String(id).padStart(3, '0')}` || p.id === id)
+            ? proyectoActualizado
+            : p
+        ));
       }
       return proyectoActualizado;
     } catch (error) {

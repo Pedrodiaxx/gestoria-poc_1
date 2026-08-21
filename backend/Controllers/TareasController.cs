@@ -18,9 +18,9 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int? clienteId, [FromQuery] string? rol)
         {
-            var resultado = await _service.GetAllAsync();
+            var resultado = await _service.GetAllAsync(clienteId, rol);
             return Ok(resultado);
         }
 

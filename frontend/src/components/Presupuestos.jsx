@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppContext } from '../core/context';
 import Icon from './common/Icon';
 import { money, EQUIPO } from '../data/mockData';
 import { usePresupuestos } from '../hooks/usePresupuestos';
 import { useTareas } from '../hooks/useTareas';
 import Swal from 'sweetalert2';
+import { descargarPresupuestoPDF } from '../utils/pdfExporter';
 
 const hoy = new Date();
 const fmt = (d) => d.toISOString().split('T')[0];
@@ -118,9 +119,11 @@ function ConceptBuilder({ catalog, onAddConcept, equipo }) {
 
   return (
     <div className="card" style={{ marginBottom: 20, padding: 20, border: '1px solid var(--border)', background: 'var(--surface2)' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
-        <Icon name="plus" size={16} style={{ color: 'var(--accent)' }} />
-        <span>Agregar Conceptos al Presupuesto</span>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', color: 'var(--text)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="plus" size={16} style={{ color: 'var(--accent)' }} />
+          <span>Agregar Conceptos al Presupuesto</span>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
@@ -265,6 +268,37 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   }, {});
   const otherItems = conceptos.filter(c => !STAGES.includes(c.etapa));
 
+  // Ordenar todos los conceptos según el orden de presentación por etapas
+  const orderedConcepts = [];
+  STAGES.forEach(stage => {
+    orderedConcepts.push(...(conceptsByStage[stage] || []));
+  });
+  orderedConcepts.push(...otherItems);
+
+  // Mapa por referencia de objeto JS de números correlativos globales (1..N) y notas / observaciones para la simbología
+  const conceptGlobalNoMap = new Map();
+  const conceptNoteMap = new Map();
+  const footnotesList = [];
+  let noteCounter = 1;
+
+  orderedConcepts.forEach((c, idx) => {
+    const globalNo = idx + 1;
+    conceptGlobalNoMap.set(c, globalNo);
+
+    const com = (c.comentarios || c.observaciones || '').trim();
+    if (com && com !== '—' && com !== '-') {
+      const noteTag = `NOTA ${noteCounter}`;
+      conceptNoteMap.set(c, noteTag);
+      footnotesList.push({
+        tag: noteTag,
+        conceptoNo: globalNo,
+        conceptoNombre: c.concepto || c.descripcion || '',
+        texto: com
+      });
+      noteCounter++;
+    }
+  });
+
   const renderStageSection = (stageName, items) => {
     if (items.length === 0) return null;
 
@@ -282,11 +316,12 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
           </td>
         </tr>
 
-        {items.map((c) => {
+        {items.map((c, idx) => {
+          const displayNo = conceptGlobalNoMap.get(c) || (idx + 1);
           if (editable) {
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
-                <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold' }}>{c.no}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold' }}>{displayNo}</td>
                 <td style={{ padding: '10px 8px' }}>
                   <textarea className="form-control" rows={2} style={{ padding: '6px', fontSize: '13px', width: '100%' }} value={c.concepto} onChange={e => updateConcept(c.id, 'concepto', e.target.value)} />
                 </td>
@@ -325,13 +360,20 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
             );
           } else {
             const assigned = EQUIPO.find(eq => eq.id === c.empleadoAsignadoId);
+            const noteTag = conceptNoteMap.get(c);
             return (
               <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}>
-                <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: 'var(--text-3)' }}>{c.no}</td>
-                <td style={{ padding: '12px 10px', fontWeight: '500', fontSize: '13px' }}>{c.concepto}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: 'var(--text-3)' }}>{displayNo}</td>
+                <td style={{ padding: '12px 10px', fontWeight: '600', fontSize: '13.5px', color: 'var(--text)' }}>{c.concepto}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'center' }}><span className="badge badge-gray">{c.unidad}</span></td>
-                <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '600' }}>{money(c.honorarios)}</td>
-                <td style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-2)', whiteSpace: 'pre-line' }}>{c.comentarios || '—'}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono', fontWeight: '700', fontSize: '13.5px' }}>{money(c.honorarios)}</td>
+                <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                  {noteTag ? (
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '11px', fontWeight: 700, color: 'var(--text-2)' }}>{noteTag}</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-3)' }}>—</span>
+                  )}
+                </td>
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono' }}>{c.pagoDerechos > 0 ? money(c.pagoDerechos) : '$ -'}</td>
                 <td style={{ padding: '12px 10px', textAlign: 'right', fontFamily: 'DM Mono' }}>{c.extra > 0 ? money(c.extra) : '$ -'}</td>
                 <td style={{ padding: '12px 10px' }}>
@@ -357,9 +399,9 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
           <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: 'DM Mono', color: 'var(--accent)', fontSize: '12px' }}>
             {money(sumHono)}
           </td>
-          <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--amber)', fontWeight: '700' }}>
+          <td style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--amber)', fontWeight: '700', textAlign: 'center' }}>
             {editable ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                 <span style={{ fontSize: 11, fontWeight: 'bold' }}>DURACIÓN DE ETAPA:</span>
                 <input className="form-control" style={{ padding: '4px 8px', fontSize: '12px', width: 220 }} placeholder="Ej: 3 meses" value={infoAdicional[durationKey] || ''} onChange={e => onInfoAdicionalChange(durationKey, e.target.value)} />
               </div>
@@ -380,134 +422,176 @@ function TablaConceptos({ conceptos = [], onChange, editable = false, infoAdicio
   };
 
   return (
-    <div style={{ overflowX: 'auto', marginBottom: 20, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)' }}>
-        <thead>
-          <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
-            <th style={{ padding: '12px 10px', textAlign: 'center', width: '4%' }}>No.</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '38%' }}>Concepto / Descripción</th>
-            <th style={{ padding: '12px 10px', textAlign: 'center', width: '8%' }}>Unidad</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Honorarios</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '20%' }}>Comentarios</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Derechos</th>
-            <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Extra</th>
-            <th style={{ padding: '12px 10px', textAlign: 'left', width: '10%' }}>Asignación</th>
-            {editable && <th style={{ width: '4%' }}></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {STAGES.map(stage => renderStageSection(stage, conceptsByStage[stage]))}
-          {otherItems.length > 0 && renderStageSection("Otros", otherItems)}
-          {conceptos.length === 0 && (
-            <tr>
-              <td colSpan="9" style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontStyle: 'italic' }}>
-                No hay conceptos agregados a este presupuesto. Utiliza el buscador superior para agregar conceptos.
-              </td>
+    <div>
+      <div className="w-full overflow-x-auto rounded-lg border border-slate-200" style={{ marginBottom: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: 'var(--surface)', minWidth: '900px' }}>
+          <thead>
+            <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border-strong)', textTransform: 'uppercase' }}>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '4%' }}>No.</th>
+              <th style={{ padding: '12px 10px', textAlign: 'left', width: '38%' }}>Concepto / Descripción</th>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '8%' }}>Unidad</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Honorarios</th>
+              <th style={{ padding: '12px 10px', textAlign: 'center', width: '12%' }}>Comentarios</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Derechos</th>
+              <th style={{ padding: '12px 10px', textAlign: 'right', width: '10%' }}>Extra</th>
+              <th style={{ padding: '12px 10px', textAlign: 'left', width: '8%' }}>Asignación</th>
+              {editable && <th style={{ width: '4%' }}></th>}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {STAGES.map(stage => renderStageSection(stage, conceptsByStage[stage]))}
+            {otherItems.length > 0 && renderStageSection("Otros", otherItems)}
+            {conceptos.length === 0 && (
+              <tr>
+                <td colSpan="9" style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontStyle: 'italic' }}>
+                  No hay conceptos agregados a este presupuesto. Utiliza el buscador superior para agregar conceptos.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend for concept notes */}
+      {footnotesList.length > 0 && !editable && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 18px', marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 6, letterSpacing: '0.4px' }}>
+            Notas Complementarias y Observaciones
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+            {footnotesList.map(fn => (
+              <div key={fn.tag} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '11px', fontWeight: 800, color: 'var(--text)', flexShrink: 0 }}>{fn.tag}</span>
+                <span style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>
+                  <strong style={{ color: 'var(--text)' }}>Item {fn.conceptoNo} ({fn.conceptoNombre}):</strong> {fn.texto}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// ─── HELPER FUNCTION FOR TITLE CASE ─────────────────────────────────────────
+function toTitleCase(str) {
+  if (!str) return '';
+
+  // 1. Convertir todo a minúsculas
+  let formatted = str.toLowerCase();
+
+  // 2. Capitalizar la primera letra de cada palabra (soporta á, é, í, ó, ú, ñ)
+  formatted = formatted.replace(/(?:^|\s|\/|-)(\p{L})/gu, (match, letter) => {
+    return match.replace(letter, letter.toUpperCase());
+  });
+
+  // 3. Reglas especiales para Siglas y Acrónimos entre paréntesis
+  // Mantiene (AI), (ATC), (AR), (PDUM), (ZCO) totalmente en MAYÚSCULAS
+  formatted = formatted.replace(/\(([^)]+)\)/g, (match, p1) => `(${p1.toUpperCase()})`);
+
+  // 4. Preposiciones y conectores comunes en minúsculas si no son la primera palabra
+  const preposiciones = ['De', 'Del', 'Y', 'En', 'Para', 'Con', 'O', 'A'];
+  preposiciones.forEach((prep) => {
+    const regex = new RegExp(`\\b${prep}\\b`, 'g');
+    formatted = formatted.replace(regex, prep.toLowerCase());
+  });
+
+  // Asegurar que la primera letra del string completo SIEMPRE quede en Mayúscula
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 // ─── SPECIFICATIONS CARD COMPONENT ──────────────────────────────────────────
 function FichaDatosPredio({ b, editable = false, onFieldChange }) {
+  const inputStyle = { fontSize: '12px', padding: '5px 10px', height: '34px' };
+  const labelStyle = { fontSize: '10px', fontWeight: 700, color: 'var(--text-3)', marginBottom: '4px', letterSpacing: '0.2px' };
+
   return (
-    <div className="card" style={{ marginBottom: 20, padding: 20, border: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-        <Icon name="list" size={16} style={{ color: 'var(--accent)' }} />
-        <span>Ficha de Metadatos del Predio y Parámetros Urbanos</span>
+    <div className="card" style={{ marginBottom: 16, padding: '14px 18px', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+        <Icon name="list" size={15} style={{ color: 'var(--accent)' }} />
+        <span>Datos del Predio y Parametros Urbanos</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>PROPIETARIO / CLIENTE</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px 12px' }}>
+        <div style={{ gridColumn: 'span 2' }}>
+          <label className="form-label" style={labelStyle}>PROPIETARIO / CLIENTE</label>
           {editable ? (
-            <input className="form-control" value={b.propietario} onChange={e => onFieldChange('propietario', e.target.value)} placeholder="Ej: Santos Lugo" />
+            <input className="form-control" style={inputStyle} value={b.propietario} onChange={e => onFieldChange('propietario', e.target.value)} placeholder="Ej: Santos Lugo" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.propietario || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.propietario) || '—'}</div>
           )}
         </div>
 
         <div style={{ gridColumn: 'span 2' }}>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>DIRECCIÓN COMPLETA</label>
+          <label className="form-label" style={labelStyle}>DIRECCIÓN COMPLETA</label>
           {editable ? (
-            <input className="form-control" value={b.direccion} onChange={e => onFieldChange('direccion', e.target.value)} placeholder="Ej: Tablajes 20690 Colonia Centro" />
+            <input className="form-control" style={inputStyle} value={b.direccion} onChange={e => onFieldChange('direccion', e.target.value)} placeholder="Ej: Tablajes 20690 Colonia Centro" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.direccion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.direccion) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>USO DE SUELO AUTORIZADO</label>
+          <label className="form-label" style={labelStyle}>USO DE SUELO AUTORIZADO</label>
           {editable ? (
-            <input className="form-control" value={b.uso} onChange={e => onFieldChange('uso', e.target.value)} placeholder="Ej: Tienda de Abarrotes" />
+            <input className="form-control" style={inputStyle} value={b.uso} onChange={e => onFieldChange('uso', e.target.value)} placeholder="Ej: Tienda de Abarrotes" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.uso || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.uso) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>CLASIFICACIÓN DE IMPACTO</label>
+          <label className="form-label" style={labelStyle}>CLASIFICACIÓN DE IMPACTO</label>
           {editable ? (
-            <input className="form-control" value={b.clasificacion} onChange={e => onFieldChange('clasificacion', e.target.value)} placeholder="Ej: Bajo Impacto" />
+            <input className="form-control" style={inputStyle} value={b.clasificacion} onChange={e => onFieldChange('clasificacion', e.target.value)} placeholder="Ej: Bajo Impacto" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.clasificacion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.clasificacion) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>ZONA PRIMARIA (PDUM)</label>
+          <label className="form-label" style={labelStyle}>ZONA PRIMARIA (PDUM)</label>
           {editable ? (
-            <input className="form-control" value={b.zonaPrimaria} onChange={e => onFieldChange('zonaPrimaria', e.target.value)} placeholder="Ej: 2" />
+            <input className="form-control" style={inputStyle} value={b.zonaPrimaria} onChange={e => onFieldChange('zonaPrimaria', e.target.value)} placeholder="Ej: 2" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.zonaPrimaria || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.zonaPrimaria) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>TIPO DE VIALIDAD (PDUM)</label>
+          <label className="form-label" style={labelStyle}>TIPO DE VIALIDAD (PDUM)</label>
           {editable ? (
-            <input className="form-control" value={b.tipoVialidad} onChange={e => onFieldChange('tipoVialidad', e.target.value)} placeholder="Ej: Local" />
+            <input className="form-control" style={inputStyle} value={b.tipoVialidad} onChange={e => onFieldChange('tipoVialidad', e.target.value)} placeholder="Ej: Local" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.tipoVialidad || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{toTitleCase(b.tipoVialidad) || '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE PREDIO (M2)</label>
+          <label className="form-label" style={labelStyle}>SUPERFICIE PREDIO (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supPredio} onChange={e => onFieldChange('supPredio', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supPredio} onChange={e => onFieldChange('supPredio', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supPredio ? `${parseFloat(b.supPredio).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supPredio ? `${parseFloat(b.supPredio).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE CONST. EXISTENTE (M2)</label>
+          <label className="form-label" style={labelStyle}>SUP. CONST. EXISTENTE (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supConstExistente} onChange={e => onFieldChange('supConstExistente', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supConstExistente} onChange={e => onFieldChange('supConstExistente', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supConstExistente ? `${parseFloat(b.supConstExistente).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '0.00 M2'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Mono' }}>{b.supConstExistente ? `${parseFloat(b.supConstExistente).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '0.00 M2'}</div>
           )}
         </div>
 
         <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>SUPERFICIE A INTERVENIR (M2)</label>
+          <label className="form-label" style={labelStyle}>SUPERFICIE A INTERVENIR (M2)</label>
           {editable ? (
-            <input type="number" className="form-control" value={b.supIntervenir} onChange={e => onFieldChange('supIntervenir', e.target.value)} placeholder="0.00" />
+            <input type="number" className="form-control" style={inputStyle} value={b.supIntervenir} onChange={e => onFieldChange('supIntervenir', e.target.value)} placeholder="0.00" />
           ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', fontFamily: 'DM Mono' }}>{b.supIntervenir ? `${parseFloat(b.supIntervenir).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
-          )}
-        </div>
-
-        <div>
-          <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>ESTIMACIÓN</label>
-          {editable ? (
-            <input className="form-control" value={b.estimacion} onChange={e => onFieldChange('estimacion', e.target.value)} placeholder="Estimación" />
-          ) : (
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{b.estimacion || '—'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', fontFamily: 'DM Mono' }}>{b.supIntervenir ? `${parseFloat(b.supIntervenir).toLocaleString('es-MX', { minimumFractionDigits: 2 })} M2` : '—'}</div>
           )}
         </div>
       </div>
@@ -515,9 +599,40 @@ function FichaDatosPredio({ b, editable = false, onFieldChange }) {
   );
 }
 
+const AUTOSAVE_KEY = 'giu_presupuesto_en_progreso';
+
+const defaultInfoAdicional = {
+  duracionUsoSuelo: "3 meses",
+  duracionLicenciaConst: "6 meses",
+  duracionTerminacionObra: "4 meses a partir de la finalización de obra",
+  duracionLicenciaFunc: "3 meses",
+  documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
+  documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
+  derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
+  formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
+  exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
+  notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
+  firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
+  firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
+  firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
+};
+
 // ─── FORM NUEVO PRESUPUESTO COMPONENT ─────────────────────────────────────────
-function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId }) {
+function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, preselectedProjectId, preloadedConcepts }) {
   const { conceptos: catalog } = useAppContext();
+
+  // Limpieza explícita de cualquier borrador en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("proyecto_draft");
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("presupuesto_draft");
+    localStorage.removeItem("giu_presupuesto_en_progreso");
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("tarea_draft");
+    localStorage.removeItem("catalogo_draft");
+  }, []);
+
+  // Initialize state cleanly
   const [proyectoId, setProyectoId] = useState(preselectedProjectId || '');
   const [titulo, setTitulo] = useState('');
   const [version, setVersion] = useState('1.00');
@@ -532,25 +647,10 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
   const [clasificacion, setClasificacion] = useState('');
   const [zonaPrimaria, setZonaPrimaria] = useState('');
   const [tipoVialidad, setTipoVialidad] = useState('');
-  const [estimacion, setEstimacion] = useState('');
   const [costoDirectoConstruccion, setCostoDirectoConstruccion] = useState('');
 
   // Auxiliary information JSON
-  const [infoAdicional, setInfoAdicional] = useState({
-    duracionUsoSuelo: "3 meses",
-    duracionLicenciaConst: "6 meses",
-    duracionTerminacionObra: "4 meses a partir de la finalización de obra",
-    duracionLicenciaFunc: "3 meses",
-    documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
-    documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
-    derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
-    formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
-    exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
-    notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
-    firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
-    firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
-    firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
-  });
+  const [infoAdicional, setInfoAdicional] = useState({ ...defaultInfoAdicional });
 
   const handleInfoAdicionalChange = (key, val) => {
     setInfoAdicional(prev => ({ ...prev, [key]: val }));
@@ -566,38 +666,74 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     else if (field === 'clasificacion') setClasificacion(value);
     else if (field === 'zonaPrimaria') setZonaPrimaria(value);
     else if (field === 'tipoVialidad') setTipoVialidad(value);
-    else if (field === 'estimacion') setEstimacion(value);
   };
 
-  const [conceptosList, setConceptosList] = useState([]);
+  const [conceptosList, setConceptosList] = useState(
+    preloadedConcepts && preloadedConcepts.length > 0 ? preloadedConcepts : []
+  );
   const [guardado, setGuardado] = useState(false);
 
-  // Prepopulate title and address if project is selected
+  const handleProyectoChange = (e) => {
+    const selectedId = e.target.value;
+    setProyectoId(selectedId);
+    if (!selectedId) return;
+
+    const valNum = parseInt(selectedId);
+    const proyectoSeleccionado = (proyectos || []).find(p =>
+      p.id === selectedId || p.id === valNum || p.idNumerico === valNum
+    );
+
+    if (proyectoSeleccionado) {
+      if (!titulo) setTitulo('Presupuesto de Gestión');
+
+      const clientObj = (clientes || []).find(c => String(c.id) === String(proyectoSeleccionado.clienteId) || c.id === proyectoSeleccionado.clienteId);
+      const propietarioNombre = clientObj?.nombre || proyectoSeleccionado.cliente?.nombre || proyectoSeleccionado.clienteNombre || '';
+
+      setPropietario(propietarioNombre);
+      setDireccion(proyectoSeleccionado.direccionPrincipal || proyectoSeleccionado.ubicacion || '');
+      setUso(proyectoSeleccionado.usoComplementario || proyectoSeleccionado.usoPrincipal || '');
+      setClasificacion(proyectoSeleccionado.impactoPrincipal || '');
+      setZonaPrimaria(proyectoSeleccionado.zonaPrimaria || '');
+      setTipoVialidad(proyectoSeleccionado.vialidadPrincipal || '');
+    }
+  };
+
+  // Prepopulate title and metadata if project is selected or loaded
   useEffect(() => {
     if (proyectoId) {
-      const selectedProj = proyectos.find(p => p.id === proyectoId);
+      const valNum = parseInt(proyectoId);
+      const selectedProj = (proyectos || []).find(p =>
+        p.id === proyectoId || p.id === valNum || p.idNumerico === valNum
+      );
       if (selectedProj) {
-        setTitulo(`Presupuesto Gestoría — ${selectedProj.nombre}`);
-        setDireccion(selectedProj.ubicacion || '');
-        const client = clientes.find(c => String(c.id) === String(selectedProj.clienteId) || c.id === selectedProj.clienteId);
-        if (client) {
-          setPropietario(client.nombre || '');
-        }
+        if (!titulo) setTitulo('Presupuesto de Gestión');
+        if (!direccion) setDireccion(selectedProj.direccionPrincipal || selectedProj.ubicacion || '');
+
+        const client = (clientes || []).find(c => String(c.id) === String(selectedProj.clienteId) || c.id === selectedProj.clienteId);
+        const propietarioNombre = client?.nombre || selectedProj.cliente?.nombre || selectedProj.clienteNombre || '';
+        if (!propietario) setPropietario(propietarioNombre);
+
+        if (!uso) setUso(selectedProj.usoComplementario || selectedProj.usoPrincipal || '');
+        if (!clasificacion) setClasificacion(selectedProj.impactoPrincipal || '');
+        if (!zonaPrimaria) setZonaPrimaria(selectedProj.zonaPrimaria || '');
+        if (!tipoVialidad) setTipoVialidad(selectedProj.vialidadPrincipal || '');
       }
     }
   }, [proyectoId, proyectos, clientes]);
 
-  const selProyecto = proyectos.find(p => p.id === proyectoId);
-  const cliente = selProyecto ? clientes.find(c => String(c.id) === String(selProyecto.clienteId) || c.id === selProyecto.clienteId) : null;
+  const selProyecto = (proyectos || []).find(p => p.id === proyectoId || p.id === parseInt(proyectoId) || p.idNumerico === parseInt(proyectoId));
+  const cliente = selProyecto ? (clientes || []).find(c => String(c.id) === String(selProyecto.clienteId) || c.id === selProyecto.clienteId) : null;
 
   // Calculators
-  const subtotalHonorarios = conceptosList.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
-  const totalDerechos = conceptosList.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
-  const totalExtras = conceptosList.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
+  const conceptosListSafe = conceptosList || [];
+  const subtotalHonorarios = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
+  const totalDerechos = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
+  const totalExtras = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
 
   const totalGeneral = subtotalHonorarios * 1.16 + totalDerechos + totalExtras;
   const costDirectConstVal = parseFloat(costoDirectoConstruccion) || 0;
-  const pctGestion = costDirectConstVal > 0 ? (totalGeneral / costDirectConstVal) * 100 : 0;
+  const sumaTotalGestion = subtotalHonorarios + totalDerechos + totalExtras;
+  const pctGestion = costDirectConstVal > 0 ? ((sumaTotalGestion / costDirectConstVal) * 100) : 0;
 
   const canSave = proyectoId && titulo.trim() !== '' && version.trim() !== '';
 
@@ -614,11 +750,10 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
     if (!canSave) return;
     const nuevo = {
       proyectoId,
+      titulo,
       version,
       estado: 'Borrador',
-      titulo,
-      fecha: fmt(hoy),
-      clienteId: cliente ? cliente.id : null,
+      fecha: new Date().toISOString().split('T')[0],
       conceptos: conceptosList,
       propietario,
       direccion,
@@ -629,26 +764,94 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       clasificacion,
       zonaPrimaria,
       tipoVialidad,
-      estimacion,
       costoDirectoConstruccion: costDirectConstVal,
       infoAdicionalJson: JSON.stringify(infoAdicional)
     };
-    onGuardar(nuevo);
+    if (onGuardar) onGuardar(nuevo);
+    clearDraft();
     setGuardado(true);
-    setTimeout(() => onCancelar(), 1500);
+    setTimeout(() => { if (onCancelar) onCancelar(); }, 1500);
+  };
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem("proyecto_draft");
+      localStorage.removeItem("cliente_draft");
+      localStorage.removeItem("presupuesto_draft");
+      localStorage.removeItem("giu_presupuesto_en_progreso");
+      localStorage.removeItem("hoja_ruta_draft");
+      localStorage.removeItem("tarea_draft");
+      localStorage.removeItem("catalogo_draft");
+    } catch {
+      // Ignorar errores de localStorage
+    }
+  };
+
+  const handleCancelar = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    clearDraft();
+    if (onCancelar) {
+      onCancelar();
+    }
   };
 
   return (
-    <div style={{ maxWidth: '100%', padding: '0 10px' }}>
+    <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <div className="page-title">Nuevo Presupuesto de Gestoría</div>
-          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-            Crea un presupuesto con el modelo de etapas administrativas para licencias urbanas.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button 
+            type="button"
+            className="btn btn-ghost" 
+            onClick={handleCancelar} 
+            title="Volver a presupuestos"
+            style={{ 
+              padding: '6px 8px', 
+              borderRadius: '6px', 
+              border: '1px solid var(--border)', 
+              background: 'var(--surface)', 
+              color: 'var(--text-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Icon name="arrowleft" size={16} />
+          </button>
+          <div>
+            <div className="page-title">Nuevo Presupuesto de Gestoría</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+              Crea un presupuesto con el modelo de etapas administrativas para licencias urbanas.
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary" onClick={onCancelar}>Volver al Listado</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const borradorObj = {
+              id: 'BORRADOR',
+              titulo: titulo || 'Nuevo Presupuesto',
+              version: version || '1.00',
+              estado: 'Borrador',
+              fecha: new Date().toISOString(),
+              conceptos: conceptosList,
+              propietario,
+              direccion,
+              supPredio,
+              supConstExistente,
+              supIntervenir,
+              uso,
+              clasificacion,
+              zonaPrimaria,
+              tipoVialidad,
+              costoDirectoConstruccion,
+              infoAdicionalJson: JSON.stringify(infoAdicional)
+            };
+            const projVinculado = proyectos.find(p => String(p.id) === String(proyectoId));
+            descargarPresupuestoPDF(borradorObj, projVinculado);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="download" size={14} /> Descargar PDF
+          </button>
           {guardado ? (
             <div className="alert alert-green" style={{ padding: '8px 16px', margin: 0 }}><Icon name="check" size={14} /> Presupuesto Guardado</div>
           ) : (
@@ -663,18 +866,39 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       <div className="card" style={{ marginBottom: 20, padding: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 0.5fr', gap: 16 }}>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Proyecto Vinculado *</label>
-            <select className="form-control" value={proyectoId} onChange={e => setProyectoId(e.target.value)}>
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Proyecto Vinculado
+            </label>
+            <select className="form-control" value={proyectoId} onChange={handleProyectoChange}>
               <option value="">— Selecciona un proyecto para importar datos —</option>
               {proyectos.map(p => <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Título del Presupuesto *</label>
-            <input className="form-control" placeholder="Ej: Presupuesto Base de Gestoría" value={titulo} onChange={e => setTitulo(e.target.value)} />
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Título del Presupuesto
+            </label>
+            <select
+              name="tituloPresupuesto"
+              className="form-control"
+              value={titulo}
+              onChange={e => setTitulo(e.target.value)}
+            >
+              <option value="" disabled>-- Selecciona el Título del Presupuesto --</option>
+              <option value="Presupuesto de Gestión">Presupuesto de Gestión</option>
+              <option value="Presupuesto de Trámites">Presupuesto de Trámites</option>
+              <option value="Presupuesto de Estudios">Presupuesto de Estudios</option>
+              <option value="Presupuesto de Proyecto">Presupuesto de Proyecto</option>
+              <option value="Presupuesto de Gestión, Trámites y Estudios">Presupuesto de Gestión, Trámites y Estudios</option>
+              {titulo && !["Presupuesto de Gestión", "Presupuesto de Trámites", "Presupuesto de Estudios", "Presupuesto de Proyecto", "Presupuesto de Gestión, Trámites y Estudios"].includes(titulo) && (
+                <option value={titulo}>{titulo}</option>
+              )}
+            </select>
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 700 }}>Versión *</label>
+            <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+              Versión
+            </label>
             <input className="form-control" style={{ fontFamily: 'DM Mono', fontWeight: 'bold', textAlign: 'center' }} value={version} onChange={e => setVersion(e.target.value)} />
           </div>
         </div>
@@ -682,7 +906,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
 
       {/* Property metadata */}
       <FichaDatosPredio
-        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion }}
+        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad }}
         editable={true}
         onFieldChange={handleFieldChange}
       />
@@ -710,7 +934,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       </div>
 
       {/* Financial & notes grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 20, marginBottom: 20 }}>
+      <div className="two-col" style={{ gap: 20, marginBottom: 20 }}>
         {/* Left: Summary totals & Construction Cost */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
@@ -748,7 +972,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN</label>
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN (OPCIONAL)</label>
             <input
               type="number"
               className="form-control"
@@ -760,9 +984,9 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           </div>
 
           {costDirectConstVal > 0 && (
-            <div style={{ background: 'var(--accent-light)', color: 'var(--accent-text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 700 }}>% GESTIÓN VS COSTO CONST.</span>
-              <span className="mono" style={{ fontSize: 15, fontWeight: 800 }}>{pctGestion.toFixed(3)}%</span>
+            <div style={{ background: 'var(--surface2)', color: 'var(--text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', borderLeft: '4px solid var(--accent)', marginTop: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.3px', color: 'var(--text-2)' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
+              <span className="mono" style={{ fontSize: 15, fontWeight: 900, color: 'var(--accent)' }}>{pctGestion.toFixed(3)}%</span>
             </div>
           )}
         </div>
@@ -772,30 +996,30 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
-              <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
+          <div className="terms-grid">
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS LEGALES NECESARIOS</label>
-              <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS LEGALES NECESARIOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DERECHOS Y GASTOS</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DERECHOS Y GASTOS</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>FORMA DE PAGO</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>FORMA DE PAGO</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>LOS TRABAJOS NO INCLUYEN</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>LOS TRABAJOS NO INCLUYEN</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>NOTAS ADICIONALES</label>
-              <textarea style={flatTextarea} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>NOTAS ADICIONALES</label>
+              <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
             </div>
           </div>
         </div>
@@ -806,7 +1030,7 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
           Bloque de Firmas
         </div>
-        <div style={{ display: 'inline-grid', gridTemplateColumns: '1fr', gap: 6, width: 300, margin: '10px auto 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, width: '100%', maxWidth: 360, margin: '10px auto 0', boxSizing: 'border-box' }}>
           <input className="form-control" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 12 }} value={infoAdicional.firmadoPor} onChange={e => handleInfoAdicionalChange('firmadoPor', e.target.value)} placeholder="Nombre del Responsable" />
           <input className="form-control" style={{ textAlign: 'center', fontSize: 11 }} value={infoAdicional.firmadoCargo} onChange={e => handleInfoAdicionalChange('firmadoCargo', e.target.value)} placeholder="Cargo (Ej: Director General)" />
           <input className="form-control" style={{ textAlign: 'center', fontSize: 10, fontFamily: 'DM Mono' }} value={infoAdicional.firmadoCedula} onChange={e => handleInfoAdicionalChange('firmadoCedula', e.target.value)} placeholder="Registro / Cédula Profesional" />
@@ -901,11 +1125,31 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
     setTitulo(p.titulo || '');
     setVersion(p.version || '');
 
+    const defaultInfo = {
+      duracionUsoSuelo: "3 meses",
+      duracionLicenciaConst: "6 meses",
+      duracionTerminacionObra: "4 meses a partir de la finalización de obra",
+      duracionLicenciaFunc: "3 meses",
+      documentosTecnicos: "PROYECTO ARQUITECTONICO, PROYECTOS DE INGENIERIAS ESTRUCTURAL, ELECTRICA MEDIA Y BAJA TENSIÓN, HIDROSANITARIA, ETC., MEMORIAS RESPONSIVAS DE CADA INGENIERIA Y FIRMAS DE RESPONSIVA POR ESPECIALIDAD ESTATAL Y FEDERAL",
+      documentosLegales: "ESCRITURAS DE PROPIEDAD, ACTUALIZACIONES CATASTRALES, IMPUESTO PREDIAL 2026, CERTIFICACIONES NOTARIALES DE DOCUMENTOS, CEDULAS, PLANOS CATASTRALES, IDENTIFICACIONES DE PROPIETARIOS Y ESCRITURA DE APODERADO O REPRESENTANTE LEGAL.",
+      derechosGastos: "CORREN POR CUENTA UNICA Y EXCLUSIVA DE LOS PROMOVENTES DEL PROYECTO, EN NINGUN CASO EL GESTOR SE HARÁ CARGO DE PAGAR LOS DERECHOS, LICENCIAS O PERMISOS.",
+      formaPago: "50% DE ANTICIPO, SALDOS DE 50% POR EVENTO CONCLUIDO. POR ETAPA",
+      exclusiones: "MULTAS O CLAUSURAS DURANTE LAS GESTIONES DERIVADOS DE DECISIONES DE LOS PROPIETARIOS O CONSTRUCTOR DEL PROYECTO, MODIFICACIONES A PROYECTO POR INCUMPLIR REGLAMENTO DE CONSTRUCCIONES, MODIFICACIONES A PLANOS POR CAMBIOS EN OBRA.",
+      notas: "CUALQUIER OTRA GESTIÓN, TRÁMITE O ESTUDIO DERIVADO DE LAS GESTIONES QUE NO ESTÉ ENLISTADO EN ESTE PRESUPUESTO SE COTIZARÁ POR SEPARADO",
+      firmadoPor: "ARQ. GABRIEL LÓPEZ CERVERA",
+      firmadoCargo: "DIRECTOR / GESTIÓN INTEGRAL URBANA",
+      firmadoCedula: "CEDULA PROFESIONAL 3770298 / P.C.M. L-055 / DC24-L010"
+    };
+
+    let parsed = {};
     if (p.infoAdicionalJson) {
       try {
-        setInfoAdicional(JSON.parse(p.infoAdicionalJson));
+        parsed = typeof p.infoAdicionalJson === 'string' ? JSON.parse(p.infoAdicionalJson) : p.infoAdicionalJson;
       } catch (e) { }
+    } else if (p.infoAdicional && typeof p.infoAdicional === 'object') {
+      parsed = p.infoAdicional;
     }
+    setInfoAdicional({ ...defaultInfo, ...parsed });
     setIsEdited(false);
   }, [p]);
 
@@ -947,35 +1191,80 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   };
 
   // Calculations
-  const subtotalHonorarios = conceptosList.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
-  const totalDerechos = conceptosList.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
-  const totalExtras = conceptosList.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
+  const conceptosListSafe = conceptosList || [];
+  const subtotalHonorarios = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.honorarios) || 0), 0);
+  const totalDerechos = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.pagoDerechos) || 0), 0);
+  const totalExtras = conceptosListSafe.reduce((acc, c) => acc + (parseFloat(c.extra) || 0), 0);
 
   const totalGeneral = subtotalHonorarios * 1.16 + totalDerechos + totalExtras;
   const costDirectConstVal = parseFloat(costoDirectoConstruccion) || 0;
-  const pctGestion = costDirectConstVal > 0 ? (totalGeneral / costDirectConstVal) * 100 : 0;
+  const sumaTotalGestion = subtotalHonorarios + totalDerechos + totalExtras;
+  const pctGestion = costDirectConstVal > 0 ? ((sumaTotalGestion / costDirectConstVal) * 100) : 0;
 
   const isBorrador = p.estado === 'Borrador';
 
   return (
-    <div style={{ maxWidth: '100%', padding: '0 10px' }}>
+    <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <div className="page-title" style={{ fontSize: 19 }}>Detalle de Presupuesto: {titulo}</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="badge badge-gray">{p.id}</span>
-            {proj && <span className="badge badge-blue">{proj.nombre}</span>}
-            <span style={{
-              fontSize: 11,
-              background: p.estado === 'Aprobado' ? 'var(--accent-light)' : p.estado === 'Enviado' ? 'var(--blue-light)' : p.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
-              color: p.estado === 'Aprobado' ? 'var(--accent-text)' : p.estado === 'Enviado' ? 'var(--blue)' : p.estado === 'Rechazado' ? '#C0392B' : 'var(--text-3)',
-              padding: '2px 8px', borderRadius: 10, fontWeight: 600
-            }}>{p.estado}</span>
-            {p.isBaseline && <span className="badge badge-green">Línea Base Activa</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button 
+            type="button"
+            className="btn btn-ghost" 
+            onClick={onCerrar} 
+            title="Volver a presupuestos"
+            style={{ 
+              padding: '6px 8px', 
+              borderRadius: '6px', 
+              border: '1px solid var(--border)', 
+              background: 'var(--surface)', 
+              color: 'var(--text-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Icon name="arrowleft" size={16} />
+          </button>
+          <div>
+            <div className="page-title" style={{ fontSize: 19 }}>Detalle de Presupuesto: {titulo}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="badge badge-gray">{p.id}</span>
+              {proj && <span className="badge badge-blue">{proj.nombre}</span>}
+              <span style={{
+                fontSize: 11,
+                background: p.estado === 'Aprobado' ? 'var(--accent-light)' : p.estado === 'Enviado' ? 'var(--blue-light)' : p.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
+                color: p.estado === 'Aprobado' ? 'var(--accent-text)' : p.estado === 'Enviado' ? 'var(--blue)' : p.estado === 'Rechazado' ? '#C0392B' : 'var(--text-3)',
+                padding: '2px 8px', borderRadius: 10, fontWeight: 600
+              }}>{p.estado}</span>
+              {p.isBaseline && <span className="badge badge-green">Línea Base Activa</span>}
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary" onClick={onCerrar}>Volver al Listado</button>
+          <button className="btn btn-secondary" onClick={() => {
+            const presupuestoActivo = {
+              ...p,
+              titulo,
+              version,
+              conceptos: conceptosList,
+              propietario,
+              direccion,
+              supPredio,
+              supConstExistente,
+              supIntervenir,
+              uso,
+              clasificacion,
+              zonaPrimaria,
+              tipoVialidad,
+              estimacion,
+              costoDirectoConstruccion,
+              infoAdicionalJson: JSON.stringify(infoAdicional)
+            };
+            descargarPresupuestoPDF(presupuestoActivo, proj);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="download" size={14} /> Descargar PDF
+          </button>
           {isEdited && (
             <button className="btn btn-primary" onClick={saveEdits} style={{ background: '#B87A0A', color: '#fff' }}>
               <Icon name="check" size={14} /> Guardar Cambios
@@ -984,42 +1273,46 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         </div>
       </div>
 
-      {/* Actions Toolbar */}
-      <div className="card" style={{ padding: 14, marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>Acciones Disponibles:</span>
+      {/* Actions Toolbar - Executive Modern Clean Layout */}
+      <div className="budget-actions-toolbar">
+        <div className="budget-actions-left">
+          <span className="budget-actions-label">Acciones Disponibles:</span>
+          {p.estado === 'Borrador' && (
+            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
+              <Icon name="send" size={13} /> Enviar al Cliente
+            </button>
+          )}
+
+          {p.estado === 'Enviado' && (
+            <>
+              <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
+                <Icon name="check" size={13} /> Aprobar Presupuesto
+              </button>
+              <button className="btn btn-sm btn-ghost" onClick={() => onCambiarEstatus(p.id, 'Rechazado')} style={{ color: 'var(--red)' }}>
+                <Icon name="x" size={13} /> Rechazar
+              </button>
+            </>
+          )}
+
+          {p.estado === 'Aprobado' && !p.isBaseline && (
+            <button className="btn btn-sm btn-primary" onClick={() => onMarcarBaseline(p.id)} style={{ background: 'var(--accent)', color: '#fff' }}>
+              <Icon name="bookmark" size={13} /> Establecer como Línea Base
+            </button>
+          )}
+
+          {(p.estado === 'Aprobado' || p.estado === 'Enviado' || p.estado === 'Rechazado') && (
+            <button className="btn btn-sm btn-secondary" onClick={() => onAjustar(p)}>
+              <Icon name="plus" size={13} /> Crear Nueva Versión
+            </button>
+          )}
+        </div>
 
         {p.estado === 'Borrador' && (
-          <>
-            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Enviado')}>
-              Enviar al Cliente
+          <div className="budget-actions-right">
+            <button className="btn btn-sm btn-ghost btn-danger-ghost" onClick={() => onEliminar(p.id, p.idNumerico)}>
+              <Icon name="trash" size={13} /> Eliminar Presupuesto
             </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => onEliminar(p.id, p.idNumerico)} style={{ color: 'var(--red)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="trash" size={14} /> Eliminar Presupuesto
-            </button>
-          </>
-        )}
-
-        {p.estado === 'Enviado' && (
-          <>
-            <button className="btn btn-sm btn-primary" onClick={() => onCambiarEstatus(p.id, 'Aprobado')} style={{ background: 'var(--accent)' }}>
-              Aprobar Presupuesto
-            </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => onCambiarEstatus(p.id, 'Rechazado')} style={{ color: 'var(--red)' }}>
-              Rechazar
-            </button>
-          </>
-        )}
-
-        {p.estado === 'Aprobado' && !p.isBaseline && (
-          <button className="btn btn-sm btn-primary" onClick={() => onMarcarBaseline(p.id)} style={{ background: 'var(--accent)', color: '#fff' }}>
-            Establecer como Línea Base
-          </button>
-        )}
-
-        {(p.estado === 'Aprobado' || p.estado === 'Enviado' || p.estado === 'Rechazado') && (
-          <button className="btn btn-sm btn-secondary" onClick={() => onAjustar(p)}>
-            Crear Nueva Versión
-          </button>
+          </div>
         )}
       </div>
 
@@ -1028,11 +1321,30 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <div className="card" style={{ marginBottom: 20, padding: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 700 }}>Título del Presupuesto</label>
-              <input className="form-control" value={titulo} onChange={e => handleFieldChange('titulo', e.target.value)} />
+              <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+                Título del Presupuesto
+              </label>
+              <select
+                name="tituloPresupuesto"
+                className="form-control"
+                value={titulo}
+                onChange={e => handleFieldChange('titulo', e.target.value)}
+              >
+                <option value="" disabled>-- Selecciona el Título del Presupuesto --</option>
+                <option value="Presupuesto de Gestión">Presupuesto de Gestión</option>
+                <option value="Presupuesto de Trámites">Presupuesto de Trámites</option>
+                <option value="Presupuesto de Estudios">Presupuesto de Estudios</option>
+                <option value="Presupuesto de Proyecto">Presupuesto de Proyecto</option>
+                <option value="Presupuesto de Gestión, Trámites y Estudios">Presupuesto de Gestión, Trámites y Estudios</option>
+                {titulo && !["Presupuesto de Gestión", "Presupuesto de Trámites", "Presupuesto de Estudios", "Presupuesto de Proyecto", "Presupuesto de Gestión, Trámites y Estudios"].includes(titulo) && (
+                  <option value={titulo}>{titulo}</option>
+                )}
+              </select>
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 700 }}>Versión</label>
+              <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'block' }}>
+                Versión
+              </label>
               <input className="form-control" style={{ fontFamily: 'DM Mono', fontWeight: 'bold' }} value={version} onChange={e => handleFieldChange('version', e.target.value)} />
             </div>
           </div>
@@ -1041,7 +1353,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
 
       {/* Property metadata card */}
       <FichaDatosPredio
-        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad, estimacion }}
+        b={{ propietario, direccion, supPredio, supConstExistente, supIntervenir, uso, clasificacion, zonaPrimaria, tipoVialidad }}
         editable={isBorrador}
         onFieldChange={handleFieldChange}
       />
@@ -1070,7 +1382,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
       </div>
 
       {/* Financial & notes grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: 20, marginBottom: 20 }}>
+      <div className="two-col" style={{ gap: 20, marginBottom: 20 }}>
         {/* Left: Summary totals */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
@@ -1108,7 +1420,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN</label>
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>COSTO DIRECTO DE CONSTRUCCIÓN (OPCIONAL)</label>
             {isBorrador ? (
               <input
                 type="number"
@@ -1119,14 +1431,14 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
                 placeholder="Ej: 77400000"
               />
             ) : (
-              <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'DM Mono' }}>{money(costDirectConstVal)}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'DM Mono' }}>{costDirectConstVal > 0 ? money(costDirectConstVal) : '—'}</div>
             )}
           </div>
 
           {costDirectConstVal > 0 && (
-            <div style={{ background: 'var(--accent-light)', color: 'var(--accent-text)', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 700 }}>% GESTIÓN VS COSTO CONST.</span>
-              <span className="mono" style={{ fontSize: 15, fontWeight: 800 }}>{pctGestion.toFixed(3)}%</span>
+            <div style={{ background: '#ffff00', color: '#000000', padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1.5px solid #000000', marginTop: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>PORCENTAJE DE GESTIÓN VS. COSTO DIRECTO DE CONSTRUCCIÓN</span>
+              <span className="mono" style={{ fontSize: 15, fontWeight: 900 }}>{pctGestion.toFixed(3)}%</span>
             </div>
           )}
         </div>
@@ -1136,51 +1448,51 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
             Términos y Cláusulas del Presupuesto
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
+          <div className="terms-grid">
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS TÉCNICOS NECESARIOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosTecnicos} onChange={e => handleInfoAdicionalChange('documentosTecnicos', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.documentosTecnicos}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DOCUMENTOS LEGALES NECESARIOS</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DOCUMENTOS LEGALES NECESARIOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 70, resize: 'vertical' }} rows={3} value={infoAdicional.documentosLegales} onChange={e => handleInfoAdicionalChange('documentosLegales', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.documentosLegales}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>DERECHOS Y GASTOS</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>DERECHOS Y GASTOS</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.derechosGastos} onChange={e => handleInfoAdicionalChange('derechosGastos', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.derechosGastos}</p>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>FORMA DE PAGO</label>
+            <div className="terms-field">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>FORMA DE PAGO</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.formaPago} onChange={e => handleInfoAdicionalChange('formaPago', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.formaPago}</p>
               )}
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>LOS TRABAJOS NO INCLUYEN</label>
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>LOS TRABAJOS NO INCLUYEN</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.exclusiones} onChange={e => handleInfoAdicionalChange('exclusiones', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.exclusiones}</p>
               )}
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>NOTAS ADICIONALES</label>
+            <div className="terms-field terms-field-full">
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>NOTAS ADICIONALES</label>
               {isBorrador ? (
-                <textarea style={flatTextarea} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
+                <textarea className="form-control" style={{ width: '100%', minHeight: 50, resize: 'vertical' }} rows={2} value={infoAdicional.notas} onChange={e => handleInfoAdicionalChange('notas', e.target.value)} />
               ) : (
                 <p style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-line', lineHeight: 1.4 }}>{infoAdicional.notas}</p>
               )}
@@ -1194,7 +1506,7 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
           Bloque de Firmas Autorizadas
         </div>
-        <div style={{ display: 'inline-grid', gridTemplateColumns: '1fr', gap: 6, width: 300, margin: '10px auto 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, width: '100%', maxWidth: 360, margin: '10px auto 0', boxSizing: 'border-box' }}>
           {isBorrador ? (
             <>
               <input className="form-control" style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 12 }} value={infoAdicional.firmadoPor} onChange={e => handleInfoAdicionalChange('firmadoPor', e.target.value)} />
@@ -1236,10 +1548,22 @@ export function Presupuestos() {
     setTareas
   } = useAppContext();
 
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("proyecto_draft");
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("presupuesto_draft");
+    localStorage.removeItem("giu_presupuesto_en_progreso");
+    localStorage.removeItem("hoja_ruta_draft");
+    localStorage.removeItem("tarea_draft");
+    localStorage.removeItem("catalogo_draft");
+  }, []);
+
   const [tab, setTab] = useState('agrupado'); // 'agrupado' | 'nuevo' | 'ver' | 'catalogo'
   const [viendoId, setViendoId] = useState(null);
   const [q, setQ] = useState('');
   const [collapsedProyectos, setCollapsedProyectos] = useState({});
+  const [preloadedConcepts, setPreloadedConcepts] = useState([]);
 
   // Network services hook integration
   const { crearPresupuesto, actualizarPresupuesto, eliminarPresupuesto } = usePresupuestos(setPresupuestos, session);
@@ -1293,6 +1617,8 @@ export function Presupuestos() {
       if (preselectedProjectId) {
         setPreselectedProjectId(null);
       }
+      setPreloadedConcepts([]);
+      localStorage.removeItem(AUTOSAVE_KEY); // Limpiar borrador tras guardar exitosamente
     } catch (error) {
       console.error("Hubo un problema al conectar con el Backend:", error);
       alert("No se pudo conectar con el servidor. Revisa la consola.");
@@ -1520,7 +1846,7 @@ export function Presupuestos() {
 
   const handleEliminarPresupuesto = async (id, idNumerico) => {
     const targetId = idNumerico || id;
-    
+
     const result = await Swal.fire({
       title: '¿Estás seguro?',
       text: "¿Estás seguro de que deseas eliminar esta versión del presupuesto? Esta acción no se puede deshacer.",
@@ -1606,10 +1932,11 @@ export function Presupuestos() {
     return (
       <FormNuevoPresupuesto
         onGuardar={guardarNuevo}
-        onCancelar={() => { setTab('agrupado'); setPreselectedProjectId(null); }}
+        onCancelar={() => { setTab('agrupado'); setPreselectedProjectId(null); setPreloadedConcepts([]); }}
         clientes={clientes}
         proyectos={proyectos}
         preselectedProjectId={preselectedProjectId}
+        preloadedConcepts={preloadedConcepts}
       />
     );
   }
@@ -1648,21 +1975,21 @@ export function Presupuestos() {
   );
 
   return (
-    <div style={{ padding: '0 10px' }}>
+    <div className="module-container" style={{ padding: '0 10px' }}>
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">{session.rol === 'cliente' ? 'Mis Presupuestos' : 'Presupuestos por Proyecto'}</div>
           <div className="page-subtitle">Historial de presupuestos ejecutivos agrupados por etapas administrativas de gestoría.</div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className={`btn ${tab === 'agrupado' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('agrupado')}>
             Presupuestos
           </button>
           <button className={`btn ${tab === 'catalogo' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('catalogo')}>
-            Catálogo Conceptos
+            Conceptos
           </button>
           {session.rol !== 'cliente' && (
-            <button className="btn btn-primary" onClick={() => setTab('nuevo')}>
+            <button className="btn btn-primary" onClick={() => { setPreloadedConcepts([]); setTab('nuevo'); }}>
               <Icon name="plus" size={14} /> Nuevo Presupuesto
             </button>
           )}
@@ -1673,7 +2000,7 @@ export function Presupuestos() {
       <div className="search-wrap mb-6" style={{ maxWidth: 400 }}>
         <Icon name="search" size={14} />
         <input className="form-control search-input" placeholder="Buscar por proyecto, id o concepto…" value={q} onChange={e => setQ(e.target.value)} />
-      </div>
+      </div >
 
       {tab === 'agrupado' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1753,8 +2080,8 @@ export function Presupuestos() {
                         No hay ningún presupuesto creado para este proyecto.
                       </div>
                     ) : (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: '800px' }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid var(--border)' }}>
                               <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Versión</th>
@@ -1763,9 +2090,7 @@ export function Presupuestos() {
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Estatus</th>
                               <th style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Costo Total</th>
                               <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Línea Base</th>
-                              {session.rol !== 'cliente' && (
-                                <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Acciones</th>
-                              )}
+                              <th style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--text-3)', fontWeight: 600, fontSize: 11 }}>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1779,14 +2104,18 @@ export function Presupuestos() {
                                   onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                                   onMouseLeave={e => e.currentTarget.style.background = ''}
                                 >
-                                  <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)' }}>V{b.version}</td>
+                                  <td style={{ padding: '12px', fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--accent)' }}>
+                                    {(b.version || '').toUpperCase().startsWith('V') ? b.version.toUpperCase() : `V${b.version || '1.0'}`}
+                                  </td>
                                   <td style={{ padding: '12px' }}>
                                     <div style={{ fontWeight: 600 }}>{b.titulo}</div>
                                     <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>ID: {b.id}</div>
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center', color: 'var(--text-2)' }}>{b.fecha}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                                    <span className={`badge ${statusMap[b.estado] || 'badge-gray'}`}>{b.estado}</span>
+                                    <span className={`badge ${b.estadoBadge || (String(b.estado).toLowerCase() === 'aprobado' ? 'badge-green' : 'badge-amber')}`}>
+                                      {b.estadoLabel || (String(b.estado).toLowerCase() === 'aprobado' ? 'Aprobado' : (b.estado || 'Borrador'))}
+                                    </span>
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, fontFamily: 'DM Mono', color: b.isBaseline ? 'var(--accent)' : 'var(--text)' }}>
                                     {money(totalCost)}
@@ -1798,18 +2127,28 @@ export function Presupuestos() {
                                       <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
                                     )}
                                   </td>
-                                  {session.rol !== 'cliente' && (
-                                    <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                                      <button 
-                                        className="btn btn-ghost btn-sm" 
-                                        style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
-                                        title="Eliminar Presupuesto"
+                                  <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); descargarPresupuestoPDF(b, proj); }}
+                                        className="p-1.5 text-slate-600 hover:text-emerald-600 transition-colors"
+                                        style={{ padding: '4px 8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-2)' }}
+                                        title="Descargar PDF"
                                       >
-                                        <Icon name="trash" size={13} />
+                                        <Icon name="download" size={14} />
                                       </button>
-                                    </td>
-                                  )}
+                                      {session.rol !== 'cliente' && (
+                                        <button
+                                          className="btn btn-ghost btn-sm"
+                                          style={{ padding: '4px 8px', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                          onClick={() => handleEliminarPresupuesto(b.id, b.idNumerico)}
+                                          title="Eliminar Presupuesto"
+                                        >
+                                          <Icon name="trash" size={13} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -1828,11 +2167,11 @@ export function Presupuestos() {
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Icon name="list" size={15} style={{ color: 'var(--text-3)' }} />
-            Catálogo de Conceptos
+            Conceptos
             <span className="badge badge-gray">{filteredCatalogo.length}</span>
           </div>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: '700px' }}>
               <thead>
                 <tr style={{ background: 'var(--surface2)' }}>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, color: 'var(--text-3)', fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>Clave</th>
@@ -1855,6 +2194,7 @@ export function Presupuestos() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -6,15 +6,6 @@
  * sanitizar, renombrar campos, o adaptar estructuras complejas.
  */
 
-/**
- * Transforma un CotizacionDTO en el formato interno de la UI.
- * @param {Object} dto - DTO recibido del backend
- * @returns {Object} Modelo de UI
- */
-export function mapCotizacion(dto) {
-  return dto; // Pass-through: el DTO ya viene listo
-}
-
 export function mapCliente(dto) {
   return dto;
 }

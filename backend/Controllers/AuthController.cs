@@ -40,7 +40,6 @@ namespace Backend.Controllers
             {
                 Id = u.Id,
                 Nombre = u.Nombre,
-                Email = u.Email,
                 Contrasenia = u.Contrasenia,
                 Rol = u.Rol,
                 Modulos = modulos,
@@ -53,18 +52,21 @@ namespace Backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Contrasenia))
+            var username = request?.GetUsername() ?? "";
+            var password = request?.GetPassword() ?? "";
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                return BadRequest("Por favor ingresa usuario y contraseña.");
+                return BadRequest("Por favor ingresa tu nombre de usuario y contraseña.");
             }
 
-            var emailClean = request.Email.Trim().ToLower();
+            var usernameClean = username.ToLower();
             var user = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailClean);
+                .FirstOrDefaultAsync(u => u.Nombre.ToLower() == usernameClean);
 
             if (user == null)
             {
-                return Unauthorized(new { message = "Credenciales inválidas. Revisa el correo y contraseña." });
+                return Unauthorized(new { message = "Credenciales inválidas. Revisa el nombre de usuario y contraseña." });
             }
 
             bool isPasswordValid = false;
@@ -72,22 +74,22 @@ namespace Backend.Controllers
             {
                 try
                 {
-                    isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Contrasenia.Trim(), user.Contrasenia);
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.Contrasenia);
                 }
                 catch
                 {
                     isPasswordValid = false;
                 }
             }
-            
+
             if (!isPasswordValid)
             {
-                isPasswordValid = (user.Contrasenia == request.Contrasenia.Trim());
+                isPasswordValid = (user.Contrasenia == password);
             }
 
             if (!isPasswordValid)
             {
-                return Unauthorized(new { message = "Credenciales inválidas. Revisa el correo y contraseña." });
+                return Unauthorized(new { message = "Credenciales inválidas. Revisa el nombre de usuario y contraseña." });
             }
 
             return Ok(MapToDTO(user));
@@ -139,9 +141,9 @@ namespace Backend.Controllers
         [HttpPost("usuarios")]
         public async Task<IActionResult> CreateUsuario([FromBody] UsuarioDTO dto)
         {
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Contrasenia))
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Nombre) || string.IsNullOrWhiteSpace(dto.Contrasenia))
             {
-                return BadRequest("Datos inválidos.");
+                return BadRequest("Datos inválidos. Se requiere nombre de usuario y contraseña.");
             }
 
             var (passValid, passError) = ValidatePassword(dto.Contrasenia);
@@ -150,18 +152,17 @@ namespace Backend.Controllers
                 return BadRequest(passError);
             }
 
-            var emailClean = dto.Email.Trim().ToLower();
-            var exists = await _context.Usuarios.AnyAsync(u => u.Email.ToLower() == emailClean);
+            var nombreClean = dto.Nombre.Trim().ToLower();
+            var exists = await _context.Usuarios.AnyAsync(u => u.Nombre.ToLower() == nombreClean);
             if (exists)
             {
-                return BadRequest("El correo electrónico ya está registrado.");
+                return BadRequest("El nombre de usuario ya está registrado.");
             }
 
             var user = new Usuario
             {
                 Id = string.IsNullOrWhiteSpace(dto.Id) ? $"usr-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" : dto.Id,
-                Nombre = dto.Nombre,
-                Email = emailClean,
+                Nombre = dto.Nombre.Trim(),
                 Contrasenia = dto.Contrasenia.Trim(),
                 Rol = dto.Rol,
                 ModulosJson = JsonSerializer.Serialize(dto.Modulos ?? new List<string>()),
@@ -191,7 +192,6 @@ namespace Backend.Controllers
             }
 
             user.Nombre = dto.Nombre;
-            user.Email = dto.Email.Trim().ToLower();
 
             if (!string.IsNullOrWhiteSpace(dto.Contrasenia))
             {

@@ -1,16 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   addClientCommand, deleteClientCommand, updateClientFieldCommand,
-  addQuoteCommand, addConceptCommand
+  addConceptCommand
 } from '../cqrs';
 import { getDefaultModulos } from '../../data/mockData';
 import { fetchClientes, updateCliente } from '../../services/clientesService';
 import { fetchProyectos, updateProyecto as updateProyectoService, deleteProyecto as deleteProyectoService } from '../../services/proyectosService';
 import { fetchPresupuestos } from '../../services/presupuestosService';
-import { fetchCotizaciones } from '../../services/cotizacionesService';
 import { fetchTareas } from '../../services/tareasService';
 import { fetchConceptos } from '../../services/conceptosService';
 import { fetchUsuarios, fetchUsuarioPorId, createUsuario, updateUsuario, deleteUsuario } from '../../services/authService';
+import { fetchRoles } from '../../services/rolesService';
 
 
 const AppContext = createContext(null);
@@ -149,7 +149,6 @@ export const AppContextProvider = ({
   // Business entities: empty initial state — populated exclusively from the remote API
   const [clientes, setClientes] = useState([]);
   const [conceptos, setConceptos] = useState([]);
-  const [cotizaciones, setCotizaciones] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
 
   const [rolesList, setRolesList] = useState(() => rolesRepository.getAll());
@@ -157,40 +156,44 @@ export const AppContextProvider = ({
   const [presupuestos, setPresupuestos] = useState([]);
   const [tareas, setTareas] = useState([]);
 
-  // Sincronización exclusiva con el backend remoto (PostgreSQL en Render)
+  // Sincronización exclusiva con el backend (PostgreSQL en Render)
   // La API es la ÚNICA fuente de verdad para todas las entidades de negocio.
+  const hasLoadedData = useRef(false);
   useEffect(() => {
-    if (!session) return;
+    if (!session || hasLoadedData.current) return;
+    hasLoadedData.current = true;
+
     const cargarTodo = async () => {
       try {
         const queryParams = {};
         if (session.clienteId) queryParams.clienteId = session.clienteId;
         if (session.rol) queryParams.rol = session.rol;
 
-        const [clientsData, projectsData, budgetsData, quotesData, tasksData, conceptsData, usersData] =
+        const [clientsData, projectsData, budgetsData, tasksData, conceptsData, usersData, rolesData] =
           await Promise.all([
             fetchClientes(),
             fetchProyectos(queryParams),
             fetchPresupuestos(queryParams),
-            fetchCotizaciones(queryParams),
-            fetchTareas(),
+            fetchTareas(queryParams),
             fetchConceptos(),
-            fetchUsuarios()
+            fetchUsuarios(),
+            fetchRoles()
           ]);
 
         setClientes(clientsData || []);
         setProyectos(projectsData || []);
         setPresupuestos(budgetsData || []);
-        setCotizaciones(quotesData || []);
         setTareas(tasksData || []);
         setConceptos(conceptsData || []);
         setUsuarios(usersData || []);
+        if (rolesData && rolesData.length > 0) setRolesList(rolesData);
       } catch (err) {
         console.error("Error en sincronización con el backend:", err);
       }
     };
     cargarTodo();
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, session?.rol]);
 
   // Persistencia local SOLO para roles (no respaldados por API aún)
   useEffect(() => {
@@ -238,7 +241,7 @@ export const AppContextProvider = ({
       const actualizado = await updateUsuario(updatedUser.id, updatedUser);
       setUsuarios(prev => prev.map(u => u.id === updatedUser.id ? actualizado : u));
 
-      if (session && (String(session.id) === String(updatedUser.id) || session.email?.toLowerCase() === updatedUser.email?.toLowerCase())) {
+      if (session && String(session.id) === String(updatedUser.id)) {
         const newSession = {
           ...session,
           ...actualizado,
@@ -274,10 +277,12 @@ export const AppContextProvider = ({
     setProyectos(prev => [nuevo, ...prev]);
   };
   const updateProyecto = async (updated) => {
+    const idNumerico = updated.idNumerico || (typeof updated.id === 'number' ? updated.id : parseInt(String(updated.id).replace(/\D/g, '')) || 0);
+
     // Optimistic update of local state
-    setProyectos(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setProyectos(prev => prev.map(p => (p.id === updated.id || p.idNumerico === idNumerico) ? { ...p, ...updated } : p));
+
     try {
-      const idNumerico = updated.idNumerico || updated.id;
       const modeloProyecto = {
         id: idNumerico,
         nombre: updated.nombre,
@@ -285,10 +290,25 @@ export const AppContextProvider = ({
         estatus: updated.estatus,
         prioridad: updated.prioridad,
         avance: updated.avance,
-        fechaInicio: updated.fechaInicio,
-        monto: updated.monto
+        usoPrincipal: updated.usoPrincipal || null,
+        usoComplementario: updated.usoComplementario || null,
+        impactoPrincipal: updated.impactoPrincipal || null,
+        usosComplementariosJson: updated.usosComplementariosJson || (updated.usosComplementarios?.length ? JSON.stringify(updated.usosComplementarios) : null),
+        direccionPrincipal: updated.direccionPrincipal || updated.ubicacion || null,
+        direccionesComplementariasJson: updated.direccionesComplementariasJson || (updated.direccionesComplementarias?.length ? JSON.stringify(updated.direccionesComplementarias) : null),
+        vialidadPrincipal: updated.vialidadPrincipal || null,
+        vialidadComplementaria: updated.vialidadComplementaria || null,
+        alcance: updated.alcance || null,
+        descripcion: updated.descripcion || null,
+        responsable: updated.responsable || null,
+        zonaPrimaria: updated.zonaPrimaria || null,
+        fechaInicio: updated.fechaInicio
       };
-      await updateProyectoService(idNumerico, modeloProyecto);
+      const dto = await updateProyectoService(idNumerico, modeloProyecto);
+      if (dto) {
+        setProyectos(prev => prev.map(p => (p.id === dto.id || p.idNumerico === dto.idNumerico) ? dto : p));
+      }
+      return dto;
     } catch (err) {
       console.error("Error al actualizar proyecto en el backend:", err);
     }
@@ -310,18 +330,13 @@ export const AppContextProvider = ({
   const linkClientAccount = (user, currentClientesList = clientes) => {
     if (user.rol !== 'cliente') return user;
 
-    const emailClean = user.email.trim().toLowerCase();
-    let client = currentClientesList.find(c => c.email && c.email.trim().toLowerCase() === emailClean);
+    const nameClean = (user.nombre || '').trim().toLowerCase();
 
-    // Fallback: If it's Patricia N. and she wasn't matched, find by contact name "Patricia Noriega" or ID 6
-    if (!client && emailClean === 'pnoriega@gmail.com') {
-      client = currentClientesList.find(c => c.id === 6 || (c.contacto && c.contacto.toLowerCase().includes('patricia noriega')));
-      if (client) {
-        // Update client email so they are linked directly next time
-        client.email = 'pnoriega@gmail.com';
-        updateClientField(client.id, 'email', 'pnoriega@gmail.com');
-      }
-    }
+    let client = currentClientesList.find(c =>
+      (user.clienteId && String(c.id) === String(user.clienteId)) ||
+      (nameClean && c.nombre && c.nombre.trim().toLowerCase() === nameClean) ||
+      (nameClean && c.contacto && c.contacto.trim().toLowerCase() === nameClean)
+    );
 
     if (!client) {
       const newId = Math.max(...currentClientesList.map(c => c.id), 0) + 1;
@@ -329,7 +344,7 @@ export const AppContextProvider = ({
         id: newId,
         nombre: user.nombre,
         contacto: user.nombre,
-        email: user.email,
+        email: '',
         tel: '',
         tipo: 'persona',
         rfc: '',
@@ -354,13 +369,13 @@ export const AppContextProvider = ({
         : getDefaultModulos(linkedUser.rol)
     };
     setSession(linkedUserWithModulos);
-    const allowed = linkedUserWithModulos.modulos;
-    const defaultTab = allowed && allowed.length > 0 ? allowed[0] : 'home';
-    setActive(defaultTab);
+    // Tras iniciar sesión, la pantalla de aterrizaje SIEMPRE es la vista principal 'home' de GIU
+    setActive('home');
   };
 
   const handleLogout = () => {
     setSession(null);
+    hasLoadedData.current = false;
     sessionStorage.removeItem('giu_active_tab');
     setActive('home');
   };
@@ -377,8 +392,6 @@ export const AppContextProvider = ({
       setClientes,
       conceptos,
       setConceptos,
-      cotizaciones,
-      setCotizaciones,
       usuarios,
       setUsuarios,
       rolesList,
@@ -401,7 +414,6 @@ export const AppContextProvider = ({
       addUser,
       saveUserEdit,
       deleteUser,
-      addQuote,
       addConcept,
       addProyecto,
       updateProyecto,
@@ -413,4 +425,3 @@ export const AppContextProvider = ({
     </AppContext.Provider>
   );
 };
-

@@ -43,7 +43,6 @@ namespace Data.DTOs
         public string Clasificacion { get; set; } = string.Empty;
         public string ZonaPrimaria { get; set; } = string.Empty;
         public string TipoVialidad { get; set; } = string.Empty;
-        public string Estimacion { get; set; } = string.Empty;
         public double CostoDirectoConstruccion { get; set; }
         public string InfoAdicionalJson { get; set; } = string.Empty;
 

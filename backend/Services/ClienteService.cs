@@ -55,6 +55,12 @@ namespace Backend.Services
             {
                 Id = c.Id,
                 Nombre = c.Nombre ?? "",
+                NombreComercial = c.NombreComercial ?? "",
+                ApoderadoLegal = c.ApoderadoLegal ?? "",
+                Rfc = c.Rfc ?? "",
+                Ciudad = c.Ciudad ?? "",
+                DireccionFiscal = c.DireccionFiscal ?? "",
+                Responsable = c.Responsable ?? "",
                 Contacto = c.Contacto ?? "",
                 Email = c.Email ?? "",
                 Telefono = c.Telefono ?? "",

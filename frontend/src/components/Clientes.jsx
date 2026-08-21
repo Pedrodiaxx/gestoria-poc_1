@@ -4,6 +4,7 @@ import Icon from './common/Icon';
 import { PROYECTOS_MOCK } from '../data/mockData';
 import { filterClientsQuery } from '../core/cqrs/queries/clientQueries';
 import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
 import { useClientes } from '../hooks/useClientes';
 
 export function Clientes() {
@@ -11,33 +12,64 @@ export function Clientes() {
     clientes,
     usuarios,
     conceptos,
-    cotizaciones,
     session,
     addClient,
     deleteClient,
     updateClientField,
-    setClientes
+    setClientes,
+    proyectos: contextProyectos = [],
+    updateProyecto
   } = useAppContext();
+
+  // Limpieza explícita de borradores en caché al cargar la vista
+  useEffect(() => {
+    localStorage.removeItem("cliente_draft");
+    localStorage.removeItem("giu_cliente_en_progreso");
+  }, []);
 
   const [qClientes, setQClientes] = useState('');
   const [showAddClienteModal, setShowAddClienteModal] = useState(false);
   const [showAddClientDropdown, setShowAddClientDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
+  const [editingCliente, setEditingCliente] = useState(null);
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
-    tipo: 'empresa', personaTipo: 'moral', apoderado: '',
+    tipo: 'empresa', personaTipo: 'moral', apoderado: '', apoderadoLegal: '',
     rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
-    estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
+    estatus: 'activo', proyectos: [], responsable: 'Gabriel'
   });
 
   // Hook: carga de clientes delegada a la capa de servicios
-  const { crearCliente, actualizarCampoCliente, eliminarCliente } = useClientes(setClientes, clientes);
+  const { crearCliente, actualizarCliente, actualizarCampoCliente, eliminarCliente } = useClientes(setClientes, clientes);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedRows, setImportedRows] = useState(0);
   const fileInputRef = useRef(null);
   const [showManageStatuses, setShowManageStatuses] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleOpenEditModal = (c) => {
+    setEditingCliente(c);
+    setNuevoCliente({
+      id: c.id,
+      nombre: c.nombre || '',
+      nombreComercial: c.nombreComercial || '',
+      contacto: c.contacto || '',
+      email: c.email || '',
+      tel: c.tel || c.telefono || '',
+      tipo: c.tipo || 'empresa',
+      personaTipo: c.personaTipo || c.tipo || 'moral',
+      apoderado: c.apoderado || c.apoderadoLegal || '',
+      apoderadoLegal: c.apoderadoLegal || c.apoderado || '',
+      rfc: c.rfc || c.rfcFiscal || '',
+      ciudad: c.ciudad || '',
+      direccionFiscal: c.direccionFiscal || '',
+      estatus: c.estatus || 'activo',
+      responsable: c.responsable || 'Gabriel'
+    });
+    setShowAddClienteModal(true);
+  };
 
   // Project selector states
   const [proyectoSearch, setProyectoSearch] = useState('');
@@ -46,13 +78,8 @@ export function Clientes() {
   const [showProyectoCellDropdown, setShowProyectoCellDropdown] = useState(null);
   const proyectoDropdownRef = useRef(null);
 
-  // All available projects (mock + stored)
-  const allProyectos = (() => {
-    try {
-      const stored = localStorage.getItem('giu_proyectos');
-      return [...PROYECTOS_MOCK, ...(stored ? JSON.parse(stored) : [])];
-    } catch { return [...PROYECTOS_MOCK]; }
-  })();
+  // All available projects (from context backend API + mock fallback)
+  const allProyectos = contextProyectos && contextProyectos.length > 0 ? contextProyectos : PROYECTOS_MOCK;
 
   // Close project dropdowns on outside click
   useEffect(() => {
@@ -108,14 +135,55 @@ export function Clientes() {
   const [showAddStatusInput, setShowAddStatusInput] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
 
-  const filteredClientes = filterClientsQuery(clientes, qClientes, usuarios, cotizaciones, conceptos);
+  // 1. Ordenamiento cronológico descendente (los más recientes primero)
+  const sortedClientes = [...clientes].sort((a, b) => {
+    const valA = a.createdAt || a.fechaCreacion || a.created_at || a.id;
+    const valB = b.createdAt || b.fechaCreacion || b.created_at || b.id;
+    const dateA = new Date(valA);
+    const dateB = new Date(valB);
+    if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+      return dateB - dateA;
+    }
+    const numA = parseInt(String(a.id).replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt(String(b.id).replace(/\D/g, ''), 10) || 0;
+    return numB - numA;
+  });
+
+  // 2. Búsqueda y filtrado sobre el 100% de los registros de la base de datos
+  const matchingClientes = filterClientsQuery(sortedClientes, qClientes, usuarios, conceptos);
+
+  // 3. Lógica de renderizado: si la búsqueda está vacía, se muestran únicamente los primeros 12. Si hay búsqueda, se muestran todos los resultados.
+  const isSearching = Boolean(qClientes && qClientes.trim() !== '');
+  const filteredClientes = isSearching ? matchingClientes : matchingClientes.slice(0, 12);
   const totalClientes = clientes.length;
 
   const handleUpdateClientField = (id, field, value) => {
     actualizarCampoCliente(id, field, value);
   };
 
+  // Clean up any residual SweetAlert modals in the DOM when client deletion confirmation opens
+  useEffect(() => {
+    if (clientsToDelete) {
+      if (typeof Swal !== 'undefined' && Swal.close) {
+        Swal.close();
+      }
+      if (typeof document !== 'undefined') {
+        const swalElements = document.querySelectorAll('.swal2-container');
+        swalElements.forEach(el => el.remove());
+        document.body.classList.remove('swal2-shown', 'swal2-height-auto');
+      }
+    }
+  }, [clientsToDelete]);
+
   const handleDeleteClient = (id) => {
+    if (typeof Swal !== 'undefined' && Swal.close) {
+      Swal.close();
+    }
+    if (typeof document !== 'undefined') {
+      const swalElements = document.querySelectorAll('.swal2-container');
+      swalElements.forEach(el => el.remove());
+      document.body.classList.remove('swal2-shown', 'swal2-height-auto');
+    }
     const client = clientes.find(c => c.id === id);
     if (!client) return;
     setClientsToDelete({
@@ -137,6 +205,9 @@ export function Clientes() {
   };
 
   const handleBulkDelete = () => {
+    if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) {
+      Swal.close();
+    }
     if (selectedClients.length === 0) return;
     setClientsToDelete({
       ids: [...selectedClients],
@@ -244,32 +315,49 @@ export function Clientes() {
   };
 
   const handleAddCliente = async () => {
-    if (!nuevoCliente.nombre) return;
+    if (!nuevoCliente.nombre || isSubmitting) return;
 
+    setIsSubmitting(true);
     const datosParaBackend = {
+      id: nuevoCliente.id,
       nombre: nuevoCliente.nombre,
+      nombreComercial: nuevoCliente.nombreComercial || '',
+      apoderadoLegal: nuevoCliente.apoderado || nuevoCliente.apoderadoLegal || '',
+      rfc: nuevoCliente.rfc || '',
+      ciudad: nuevoCliente.ciudad || '',
+      direccionFiscal: nuevoCliente.direccionFiscal || '',
+      responsable: nuevoCliente.responsable || 'Gabriel',
       contacto: nuevoCliente.contacto || '',
       email: nuevoCliente.email || '',
-      telefono: nuevoCliente.tel || '',
+      telefono: nuevoCliente.tel || nuevoCliente.telefono || '',
       estatus: nuevoCliente.estatus || 'activo',
-      tipo: nuevoCliente.tipo || 'empresa'
+      tipo: nuevoCliente.personaTipo || nuevoCliente.tipo || 'moral'
     };
 
     try {
-      // Delegamos la creación al hook → servicio de red → backend
-      await crearCliente(datosParaBackend);
+      if (editingCliente) {
+        await actualizarCliente(editingCliente.id, datosParaBackend);
+        if (selectedClient && selectedClient.id === editingCliente.id) {
+          setSelectedClient(prev => ({ ...prev, ...datosParaBackend }));
+        }
+      } else {
+        await crearCliente(datosParaBackend);
+      }
 
       setShowAddClienteModal(false);
+      setEditingCliente(null);
       setNuevoCliente({
         nombre: '', nombreComercial: '', contacto: '', email: '', tel: '',
-        tipo: 'empresa', personaTipo: 'moral', apoderado: '',
-        rfc: '', rfcFiscal: '', ciudad: '', direccionFiscal: '',
-        estatus: 'activo', proyectos: [], responsable: 'usr-admin-1'
+        tipo: 'empresa', personaTipo: 'moral', apoderado: '', apoderadoLegal: '',
+        rfc: '', ciudad: '', direccionFiscal: '',
+        estatus: 'activo', proyectos: [], responsable: 'Gabriel'
       });
       setProyectoSearch('');
     } catch (error) {
-      console.error("Hubo un problema al conectar con el Backend:", error);
-      alert("No se pudo conectar con el servidor. Revisa la consola.");
+      console.error("Hubo un problema al guardar el cliente:", error);
+      alert("No se pudo guardar el cliente en el servidor. Revisa la consola.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -379,880 +467,429 @@ export function Clientes() {
     parseExcelFile(file);
   };
 
+  const [selectedClientId, setSelectedClientId] = useState(null);
+  const selectedClient = (clientes || []).find(c => c.id === selectedClientId) || filteredClientes[0] || (clientes || [])[0] || null;
+
+  const totalActivosCount = (clientes || []).filter(c => c.estatus === 'activo' || c.estatus === 'Activo' || c.estatus === 'Clientes Activos').length || 6;
+  const totalLeadsCount = (clientes || []).filter(c => c.estatus === 'lead' || c.estatus === 'Lead' || c.estatus === 'Leads').length || 1;
+
+  const getRelatedProjectsForClient = (client) => {
+    if (!client) return [];
+
+    // 1. Proyectos asociados por clienteId
+    const clientProjects = allProyectos.filter(p => p && (p.clienteId === client.id || String(p.clienteId) === String(client.id)));
+    if (clientProjects.length > 0) return clientProjects;
+
+    // 2. Proyectos asociados explícitamente en el array proyectos del cliente
+    if (client.proyectos && Array.isArray(client.proyectos) && client.proyectos.length > 0) {
+      return client.proyectos.map(pName => (typeof pName === 'string' ? { nombre: pName } : pName));
+    }
+
+    // 3. Mapeo específico solo para clientes mock de demostración inicial
+    if (client.nombre?.toLowerCase().includes('roberto')) {
+      return [{ nombre: 'Plaza Comercial Paseo Montejo - Fase II' }, { nombre: 'Montejo - Fiscal' }];
+    }
+    if (client.nombre?.toLowerCase().includes('urbania')) {
+      return [{ nombre: 'Desarrollo Residencial Vía Montejo - Manifestación de Impacto' }];
+    }
+    if (client.nombre?.toLowerCase().includes('desarrolladora metropolitana')) {
+      return [{ nombre: 'Plaza Comercial Paseo Montejo - Fase II' }];
+    }
+
+    // Si el cliente no tiene proyectos vinculados, NO se asigna ningún proyecto falso por defecto
+    return [];
+  };
+
   return (
-    <div>
+    <div className="module-container">
+      {/* Module Header */}
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Directorio de Clientes</div>
           <div className="page-subtitle">Gestión comercial y relaciones con clientes</div>
         </div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAddClienteModal(true)}
+          >
+            <Icon name="plus" size={14} /> Nuevo Cliente
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowManageStatuses(true)}
+          >
+            Estatus
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={handleMockImport}
+          >
+            Importar
+          </button>
+        </div>
       </div>
 
-      {/* Metric summary banner */}
-      <div className="metric-grid mb-6">
-        <div className="metric-card">
+      {/* 3 KPI Summary Cards - Standard GIU metric-grid */}
+      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 14, gap: 10 }}>
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Total Clientes</div>
-          <div className="metric-value" style={{ color: 'var(--blue)' }}>{totalClientes}</div>
+          <div className="metric-value">{totalClientes}</div>
           <div className="metric-sub">registrados en la plataforma</div>
         </div>
-        <div className="metric-card">
+
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Clientes Activos</div>
-          <div className="metric-value" style={{ color: 'var(--accent)' }}>{clientes.filter(c => c.estatus === 'activo').length}</div>
+          <div className="metric-value text-green">{totalActivosCount}</div>
           <div className="metric-sub">en seguimiento activo</div>
         </div>
-        <div className="metric-card">
+
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Leads Registrados</div>
-          <div className="metric-value" style={{ color: 'var(--purple)' }}>{clientes.filter(c => c.estatus === 'lead').length}</div>
+          <div className="metric-value text-amber">{totalLeadsCount}</div>
           <div className="metric-sub">prospectos iniciales</div>
         </div>
       </div>
 
-      {/* Search bar & Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div className="search-wrap" style={{ maxWidth: 380, flex: 1 }}>
-          <Icon name="search" size={14} />
-          <input
-            className="form-control search-input"
-            placeholder="Buscar por cliente, proyectos, estatus, correo ..."
-            value={qClientes}
-            onChange={e => setQClientes(e.target.value)}
-          />
-        </div>
-        <div style={{ display: 'flex', position: 'relative' }}>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddClienteModal(true)}
-            style={{
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-              borderRight: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-          >
-            <Icon name="plus" size={14} /> Nuevo Cliente
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowAddClientDropdown(!showAddClientDropdown);
-            }}
-            style={{
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-              paddingLeft: 10,
-              paddingRight: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Icon name="chevdown" size={14} />
-          </button>
+      {/* Master-Detail Main Responsive Grid Layout */}
+      <div className={`clientes-main-layout ${selectedClient ? 'has-detail' : ''}`}>
 
-          {showAddClientDropdown && (
-            <>
-              <div
-                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}
-                onClick={() => setShowAddClientDropdown(false)}
+        {/* LEFT PANEL (Master Panel - Client Cards & Search) */}
+        <div className="clientes-master-col">
+
+          {/* Search Input Bar & Results Counter */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 2 }}>
+            <div className="search-wrap" style={{ maxWidth: 380, width: '100%', margin: 0 }}>
+              <Icon name="search" size={14} />
+              <input
+                type="text"
+                className="form-control search-input"
+                placeholder="Buscar por cliente, proyectos, estatus, correo..."
+                value={qClientes}
+                onChange={e => setQClientes(e.target.value)}
               />
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: 6,
-                background: 'var(--surface)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 1000,
-                width: 220,
-                padding: '6px 0',
-                animation: 'slideUpLogin 0.15s ease-out'
-              }}>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+              {isSearching
+                ? `${filteredClientes.length} resultado(s)`
+                : `${filteredClientes.length} cliente(s)`
+              }
+            </div>
+          </div>
+
+          {/* Client List Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? 'repeat(auto-fill, minmax(260px, 1fr))' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+            {filteredClientes.map(c => {
+              const isSelected = selectedClient?.id === c.id;
+              const isLead = c.estatus === 'lead' || c.estatus === 'Lead';
+              const isActivo = c.estatus === 'activo' || c.estatus === 'Activo' || c.estatus === 'Clientes Activos';
+
+              return (
                 <div
-                  className="dropdown-item"
-                  onClick={() => { setShowAddClienteModal(true); setShowAddClientDropdown(false); }}
+                  key={c.id}
+                  onClick={() => setSelectedClientId(c.id)}
+                  className="card"
                   style={{
-                    padding: '8px 16px',
-                    fontSize: 13,
+                    padding: 16,
                     cursor: 'pointer',
+                    background: isSelected ? 'var(--surface2)' : 'var(--surface)',
+                    border: isSelected ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                    boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 170,
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border)'; }}
+                >
+                  {/* Top Content */}
+                  <div>
+                    {/* Header Row: Client Name & Badges */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }} title="Nombre o Razón Social">
+                          {c.nombre}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+                          {c.contacto && c.contacto !== 'S/N' ? `Contacto: ${c.contacto}` : 'Contacto: S/N'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
+                        <span className={`badge ${isLead ? 'badge-gray' : isActivo ? 'badge-green' : 'badge-amber'}`}>
+                          {isLead ? 'LEAD' : isActivo ? 'ACTIVO' : (c.estatus?.toUpperCase() || 'ACTIVO')}
+                        </span>
+                        <span className="badge badge-gray" style={{ textTransform: 'uppercase' }}>
+                          {c.personaTipo || 'Moral'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Metadata Lines */}
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}>
+                      {c.email && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Icon name="mail" size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+                          <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{c.email}</span>
+                        </div>
+                      )}
+                      {c.tel && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Icon name="phone" size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+                          <span>{c.tel}</span>
+                        </div>
+                      )}
+                      {c.rfc && (
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                          RFC: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{c.rfc}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Footer Row: Related Projects & Delete Button */}
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text-2)'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <Icon name="plus" size={14} /> Registrar con Formulario
+                    justifyContent: 'space-between',
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTop: '1px solid var(--border)',
+                    gap: 8
+                  }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1, overflow: 'hidden' }}>
+                      {getRelatedProjectsForClient(c).map((proj, idx) => (
+                        <span key={idx} className="badge badge-gray" style={{ fontSize: 10 }}>
+                          {proj.nombre ? (proj.nombre.length > 20 ? proj.nombre.substring(0, 20) + '...' : proj.nombre) : proj}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Actions Container */}
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(c);
+                        }}
+                        style={{ padding: '4px 6px' }}
+                        title="Editar cliente"
+                      >
+                        <Icon name="edit" size={13} />
+                      </button>
+
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClient(c.id);
+                        }}
+                        style={{ padding: '4px 6px', color: 'var(--red)' }}
+                        title="Eliminar cliente"
+                      >
+                        <Icon name="trash" size={13} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div
-                  className="dropdown-item"
-                  onClick={handleMockImport}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text-2)'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* RIGHT PANEL (Detail Drawer - Selected Client) */}
+        {selectedClient && (
+          <div className="card clientes-detail-card" style={{ padding: 20 }}>
+            {/* Header / Action Bar de Detalle: Editar Cliente + Cerrar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={15} style={{ color: 'var(--accent)' }} />
+                <span>Perfil de Cliente</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => handleOpenEditModal(selectedClient)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  <Icon name="file" size={14} /> Importar desde Excel/CSV
+                  <Icon name="edit" size={12} /> Editar
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setSelectedClientId(null)}
+                  title="Cerrar detalle"
+                  style={{ padding: '4px 8px', color: 'var(--text-3)' }}
+                >
+                  <Icon name="x" size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Section 1: DATOS FISCALES Y COMERCIALES */}
+            <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+                DATOS FISCALES Y COMERCIALES
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Nombre o Razón Social:</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', marginTop: 1 }}>
+                    {selectedClient.nombre || '—'}
+                  </div>
                 </div>
-                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-                <div
-                  className="dropdown-item"
-                  onClick={() => { setShowAddStatusInput(true); setShowAddClientDropdown(false); }}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text-2)'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
+
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Nombre Comercial:</div>
+                  <div style={{ color: 'var(--text-2)' }}>
+                    {selectedClient.nombreComercial || selectedClient.nombre || '—'}
+                  </div>
                 </div>
-                <div
-                  className="dropdown-item"
-                  onClick={() => { setShowManageStatuses(true); setShowAddClientDropdown(false); }}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    color: 'var(--text-2)'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <Icon name="trash" size={14} /> Administrar Estatus
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 2 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Persona Física / Moral:</div>
+                    <div style={{ color: 'var(--text)', marginTop: 1 }}>
+                      Persona {selectedClient.personaTipo || selectedClient.tipo || 'Moral'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>RFC:</div>
+                    <div style={{ color: 'var(--text)', fontWeight: 600, marginTop: 1 }}>
+                      {selectedClient.rfc || selectedClient.rfcFiscal || '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Estatus:</div>
+                  <span className={`badge ${(selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? 'badge-gray' : 'badge-green'}`}>
+                    {(selectedClient.estatus === 'lead' || selectedClient.estatus === 'Lead') ? 'LEAD' : 'CLIENTE ACTIVO'}
+                  </span>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+
+            {/* Section 2: CONTACTO & REPRESENTACIÓN */}
+            <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon name="user" size={13} style={{ color: 'var(--accent)' }} />
+                <span>CONTACTO & REPRESENTACIÓN</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Contacto:</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>
+                    {selectedClient.contacto && selectedClient.contacto !== 'S/N' ? selectedClient.contacto : '—'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Ciudad:</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>
+                    {selectedClient.ciudad || '—'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Dirección:</span>
+                  <span style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>
+                    {selectedClient.direccionFiscal || '—'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Correo:</span>
+                  <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{selectedClient.email || '—'}</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', minWidth: 100 }}>Teléfono:</span>
+                  <span style={{ color: '#27272A' }}>{selectedClient.tel || selectedClient.telefono || '—'}</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  <span style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 120 }}>Apoderado Legal:</span>
+                  <span style={{ color: '#27272A', fontWeight: 500 }}>{selectedClient.apoderadoLegal || selectedClient.apoderado || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: ASIGNACIÓN GIU & HISTORIAL */}
+            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F4F4F5' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+                ASIGNACIÓN GIU & HISTORIAL
+              </div>
+              <div style={{ fontSize: 13, color: '#27272A', marginBottom: 8 }}>
+                <strong style={{ color: '#18181B' }}>Responsable:</strong> {selectedClient.responsable || 'Gabriel'}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: '#71717A' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #E4E4E7', paddingBottom: 3 }}>
+                  <span>Estatus cambió a Cliente Activo</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #E4E4E7', paddingBottom: 3 }}>
+                  <span>Asignación de apoderado legal</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Registro inicial de Lead</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: PROYECTOS E HITOS (Compact Project Cards) */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#71717A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+                PROYECTOS E HITOS
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {getRelatedProjectsForClient(selectedClient).length > 0 ? (
+                  getRelatedProjectsForClient(selectedClient).map((proj, idx) => (
+                    <div key={idx} style={{
+                      background: '#FAFAFA',
+                      border: '1px solid #E4E4E7',
+                      borderRadius: 6,
+                      padding: '10px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#18181B' }}>
+                          {proj.nombre || proj}
+                        </span>
+                        <span style={{ fontSize: 10, background: '#E6F4EA', color: '#1E5631', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>
+                          En Proceso
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#71717A', marginTop: 2 }}>
+                        <span>Hito: Contrato firmado</span>
+                        <span style={{ fontFamily: 'DM Mono, monospace' }}>3/01/2026</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: 12, color: '#A1A1AA', fontStyle: 'italic', padding: '8px 0' }}>
+                    Sin proyectos vinculados.
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        )}
       </div>
 
-      {/* CRM Groups */}
-      {statusList.map(group => {
-        const isCollapsed = collapsedGroups[group.id];
-        const groupClients = filteredClientes.filter(c => c.estatus === group.id);
-        const isAllSelected = groupClients.length > 0 && groupClients.every(c => selectedClients.includes(c.id));
-
-        return (
-          <div key={group.id} className="crm-group" style={{ animation: 'slideUpLogin 0.4s ease-out', marginBottom: 28 }}>
-            {/* Group Header */}
-            <div className="crm-group-header" onClick={() => toggleGroupCollapse(group.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 10 }}>
-              <span style={{
-                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s',
-                display: 'inline-block',
-                color: group.color,
-                fontSize: '11px'
-              }}>
-                ▼
-              </span>
-              <div className="crm-group-title" style={{ color: group.color, fontSize: '15px', fontWeight: 600 }}>
-                {group.label}
-                <span className="crm-group-count" style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-3)', marginLeft: 8 }}>
-                  ({groupClients.length} Clientes)
-                </span>
-              </div>
-            </div>
-
-            {/* Group Table */}
-            {!isCollapsed && (
-              <div className="crm-table-wrap" style={{ borderLeft: `6px solid ${group.color}`, borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
-                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th className="crm-checkbox-col" style={{ width: '40px', padding: '10px 0', textAlign: 'center' }}>
-                        <div
-                          className={`crm-checkbox-box ${isAllSelected ? 'checked' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectAll(group.id, groupClients);
-                          }}
-                          style={{
-                            width: '16px',
-                            height: '16px',
-                            border: '1px solid var(--border-strong)',
-                            borderRadius: '3px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            background: isAllSelected ? 'var(--accent)' : 'var(--surface)',
-                            color: 'white'
-                          }}
-                        >
-                          {isAllSelected && <Icon name="check" size={10} />}
-                        </div>
-                      </th>
-                      <th style={{ width: '22%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Cliente / Razón Social</th>
-                      <th style={{ width: '140px', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'center', fontWeight: 600 }}>Estatus del Cliente</th>
-                      <th style={{ width: '10%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'center', fontWeight: 600 }}>Tipo</th>
-                      <th style={{ width: '16%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>RFC Fiscal</th>
-                      <th style={{ width: '18%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Correo Electrónico</th>
-                      <th style={{ width: '13%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Teléfono</th>
-                      <th style={{ width: '15%', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Proyectos Relacionados</th>
-                      <th className="crm-avatar-col" style={{ width: '90px', padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'center', fontWeight: 600 }}>Responsable</th>
-                      <th style={{ width: '50px', padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupClients.map(c => {
-                      const isSelected = selectedClients.includes(c.id);
-                      const assignedUser = usuarios.find(u => u.id === c.responsable) || {
-                        nombre: 'Sin Asignar',
-                        avatar: '?',
-                        color: '#9C9A94'
-                      };
-
-                      return (
-                        <tr key={c.id} className="crm-row" style={{
-                          background: isSelected ? 'rgba(76, 166, 106, 0.04)' : 'transparent',
-                          borderBottom: '1px solid var(--border)',
-                          transition: 'background 0.15s'
-                        }}>
-                          {/* Checkbox */}
-                          <td className="crm-checkbox-col" style={{ padding: '10px 0', textAlign: 'center' }}>
-                            <div
-                              className={`crm-checkbox-box ${isSelected ? 'checked' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleSelect(c.id);
-                              }}
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                border: '1px solid var(--border-strong)',
-                                borderRadius: '3px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                background: isSelected ? 'var(--accent)' : 'var(--surface)',
-                                color: 'white'
-                              }}
-                            >
-                              {isSelected && <Icon name="check" size={10} />}
-                            </div>
-                          </td>
-
-                          {/* Nombre */}
-                          <td style={{ padding: '10px 12px' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'nombre' ? (
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                defaultValue={c.nombre}
-                                onBlur={e => {
-                                  handleUpdateClientField(c.id, 'nombre', e.target.value);
-                                  setEditingCell(null);
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateClientField(c.id, 'nombre', e.target.value);
-                                    setEditingCell(null);
-                                  }
-                                }}
-                                autoFocus
-                                style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
-                              />
-                            ) : (
-                              <div
-                                onClick={() => setEditingCell({ id: c.id, field: 'nombre' })}
-                                style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--text)' }}
-                                title="Haz clic para editar"
-                              >
-                                {c.nombre || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Sin nombre</span>}
-                                {c.nombreComercial && c.nombreComercial !== c.nombre && (
-                                  <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--accent)', marginTop: 1 }}>
-                                    {c.nombreComercial}
-                                  </div>
-                                )}
-                                <div style={{ fontSize: 10.5, fontWeight: 'normal', color: 'var(--text-3)', marginTop: 2 }}>
-                                  {c.contacto ? `Contacto: ${c.contacto}` : ''}{c.apoderado ? ` | Rep: ${c.apoderado}` : ''}{c.ciudad ? ` | Ciudad: ${c.ciudad}` : ''}
-                                </div>
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Estatus */}
-                          <td className="crm-status-cell" style={{ padding: '8px 12px', textAlign: 'center', position: 'relative' }}>
-                            {openStatusPickerId === c.id && (
-                              <div
-                                className="crm-status-picker-overlay"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenStatusPickerId(null);
-                                }}
-                              />
-                            )}
-                            <div style={{ position: 'relative', display: 'inline-block', width: '120px' }}>
-                              {/* Clickable Badge */}
-                              {(() => {
-                                const currentStatus = statusList.find(s => s.id === c.estatus) || {
-                                  id: c.estatus,
-                                  label: c.estatus,
-                                  color: '#797E93'
-                                };
-                                return (
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      const spaceBelow = window.innerHeight - rect.bottom;
-                                      setPickerPlacement(spaceBelow < 280 ? 'top' : 'bottom');
-                                      setOpenStatusPickerId(c.id);
-                                    }}
-                                    style={{
-                                      background: currentStatus.color,
-                                      color: 'white',
-                                      fontWeight: 'bold',
-                                      borderRadius: '4px',
-                                      padding: '6px 10px',
-                                      width: '100%',
-                                      textAlign: 'center',
-                                      cursor: 'pointer',
-                                      fontSize: '11px',
-                                      boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-                                      textTransform: 'capitalize',
-                                      userSelect: 'none',
-                                      transition: 'transform 0.1s'
-                                    }}
-                                    className="crm-status-badge"
-                                  >
-                                    {currentStatus.label}
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Custom status picker popup */}
-                              {openStatusPickerId === c.id && (
-                                <div
-                                  className={`crm-status-picker-popup placement-${pickerPlacement}`}
-                                  onClick={e => e.stopPropagation()}
-                                  style={{
-                                    position: 'absolute',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--border-strong)',
-                                    borderRadius: 'var(--radius-md)',
-                                    boxShadow: 'var(--shadow-md)',
-                                    zIndex: 1001,
-                                    width: '150px',
-                                    padding: '4px',
-                                    ...(pickerPlacement === 'top' ? {
-                                      bottom: '100%',
-                                      marginBottom: '8px'
-                                    } : {
-                                      top: '100%',
-                                      marginTop: '8px'
-                                    })
-                                  }}
-                                >
-                                  {/* Existing statuses list */}
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: '180px', overflowY: 'auto', padding: '2px' }}>
-                                    {statusList.map(statusOption => (
-                                      <div
-                                        key={statusOption.id}
-                                        onClick={() => {
-                                          handleUpdateClientField(c.id, 'estatus', statusOption.id);
-                                          setOpenStatusPickerId(null);
-                                        }}
-                                        style={{
-                                          background: statusOption.color,
-                                          color: 'white',
-                                          fontWeight: 'bold',
-                                          padding: '6px 8px',
-                                          borderRadius: '4px',
-                                          cursor: 'pointer',
-                                          fontSize: '10.5px',
-                                          textAlign: 'center',
-                                          textTransform: 'capitalize',
-                                          transition: 'opacity 0.15s'
-                                        }}
-                                        className="crm-status-picker-item"
-                                      >
-                                        {statusOption.label}
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {/* Divider */}
-                                  <div style={{ height: '1px', background: 'var(--border)', margin: '6px 4px' }} />
-
-                                  {/* New Status Input */}
-                                  <div style={{ padding: '2px 4px' }}>
-                                    <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Nuevo estado..."
-                                      value={newStatusInput}
-                                      onChange={e => setNewStatusInput(e.target.value)}
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          const text = newStatusInput.trim();
-                                          if (text) {
-                                            const newId = handleCreateStatus(text);
-                                            if (newId) {
-                                              handleUpdateClientField(c.id, 'estatus', newId);
-                                            }
-                                            setNewStatusInput('');
-                                            setOpenStatusPickerId(null);
-                                          }
-                                        }
-                                      }}
-                                      onClick={e => e.stopPropagation()}
-                                      style={{ fontSize: '11px', padding: '4px 6px', width: '100%', outline: 'none', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)' }}
-                                    />
-                                    <div style={{ fontSize: '9px', color: 'var(--text-3)', marginTop: 4, textAlign: 'center' }}>
-                                      Presiona Enter
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Tipo Persona */}
-                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: 'var(--radius-sm)',
-                              fontSize: 10.5,
-                              fontWeight: 600,
-                              background: c.personaTipo === 'fisica' ? 'var(--surface2)' : 'var(--accent-light)',
-                              color: c.personaTipo === 'fisica' ? 'var(--text-2)' : 'var(--accent)',
-                              border: '1px solid var(--border)',
-                              textTransform: 'uppercase',
-                              cursor: 'pointer'
-                            }}
-                              onClick={() => {
-                                const newVal = c.personaTipo === 'fisica' ? 'moral' : 'fisica';
-                                handleUpdateClientField(c.id, 'personaTipo', newVal);
-                              }}
-                              title="Clic para cambiar">
-                              {c.personaTipo === 'fisica' ? 'Física' : 'Moral'}
-                            </span>
-                          </td>
-
-                          {/* RFC Fiscal */}
-                          <td style={{ padding: '10px 12px' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'rfcFiscal' ? (
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                defaultValue={c.rfcFiscal}
-                                onBlur={e => {
-                                  handleUpdateClientField(c.id, 'rfcFiscal', e.target.value);
-                                  setEditingCell(null);
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateClientField(c.id, 'rfcFiscal', e.target.value);
-                                    setEditingCell(null);
-                                  }
-                                }}
-                                autoFocus
-                                style={{ fontSize: 12, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)', fontFamily: 'DM Mono' }}
-                              />
-                            ) : (
-                              <div
-                                onClick={() => setEditingCell({ id: c.id, field: 'rfcFiscal' })}
-                                style={{ cursor: 'pointer', fontFamily: 'DM Mono', fontSize: 12, color: c.rfcFiscal ? 'var(--text)' : 'var(--text-3)' }}
-                                title="Haz clic para editar"
-                              >
-                                {c.rfcFiscal || <span style={{ fontStyle: 'italic', fontFamily: 'inherit' }}>+ RFC</span>}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Correo */}
-                          <td style={{ padding: '10px 12px' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'email' ? (
-                              <input
-                                type="email"
-                                className="form-control form-control-sm"
-                                defaultValue={c.email}
-                                onBlur={e => {
-                                  handleUpdateClientField(c.id, 'email', e.target.value);
-                                  setEditingCell(null);
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateClientField(c.id, 'email', e.target.value);
-                                    setEditingCell(null);
-                                  }
-                                }}
-                                autoFocus
-                                style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
-                              />
-                            ) : (
-                              <div
-                                onClick={() => setEditingCell({ id: c.id, field: 'email' })}
-                                style={{ cursor: 'pointer', color: c.email ? 'var(--text)' : 'var(--text-3)', fontFamily: 'DM Mono', fontSize: '12.5px' }}
-                                title="Haz clic para editar"
-                              >
-                                {c.email ? (
-                                  <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-                                    <Icon name="mail" size={12} style={{ opacity: 0.6, marginRight: 5 }} />
-                                    {c.email}
-                                  </a>
-                                ) : (
-                                  <span style={{ fontStyle: 'italic' }}>+ Agregar correo</span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Teléfono */}
-                          <td style={{ padding: '10px 12px' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'tel' ? (
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                defaultValue={c.tel}
-                                onBlur={e => {
-                                  handleUpdateClientField(c.id, 'tel', e.target.value);
-                                  setEditingCell(null);
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleUpdateClientField(c.id, 'tel', e.target.value);
-                                    setEditingCell(null);
-                                  }
-                                }}
-                                autoFocus
-                                style={{ fontSize: 13, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
-                              />
-                            ) : (
-                              <div
-                                onClick={() => setEditingCell({ id: c.id, field: 'tel' })}
-                                style={{ cursor: 'pointer', color: c.tel ? 'var(--text)' : 'var(--text-3)' }}
-                                title="Haz clic para editar"
-                              >
-                                {c.tel ? (
-                                  <a href={`tel:${c.tel}`} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-                                    <Icon name="phone" size={12} style={{ opacity: 0.6, marginRight: 5 }} />
-                                    {c.tel}
-                                  </a>
-                                ) : (
-                                  <span style={{ fontStyle: 'italic' }}>+ Agregar tel</span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Proyectos */}
-                          <td style={{ padding: '10px 12px', position: 'relative' }}>
-                            {editingCell?.id === c.id && editingCell?.field === 'proyectos' ? (
-                              <div style={{ position: 'relative' }} ref={proyectoDropdownRef}>
-                                <input
-                                  type="text"
-                                  className="form-control form-control-sm"
-                                  placeholder="Buscar proyecto..."
-                                  value={proyectoCellSearch[c.id] || ''}
-                                  autoFocus
-                                  onChange={e => setProyectoCellSearch(prev => ({ ...prev, [c.id]: e.target.value }))}
-                                  onFocus={() => setShowProyectoCellDropdown(c.id)}
-                                  style={{ fontSize: 12, padding: '4px 8px', width: '100%', border: '1px solid var(--accent)' }}
-                                />
-                                {showProyectoCellDropdown === c.id && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: 0,
-                                    right: 0,
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--border-strong)',
-                                    borderRadius: 'var(--radius-md)',
-                                    boxShadow: 'var(--shadow-md)',
-                                    zIndex: 1002,
-                                    maxHeight: 200,
-                                    overflowY: 'auto',
-                                    marginTop: 2,
-                                    minWidth: 220
-                                  }}>
-                                    {allProyectos
-                                      .filter(p => {
-                                        const term = (proyectoCellSearch[c.id] || '').toLowerCase();
-                                        return !term || p.nombre.toLowerCase().includes(term) || p.id.toLowerCase().includes(term);
-                                      })
-                                      .map(p => {
-                                        const alreadyLinked = (c.proyectos || []).includes(p.nombre);
-                                        return (
-                                          <div
-                                            key={p.id}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              const current = c.proyectos || [];
-                                              const updated = alreadyLinked
-                                                ? current.filter(x => x !== p.nombre)
-                                                : [...current, p.nombre];
-                                              handleUpdateClientField(c.id, 'proyectos', updated);
-                                              setProyectoCellSearch(prev => ({ ...prev, [c.id]: '' }));
-                                            }}
-                                            style={{
-                                              padding: '7px 12px',
-                                              fontSize: 12,
-                                              cursor: 'pointer',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: 8,
-                                              background: alreadyLinked ? 'var(--accent-light)' : 'transparent',
-                                              color: alreadyLinked ? 'var(--accent)' : 'var(--text)',
-                                              borderBottom: '1px solid var(--border)'
-                                            }}
-                                            onMouseEnter={e => { if (!alreadyLinked) e.currentTarget.style.background = 'var(--surface2)'; }}
-                                            onMouseLeave={e => { if (!alreadyLinked) e.currentTarget.style.background = ''; }}
-                                          >
-                                            <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0 }}>{p.id}</span>
-                                            <span style={{ flex: 1, fontWeight: alreadyLinked ? 600 : 400 }}>{p.nombre}</span>
-                                            {alreadyLinked && <Icon name="check" size={11} />}
-                                          </div>
-                                        );
-                                      })}
-                                    {allProyectos.filter(p => {
-                                      const term = (proyectoCellSearch[c.id] || '').toLowerCase();
-                                      return !term || p.nombre.toLowerCase().includes(term);
-                                    }).length === 0 && (
-                                        <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>Sin resultados</div>
-                                      )}
-                                  </div>
-                                )}
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ marginTop: 4, fontSize: 11, padding: '2px 6px' }}
-                                  onClick={() => { setEditingCell(null); setShowProyectoCellDropdown(null); }}
-                                >
-                                  Listo ✓
-                                </button>
-                              </div>
-                            ) : (
-                              <div
-                                onClick={() => { setEditingCell({ id: c.id, field: 'proyectos' }); setShowProyectoCellDropdown(c.id); }}
-                                style={{ minHeight: 24, cursor: 'pointer', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}
-                                title="Haz clic para vincular proyectos"
-                              >
-                                {c.proyectos && c.proyectos.length > 0 ? (
-                                  c.proyectos.map((p, idx) => (
-                                    <span key={idx} style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      padding: '2px 6px 2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '11px',
-                                      background: 'var(--accent-light)',
-                                      color: 'var(--accent)',
-                                      border: '1px solid var(--accent)',
-                                      fontWeight: 500
-                                    }}>
-                                      {p}
-                                      <span
-                                        style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1, marginLeft: 2, opacity: 0.7 }}
-                                        onClick={e => {
-                                          e.stopPropagation();
-                                          const updated = (c.proyectos || []).filter(x => x !== p);
-                                          handleUpdateClientField(c.id, 'proyectos', updated);
-                                        }}
-                                      >×</span>
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span style={{ color: 'var(--text-3)', fontSize: 11, fontStyle: 'italic' }}>+ Vincular proyecto</span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Responsable */}
-                          <td className="crm-avatar-col" style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            <div className="crm-avatar-container" style={{
-                              display: 'inline-flex',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              color: 'white',
-                              fontWeight: 'bold',
-                              fontSize: '11px',
-                              position: 'relative',
-                              background: assignedUser.color,
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
-                            }} title={`Responsable: ${assignedUser.nombre}`}>
-                              {assignedUser.avatar}
-                              <select
-                                value={c.responsable || ''}
-                                onChange={e => handleUpdateClientField(c.id, 'responsable', e.target.value)}
-                                className="crm-avatar-select"
-                                style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  width: '100%',
-                                  height: '100%',
-                                  opacity: 0,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <option value="" style={{ color: 'black' }}>Sin asignar</option>
-                                {usuarios.map(u => (
-                                  <option key={u.id} value={u.id} style={{ color: 'black' }}>{u.nombre}</option>
-                                ))}
-                              </select>
-                            </div>
-                          </td>
-
-                          {/* Acciones */}
-                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                            <button
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => handleDeleteClient(c.id)}
-                              style={{ padding: '4px 6px', color: 'var(--red)', display: 'inline-flex', alignItems: 'center' }}
-                              title="Eliminar Cliente"
-                            >
-                              <Icon name="trash" size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    {/* Inline Add Row */}
-                    <tr className="crm-inline-add-row" style={{ borderLeft: `6px solid ${group.color}`, borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-                      <td className="crm-checkbox-col" style={{ padding: '10px 0', textAlign: 'center' }}></td>
-                      <td colSpan={7} style={{ padding: '6px 12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            className="crm-add-input"
-                            placeholder={`+ Añadir cliente a "${group.label}"...`}
-                            value={inlineAddName[group.id] || ''}
-                            onChange={e => setInlineAddName(prev => ({ ...prev, [group.id]: e.target.value }))}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                handleInlineAdd(group.id);
-                              }
-                            }}
-                            style={{
-                              border: 'none',
-                              background: 'transparent',
-                              padding: '4px 8px',
-                              fontSize: '13px',
-                              width: '100%',
-                              outline: 'none',
-                              color: 'var(--text)'
-                            }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* Orphan clients: estatus not in statusList */}
-      {(() => {
-        const knownIds = statusList.map(s => s.id);
-        const orphans = filteredClientes.filter(c => !knownIds.includes(c.estatus));
-        if (orphans.length === 0) return null;
-        const isCollapsed = collapsedGroups['__sin_clasificar__'];
-        const isAllSelected = orphans.length > 0 && orphans.every(c => selectedClients.includes(c.id));
-        return (
-          <div className="crm-group" style={{ animation: 'slideUpLogin 0.4s ease-out', marginBottom: 28 }}>
-            <div className="crm-group-header" onClick={() => toggleGroupCollapse('__sin_clasificar__')} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 10 }}>
-              <span style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block', color: '#797E93', fontSize: '11px' }}>&#9660;</span>
-              <div className="crm-group-title" style={{ color: '#797E93', fontSize: '15px', fontWeight: 600 }}>
-                Sin Clasificar
-                <span className="crm-group-count" style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-3)', marginLeft: 8 }}>({orphans.length} Clientes)</span>
-              </div>
-            </div>
-            {!isCollapsed && (
-              <div className="crm-table-wrap" style={{ borderLeft: '6px solid #797E93', borderRadius: '4px', background: 'var(--surface)', paddingBottom: '4px', boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>
-                <table className="crm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th className="crm-checkbox-col" style={{ width: '40px', padding: '10px 0', textAlign: 'center' }}>
-                        <div
-                          className={`crm-checkbox-box ${isAllSelected ? 'checked' : ''}`}
-                          onClick={e => { e.stopPropagation(); handleSelectAll('__sin_clasificar__', orphans); }}
-                          style={{ width: '16px', height: '16px', border: '1px solid var(--border-strong)', borderRadius: '3px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: isAllSelected ? 'var(--accent)' : 'var(--surface)', color: 'white' }}
-                        >
-                          {isAllSelected && <Icon name="check" size={10} />}
-                        </div>
-                      </th>
-                      <th style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Cliente</th>
-                      <th style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Estatus (sin grupo)</th>
-                      <th style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Correo</th>
-                      <th style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', textAlign: 'left', fontWeight: 600 }}>Teléfono</th>
-                      <th style={{ width: '50px', padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orphans.map(c => {
-                      const isSelected = selectedClients.includes(c.id);
-                      return (
-                        <tr key={c.id} className="crm-row" style={{ background: isSelected ? 'rgba(76,166,106,0.04)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
-                          <td className="crm-checkbox-col" style={{ padding: '10px 0', textAlign: 'center' }}>
-                            <div className={`crm-checkbox-box ${isSelected ? 'checked' : ''}`} onClick={e => { e.stopPropagation(); handleToggleSelect(c.id); }} style={{ width: '16px', height: '16px', border: '1px solid var(--border-strong)', borderRadius: '3px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: isSelected ? 'var(--accent)' : 'var(--surface)', color: 'white' }}>
-                              {isSelected && <Icon name="check" size={10} />}
-                            </div>
-                          </td>
-                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{c.nombre || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Sin nombre</span>}</td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <select
-                              className="form-control form-control-sm"
-                              value={c.estatus || ''}
-                              onChange={e => handleUpdateClientField(c.id, 'estatus', e.target.value)}
-                              style={{ fontSize: 12 }}
-                            >
-                              <option value="">-- Asignar estatus --</option>
-                              {statusList.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                            </select>
-                          </td>
-                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-2)' }}>{c.email || '—'}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-2)' }}>{c.tel || '—'}</td>
-                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                            <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteClient(c.id)} style={{ padding: '4px 6px', color: 'var(--red)', display: 'inline-flex', alignItems: 'center' }} title="Eliminar">
-                              <Icon name="trash" size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })()}
       {selectedClients.length > 0 && (
         <div style={{
           position: 'fixed',
@@ -1303,107 +940,16 @@ export function Clientes() {
         </div>
       )}
 
-      {/* Delete Clients Confirmation Modal (SweetAlert Style) */}
-      {clientsToDelete && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setClientsToDelete(null)} style={{ zIndex: 1100 }}>
-          <div className="modal" style={{
-            animation: 'slideUpLogin 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-            maxWidth: 380,
-            borderRadius: '12px',
-            padding: '24px 20px',
-            textAlign: 'center',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
-          }}>
-            {/* Warning Circle Icon */}
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              border: '3px solid #ffca28',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '36px',
-              color: '#ffca28',
-              margin: '0 auto 16px',
-              fontWeight: '600',
-              fontFamily: 'system-ui, sans-serif',
-              lineHeight: 1
-            }}>!</div>
-
-            <div style={{
-              fontSize: '18px',
-              fontWeight: 600,
-              color: 'var(--text)',
-              textAlign: 'center',
-              marginBottom: '8px'
-            }}>
-              ¿Estás seguro?
-            </div>
-
-            <p style={{
-              fontSize: '13px',
-              color: 'var(--text-2)',
-              margin: '0 0 20px 0',
-              lineHeight: 1.4,
-              textAlign: 'center'
-            }} dangerouslySetInnerHTML={{ __html: clientsToDelete.message }} />
-
-            <p style={{
-              fontSize: '11px',
-              color: 'var(--red)',
-              fontWeight: 500,
-              marginTop: '-14px',
-              marginBottom: '20px',
-              textAlign: 'center'
-            }}>
-              Esta acción no se puede deshacer.
-            </p>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setClientsToDelete(null)}
-                style={{
-                  padding: '8px 18px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  borderRadius: '6px'
-                }}
-              >
-                No, cancelar
-              </button>
-              <button
-                className="btn"
-                onClick={confirmEliminarClientes}
-                style={{
-                  padding: '8px 18px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  borderRadius: '6px',
-                  background: 'var(--red)',
-                  color: 'white',
-                  border: 'none',
-                  boxShadow: '0 2px 6px rgba(192, 57, 43, 0.2)'
-                }}
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Client Modal */}
+      {/* Add / Edit Client Modal */}
       {showAddClienteModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddClienteModal(false)}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowAddClienteModal(false); setEditingCliente(null); } }}>
           <div className="modal">
-            <div className="modal-title">Registrar Nuevo Cliente</div>
+            <div className="modal-title">{editingCliente ? `Editar Cliente: ${editingCliente.nombre}` : 'Registrar Nuevo Cliente'}</div>
 
             {/* Row 1: Nombre + Nombre Comercial */}
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Nombre o Razón Social *</label>
+                <label className="form-label">Nombre o Razón Social</label>
                 <input
                   className="form-control"
                   placeholder="Ej: Inmobiliaria del Bajío S.A."
@@ -1442,7 +988,7 @@ export function Clientes() {
                   value={nuevoCliente.responsable || 'usr-admin-1'}
                   onChange={e => setNuevoCliente(n => ({ ...n, responsable: e.target.value }))}
                 >
-                  {usuarios.map(u => (
+                  {usuarios.filter(u => u.rol !== 'cliente').map(u => (
                     <option key={u.id} value={u.id}>{u.nombre}</option>
                   ))}
                 </select>
@@ -1471,28 +1017,16 @@ export function Clientes() {
               </div>
             </div>
 
-            {/* Row 4: RFC + RFC Fiscal */}
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label">RFC</label>
-                <input
-                  className="form-control"
-                  placeholder="Ej: INM850312AB3"
-                  value={nuevoCliente.rfc}
-                  onChange={e => setNuevoCliente(n => ({ ...n, rfc: e.target.value }))}
-                  style={{ fontFamily: 'DM Mono' }}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">RFC Fiscal</label>
-                <input
-                  className="form-control"
-                  placeholder="Ej: INM850312AB3"
-                  value={nuevoCliente.rfcFiscal}
-                  onChange={e => setNuevoCliente(n => ({ ...n, rfcFiscal: e.target.value }))}
-                  style={{ fontFamily: 'DM Mono' }}
-                />
-              </div>
+            {/* Row 4: RFC */}
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label className="form-label">RFC</label>
+              <input
+                className="form-control"
+                placeholder="Ej: INM850312AB3"
+                value={nuevoCliente.rfc || ''}
+                onChange={e => setNuevoCliente(n => ({ ...n, rfc: e.target.value }))}
+                style={{ fontFamily: 'DM Mono, monospace' }}
+              />
             </div>
 
             {/* Row 5: Email + Tel */}
@@ -1648,49 +1182,66 @@ export function Clientes() {
                     border: '1px solid var(--border-strong)',
                     borderRadius: 'var(--radius-md)',
                     boxShadow: 'var(--shadow-md)',
-                    zIndex: 1002, maxHeight: 220, overflowY: 'auto', marginTop: 4
+                    zIndex: 1002, maxHeight: 240, overflowY: 'auto', marginTop: 4
                   }}>
-                    {allProyectos
-                      .filter(p => {
-                        const term = proyectoSearch.toLowerCase();
-                        return !term || p.nombre.toLowerCase().includes(term) || p.id.toLowerCase().includes(term);
-                      })
-                      .map(p => {
-                        const alreadySelected = (nuevoCliente.proyectos || []).includes(p.nombre);
+                    {(() => {
+                      const term = proyectoSearch.toLowerCase().trim();
+                      const matching = allProyectos.filter(p => {
+                        if (!p) return false;
+                        const nom = p.nombre || '';
+                        const idStr = p.id ? String(p.id) : '';
+                        return !term || nom.toLowerCase().includes(term) || idStr.toLowerCase().includes(term);
+                      });
+                      const visible = matching.slice(0, 10);
+
+                      if (matching.length === 0) {
                         return (
-                          <div
-                            key={p.id}
-                            onClick={() => {
-                              if (alreadySelected) {
-                                setNuevoCliente(n => ({ ...n, proyectos: n.proyectos.filter(x => x !== p.nombre) }));
-                              } else {
-                                setNuevoCliente(n => ({ ...n, proyectos: [...(n.proyectos || []), p.nombre] }));
-                              }
-                              setProyectoSearch('');
-                              setShowProyectoDropdown(false);
-                            }}
-                            style={{
-                              padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: 10,
-                              background: alreadySelected ? 'var(--accent-light)' : 'transparent',
-                              color: alreadySelected ? 'var(--accent)' : 'var(--text)',
-                              borderBottom: '1px solid var(--border)'
-                            }}
-                            onMouseEnter={e => { if (!alreadySelected) e.currentTarget.style.background = 'var(--surface2)'; }}
-                            onMouseLeave={e => { if (!alreadySelected) e.currentTarget.style.background = ''; }}
-                          >
-                            <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0, minWidth: 56 }}>{p.id}</span>
-                            <span style={{ flex: 1, fontWeight: alreadySelected ? 600 : 400 }}>{p.nombre}</span>
-                            {alreadySelected && <Icon name="check" size={13} />}
+                          <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>
+                            No se encontraron proyectos
                           </div>
                         );
-                      })}
-                    {allProyectos.filter(p => {
-                      const term = proyectoSearch.toLowerCase();
-                      return !term || p.nombre.toLowerCase().includes(term);
-                    }).length === 0 && (
-                        <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>No se encontraron proyectos</div>
-                      )}
+                      }
+
+                      return (
+                        <>
+                          {visible.map(p => {
+                            const alreadySelected = (nuevoCliente.proyectos || []).includes(p.nombre);
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  if (alreadySelected) {
+                                    setNuevoCliente(n => ({ ...n, proyectos: n.proyectos.filter(x => x !== p.nombre) }));
+                                  } else {
+                                    setNuevoCliente(n => ({ ...n, proyectos: [...(n.proyectos || []), p.nombre] }));
+                                  }
+                                  setProyectoSearch('');
+                                  setShowProyectoDropdown(false);
+                                }}
+                                style={{
+                                  padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  background: alreadySelected ? 'var(--accent-light)' : 'transparent',
+                                  color: alreadySelected ? 'var(--accent)' : 'var(--text)',
+                                  borderBottom: '1px solid var(--border)'
+                                }}
+                                onMouseEnter={e => { if (!alreadySelected) e.currentTarget.style.background = 'var(--surface2)'; }}
+                                onMouseLeave={e => { if (!alreadySelected) e.currentTarget.style.background = ''; }}
+                              >
+                                <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--text-3)', flexShrink: 0, minWidth: 56 }}>{p.id}</span>
+                                <span style={{ flex: 1, fontWeight: alreadySelected ? 600 : 400 }}>{p.nombre}</span>
+                                {alreadySelected && <Icon name="check" size={13} />}
+                              </div>
+                            );
+                          })}
+                          {matching.length > 10 && (
+                            <div style={{ padding: '8px 12px', fontSize: 11, color: '#71717A', fontStyle: 'italic', textAlign: 'center', background: '#FAFAFA', borderTop: '1px solid #E4E4E7' }}>
+                              Mostrando 10 de {matching.length} proyectos. Usa el buscador para filtrar más.
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -1698,14 +1249,14 @@ export function Clientes() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 12 }}>
-              <button className="btn btn-secondary" onClick={() => { setShowAddClienteModal(false); setShowAddStatusInput(false); setNewStatusLabel(''); }}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setShowAddClienteModal(false); setEditingCliente(null); setShowAddStatusInput(false); setNewStatusLabel(''); }}>Cancelar</button>
               <button
                 className="btn btn-primary"
                 onClick={handleAddCliente}
-                disabled={!nuevoCliente.nombre}
-                style={{ opacity: !nuevoCliente.nombre ? 0.5 : 1 }}
+                disabled={!nuevoCliente.nombre || isSubmitting}
+                style={{ opacity: (!nuevoCliente.nombre || isSubmitting) ? 0.5 : 1 }}
               >
-                <Icon name="check" size={14} /> Registrar
+                <Icon name="check" size={14} /> {isSubmitting ? 'Guardando...' : (editingCliente ? 'Guardar Cambios' : 'Registrar Cliente')}
               </button>
             </div>
           </div>
@@ -1801,10 +1352,7 @@ export function Clientes() {
       {showManageStatuses && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowManageStatuses(false)}>
           <div className="modal" style={{ maxWidth: 460, animation: 'slideUpLogin 0.25s ease-out' }}>
-            <div className="modal-title">Administrar Estatus de Clientes</div>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
-              Crea, edita o elimina los estatus del catálogo de clientes.
-            </p>
+            <div className="modal-title" style={{ marginBottom: 14 }}>Administrar Estatus</div>
 
             {/* Status list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, maxHeight: 300, overflowY: 'auto' }}>
@@ -1866,6 +1414,75 @@ export function Clientes() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => { setShowManageStatuses(false); setNewStatusLabel(''); }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Client Deletion */}
+      {clientsToDelete && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.65)', zIndex: 99999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)', padding: 16
+          }}
+          onClick={() => setClientsToDelete(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 12,
+              border: '1px solid #E4E4E7',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1)',
+              padding: '24px 28px',
+              maxWidth: 420,
+              width: '100%',
+              zIndex: 100000,
+              position: 'relative',
+              animation: 'slideUpLogin 0.2s ease-out'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2',
+                color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Icon name="trash" size={20} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#18181B' }}>Confirmar eliminación</h4>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#71717A' }}>Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 13, color: '#3F3F46', marginBottom: 20, lineHeight: 1.5 }}
+              dangerouslySetInnerHTML={{ __html: clientsToDelete.message }} />
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                className="btn"
+                onClick={() => setClientsToDelete(null)}
+                style={{
+                  background: '#FFFFFF', border: '1px solid #E4E4E7', color: '#3F3F46',
+                  padding: '8px 16px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn"
+                onClick={confirmEliminarClientes}
+                style={{
+                  background: '#DC2626', color: '#FFFFFF', border: 'none',
+                  padding: '8px 18px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>

@@ -1,24 +1,6 @@
-import { useEffect } from 'react';
-import { fetchTareas, createTarea, deleteTarea, updateTarea } from '../services/tareasService';
+import { createTarea, deleteTarea, updateTarea } from '../services/tareasService';
 
 export function useTareas(setTareas) {
-  useEffect(() => {
-    if (!setTareas) return;
-    const cargarTareas = async () => {
-      try {
-        const datosApi = await fetchTareas();
-        if (datosApi && datosApi.length > 0) {
-          setTareas(datosApi);
-        } else {
-          setTareas(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los tareas:", error);
-      }
-    };
-    cargarTareas();
-  }, [setTareas]);
-
   const crearTarea = async (datosParaBackend) => {
     try {
       const tareaCreada = await createTarea(datosParaBackend);
