@@ -1637,13 +1637,28 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   const [editUbicacion, setEditUbicacion] = useState(p?.direccionPrincipal || p?.ubicacion || '');
   const [editAlcance, setEditAlcance] = useState(p?.alcance || '');
   const [editDescripcion, setEditDescripcion] = useState(p?.descripcion || '');
-  const [editUsoPrincipal, setEditUsoPrincipal] = useState(p?.usoPrincipal || '');
+  const [editUsoPrincipal, setEditUsoPrincipal] = useState(() => {
+    // Inicializar correctamente: si usoPrincipal no es clave del mapa, resolverlo
+    const up = p?.usoPrincipal || '';
+    const mapaKeys = Object.keys(USOS_NORMATIVOS_MAP);
+    if (!up || mapaKeys.includes(up)) return up;
+    // Buscar la categoría en el mapa
+    for (const [cat, list] of Object.entries(USOS_NORMATIVOS_MAP)) {
+      if (list.includes(up) || list.includes(p?.usoComplementario || '')) return cat;
+    }
+    return '';
+  });
   const [editUsoComplementario, setEditUsoComplementario] = useState(p?.usoComplementario || '');
   const [editImpactoPrincipal, setEditImpactoPrincipal] = useState(p?.impactoPrincipal || '');
   const [editVialidadPrincipal, setEditVialidadPrincipal] = useState(p?.vialidadPrincipal || '');
   const [editVialidadComplementaria, setEditVialidadComplementaria] = useState(p?.vialidadComplementaria || '');
-  const [editDireccionesComp, setEditDireccionesComp] = useState(p?.direccionesComplementarias || []);
-  const [editUsosComp, setEditUsosComp] = useState(p?.usosComplementarios || []);
+  const [editDireccionesComp, setEditDireccionesComp] = useState(
+    Array.isArray(p?.direccionesComplementarias) ? p.direccionesComplementarias : []
+  );
+  const [editUsosComp, setEditUsosComp] = useState(() => {
+    const raw = Array.isArray(p?.usosComplementarios) ? p.usosComplementarios : [];
+    return raw.map(u => (typeof u === 'object' && u !== null) ? u : { giro: u || '', uso: '' });
+  });
   const [editZonaPrimaria, setEditZonaPrimaria] = useState(p?.zonaPrimaria || '');
 
   // Dada la categoría (giro) o el uso específico, resuelve el par {categoría, uso} correcto
