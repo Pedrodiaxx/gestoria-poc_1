@@ -951,7 +951,7 @@ export function Clientes() {
             {/* Row 1: Nombre + Nombre Comercial */}
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Nombre o Razón Social *</label>
+                <label className="form-label">Nombre o Razón Social</label>
                 <input
                   className="form-control"
                   placeholder="Ej: Inmobiliaria del Bajío S.A."

@@ -523,7 +523,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
             {/* 1. Clave del Concepto y Nombre / Título */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 16 }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Clave del Concepto *</label>
+                <label className="form-label">Clave del Concepto</label>
                 <input
                   className="form-control"
                   placeholder="EJ: LIC-RES-03"
@@ -534,7 +534,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
               </div>
 
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Nombre del Concepto *</label>
+                <label className="form-label">Nombre del Concepto</label>
                 <input
                   className="form-control"
                   placeholder="Ej: Licencia de Construcción Residencial"

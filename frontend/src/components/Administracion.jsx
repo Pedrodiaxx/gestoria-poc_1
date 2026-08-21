@@ -470,7 +470,7 @@ export default function Administracion() {
             <div className="modal-title">Registrar Nuevo Usuario</div>
 
             <div className="form-group">
-              <label className="form-label">Nombre de Usuario *</label>
+              <label className="form-label">Nombre de Usuario</label>
               <input
                 className="form-control"
                 placeholder="Ej: juanperez"
@@ -480,7 +480,7 @@ export default function Administracion() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Contraseña *</label>
+              <label className="form-label">Contraseña</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
@@ -544,7 +544,7 @@ export default function Administracion() {
 
             {/* Asignar Rol */}
             <div className="form-group">
-              <label className="form-label">Asignar Rol *</label>
+              <label className="form-label">Asignar Rol</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <select
                   className="form-control"
@@ -610,7 +610,7 @@ export default function Administracion() {
               {/* Vincular con Cliente si el rol es 'cliente' */}
               {nuevoUsuario.rol === 'cliente' && (
                 <div style={{ marginTop: 12 }}>
-                  <label className="form-label">Vincular con Perfil de Cliente (Directorio) *</label>
+                  <label className="form-label">Vincular con Perfil de Cliente (Directorio)</label>
                   <select
                     className="form-control"
                     value={nuevoUsuario.clienteId || ''}
@@ -693,7 +693,7 @@ export default function Administracion() {
             <div className="modal-title">Editar Usuario: {editandoUsuario.nombre}</div>
 
             <div className="form-group">
-              <label className="form-label">Nombre de Usuario *</label>
+              <label className="form-label">Nombre de Usuario</label>
               <input
                 className="form-control"
                 placeholder="Ej: juanperez"
@@ -703,7 +703,7 @@ export default function Administracion() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Contraseña *</label>
+              <label className="form-label">Contraseña</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   className="form-control"
@@ -767,7 +767,7 @@ export default function Administracion() {
 
             {/* Asignar Rol */}
             <div className="form-group">
-              <label className="form-label">Rol *</label>
+              <label className="form-label">Rol</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <select
                   className="form-control"
@@ -833,7 +833,7 @@ export default function Administracion() {
               {/* Vincular con Cliente si el rol es 'cliente' */}
               {editandoUsuario.rol === 'cliente' && (
                 <div style={{ marginTop: 12 }}>
-                  <label className="form-label">Vincular con Perfil de Cliente (Directorio) *</label>
+                  <label className="form-label">Vincular con Perfil de Cliente (Directorio)</label>
                   <select
                     className="form-control"
                     value={editandoUsuario.clienteId || ''}
