@@ -767,15 +767,33 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
       costoDirectoConstruccion: costDirectConstVal,
       infoAdicionalJson: JSON.stringify(infoAdicional)
     };
-    onGuardar(nuevo);
+    if (onGuardar) onGuardar(nuevo);
     clearDraft();
     setGuardado(true);
-    setTimeout(() => onCancelar(), 1500);
+    setTimeout(() => { if (onCancelar) onCancelar(); }, 1500);
   };
 
-  const handleCancelar = () => {
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem("proyecto_draft");
+      localStorage.removeItem("cliente_draft");
+      localStorage.removeItem("presupuesto_draft");
+      localStorage.removeItem("giu_presupuesto_en_progreso");
+      localStorage.removeItem("hoja_ruta_draft");
+      localStorage.removeItem("tarea_draft");
+      localStorage.removeItem("catalogo_draft");
+    } catch {
+      // Ignorar errores de localStorage
+    }
+  };
+
+  const handleCancelar = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
     clearDraft();
-    onCancelar();
+    if (onCancelar) {
+      onCancelar();
+    }
   };
 
   return (
