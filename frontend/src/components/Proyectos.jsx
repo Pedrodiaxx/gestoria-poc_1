@@ -2174,15 +2174,21 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 <div style={{ gridColumn: '1/-1' }}>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Usos Complementarios</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {p.usosComplementarios.map((uso, idx) => (
-                      <span key={idx} style={{
-                        fontSize: 11, background: 'var(--surface2)', color: 'var(--text-2)',
-                        padding: '3px 10px', borderRadius: 10, border: '1px solid var(--border)',
-                        fontWeight: 500
-                      }}>
-                        {uso}
-                      </span>
-                    ))}
+                    {p.usosComplementarios.map((uso, idx) => {
+                      // Puede ser objeto {giro, uso} o string legacy
+                      const label = (typeof uso === 'object' && uso !== null)
+                        ? [uso.giro, uso.uso].filter(Boolean).map(s => toTitleCase(String(s))).join(' • ')
+                        : toTitleCase(String(uso || ''));
+                      return (
+                        <span key={idx} style={{
+                          fontSize: 11, background: 'var(--surface2)', color: 'var(--text-2)',
+                          padding: '3px 10px', borderRadius: 10, border: '1px solid var(--border)',
+                          fontWeight: 500
+                        }}>
+                          {label || 'Sin especificar'}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
