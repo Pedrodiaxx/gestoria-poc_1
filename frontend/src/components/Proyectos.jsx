@@ -2952,7 +2952,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                   disabled={isSubmitting}
                   style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px' }}
                 >
-                  <Icon name="plus" size={12} /> + Agregar Giro Complementario
+                  <Icon name="plus" size={12} /> Agregar Giro Complementario
                 </button>
               </div>
             )}
