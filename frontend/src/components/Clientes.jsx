@@ -534,20 +534,20 @@ export function Clientes() {
       </div>
 
       {/* 3 KPI Summary Cards - Standard GIU metric-grid */}
-      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 20 }}>
-        <div className="metric-card">
+      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 14, gap: 10 }}>
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Total Clientes</div>
           <div className="metric-value">{totalClientes}</div>
           <div className="metric-sub">registrados en la plataforma</div>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Clientes Activos</div>
           <div className="metric-value text-green">{totalActivosCount}</div>
           <div className="metric-sub">en seguimiento activo</div>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card" style={{ padding: '12px 16px' }}>
           <div className="metric-label">Leads Registrados</div>
           <div className="metric-value text-amber">{totalLeadsCount}</div>
           <div className="metric-sub">prospectos iniciales</div>
@@ -560,30 +560,28 @@ export function Clientes() {
         {/* LEFT PANEL (Master Panel - Client Cards & Search) */}
         <div className="clientes-master-col">
 
-          {/* Search Input Bar - Standard GIU */}
-          <div className="search-wrap" style={{ maxWidth: 420, marginBottom: 12 }}>
-            <Icon name="search" size={14} />
-            <input
-              type="text"
-              className="form-control search-input"
-              placeholder="Buscar por cliente, proyectos, estatus, correo..."
-              value={qClientes}
-              onChange={e => setQClientes(e.target.value)}
-            />
-          </div>
-
-          {/* Results Summary Indicator */}
-          <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>
-            {isSearching
-              ? `Mostrando ${filteredClientes.length} resultado(s) para "${qClientes}" de ${totalClientes} clientes.`
-              : totalClientes > 12
-                ? `Mostrando los 12 clientes más recientes (de ${totalClientes} registrados). Usa la búsqueda para encontrar cualquier otro.`
-                : `Mostrando ${filteredClientes.length} cliente(s).`
-            }
+          {/* Search Input Bar & Results Counter */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 2 }}>
+            <div className="search-wrap" style={{ maxWidth: 380, width: '100%', margin: 0 }}>
+              <Icon name="search" size={14} />
+              <input
+                type="text"
+                className="form-control search-input"
+                placeholder="Buscar por cliente, proyectos, estatus, correo..."
+                value={qClientes}
+                onChange={e => setQClientes(e.target.value)}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+              {isSearching
+                ? `${filteredClientes.length} resultado(s)`
+                : `${filteredClientes.length} cliente(s)`
+              }
+            </div>
           </div>
 
           {/* Client List Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? 'repeat(auto-fill, minmax(260px, 1fr))' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: selectedClient ? 'repeat(auto-fill, minmax(260px, 1fr))' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
             {filteredClientes.map(c => {
               const isSelected = selectedClient?.id === c.id;
               const isLead = c.estatus === 'lead' || c.estatus === 'Lead';

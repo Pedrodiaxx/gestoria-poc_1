@@ -2161,7 +2161,7 @@ select.form-control { cursor: pointer; }
 .clientes-main-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
   align-items: start;
   width: 100%;
   max-width: 100%;
@@ -2171,19 +2171,21 @@ select.form-control { cursor: pointer; }
 @media (min-width: 1140px) {
   .clientes-main-layout.has-detail {
     grid-template-columns: 1fr 370px;
+    gap: 12px;
   }
 }
 
 @media (min-width: 1400px) {
   .clientes-main-layout.has-detail {
     grid-template-columns: 1fr 400px;
+    gap: 14px;
   }
 }
 
 .clientes-master-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
@@ -2499,7 +2501,7 @@ select.form-control { cursor: pointer; }
 .clientes-main-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -2507,10 +2509,11 @@ select.form-control { cursor: pointer; }
 @media (min-width: 1024px) {
   .clientes-main-layout.has-detail {
     grid-template-columns: 1fr 380px;
+    gap: 12px;
   }
   .clientes-detail-card {
     position: sticky;
-    top: 20px;
+    top: 14px;
     align-self: start;
   }
 }
