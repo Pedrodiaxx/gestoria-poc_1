@@ -1736,8 +1736,11 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProyecto?.id, initialProyecto?.idNumerico]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSaveEdit = async () => {
-    if (!editNombre) return;
+    if (!editNombre || isSaving) return;
+    setIsSaving(true);
 
     const dirsFiltradas = editDireccionesComp.filter(d => d && typeof d === 'string' && d.trim() !== '');
     // usosFiltrados: los pares {giro, uso} con al menos el giro seleccionado
@@ -1775,14 +1778,37 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
         resultado = await updateProyecto({ ...p, ...payload, direccionesComplementarias: dirsFiltradas, usosComplementarios: usosFiltrados });
       }
 
-      if (onUpdateProyecto && resultado) {
-        onUpdateProyecto(resultado);
+      if (resultado) {
+        fillFormState(resultado);
+        if (onUpdateProyecto) {
+          onUpdateProyecto(resultado);
+        }
       }
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Proyecto guardado con éxito',
+        showConfirmButton: false,
+        timer: 2000,
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+
+      setIsEditing(false);
     } catch (error) {
       console.error('Error al guardar los cambios del proyecto:', error);
-      alert('No se pudieron guardar los cambios. Revisa tu conexión.');
+      Swal.fire({
+        title: 'Error al Guardar',
+        text: 'No se pudieron sincronizar los cambios con el servidor. Revisa tu conexión de red.',
+        icon: 'error',
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      });
+    } finally {
+      setIsSaving(false);
     }
-    setIsEditing(false);
   };
 
   return (
@@ -1816,6 +1842,7 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
                 value={editNombre}
                 onChange={e => setEditNombre(e.target.value)}
                 placeholder="Nombre del Proyecto"
+                disabled={isSaving}
               />
             ) : (
               <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{p?.nombre || 'Proyecto sin nombre'}</h2>
@@ -1824,11 +1851,17 @@ function ModalProyectoDetalle({ proyecto: initialProyecto, clientes = [], presup
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {isEditing ? (
               <>
-                <button className="btn btn-sm btn-ghost" onClick={() => setIsEditing(false)} style={{ padding: '6px 12px' }}>
+                <button className="btn btn-sm btn-ghost" onClick={() => setIsEditing(false)} disabled={isSaving} style={{ padding: '6px 12px' }}>
                   Cancelar
                 </button>
-                <button className="btn btn-sm btn-primary" onClick={handleSaveEdit} style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Icon name="check" size={12} /> Guardar
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editNombre}
+                  style={{ padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
+                >
+                  <Icon name={isSaving ? "loader" : "check"} size={13} className={isSaving ? "spin" : ""} />
+                  {isSaving ? 'Guardando...' : 'Guardar'}
                 </button>
               </>
             ) : (

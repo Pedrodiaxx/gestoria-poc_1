@@ -14,8 +14,12 @@ export function useProyectos(setProyectos) {
   const actualizarProyecto = async (id, datosParaBackend) => {
     try {
       const proyectoActualizado = await updateProyecto(id, datosParaBackend);
-      if (setProyectos) {
-        setProyectos(prev => prev.map(p => p.idNumerico === id ? proyectoActualizado : p));
+      if (setProyectos && proyectoActualizado) {
+        setProyectos(prev => (Array.isArray(prev) ? prev : []).map(p =>
+          (p.idNumerico === id || p.id === proyectoActualizado.id || p.id === `PRY-${String(id).padStart(3, '0')}` || p.id === id)
+            ? proyectoActualizado
+            : p
+        ));
       }
       return proyectoActualizado;
     } catch (error) {
