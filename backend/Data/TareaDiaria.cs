@@ -15,5 +15,7 @@ namespace Data
         public string? Etapa { get; set; }
         /// <summary>ID del presupuesto del que se originó esta tarea al ser aprobado</summary>
         public int? PresupuestoId { get; set; }
+        public int Figam {get; set;}
+        
     }
 }

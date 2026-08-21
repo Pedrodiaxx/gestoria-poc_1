@@ -496,7 +496,7 @@ export default function TareasDiarias() {
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <Icon name="check" size={13} />
-          Planner (Por Proyecto)
+          Planner
           <span className="badge badge-green" style={{ fontSize: 10, padding: '1px 6px' }}>
             {tareas.length}
           </span>
@@ -507,7 +507,7 @@ export default function TareasDiarias() {
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <Icon name="clock" size={13} />
-          Tablero Diario (Kanban)
+          Tablero
         </button>
       </div>
 

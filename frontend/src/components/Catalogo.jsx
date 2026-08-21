@@ -117,15 +117,39 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
       <div className="module-container">
         {/* Navegación y Breadcrumbs */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button 
-              className="btn btn-secondary" 
               onClick={() => setSelectedConcepto(null)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              title="Retroceder al listado"
+              aria-label="Retroceder"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--text)',
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all 0.15s ease',
+                padding: 0
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'var(--surface2)';
+                e.currentTarget.style.borderColor = 'var(--border-strong)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'var(--surface)';
+                e.currentTarget.style.borderColor = 'var(--border)';
+              }}
             >
-              <Icon name="arrowleft" size={14} /> Volver al Catálogo
+              <Icon name="arrowleft" size={16} />
             </button>
-            <span style={{ color: 'var(--text-3)', fontSize: 13 }}>/</span>
+            <span style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>Catálogo</span>
+            <span style={{ color: 'var(--text-3)', fontSize: 12 }}>/</span>
             <span className="badge badge-gray" style={{ fontWeight: 600 }}>
               {c.clave}
             </span>
@@ -376,22 +400,51 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
       </div>
 
       <div className="card">
-        <div className="search-wrap mb-4" style={{ maxWidth: 380 }}>
-          <Icon name="search" size={14} />
-          <input
-            className="form-control search-input"
-            placeholder="Buscar por clave o descripción…"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div className="search-wrap" style={{ width: '100%', maxWidth: 400, position: 'relative' }}>
+            <Icon name="search" size={14} />
+            <input
+              className="form-control search-input"
+              placeholder="Buscar por clave o descripción…"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              style={{ width: '100%', paddingRight: q ? 32 : 12 }}
+            />
+            {q && (
+              <button
+                onClick={() => setQ('')}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 4,
+                  cursor: 'pointer',
+                  color: 'var(--text-3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Limpiar búsqueda"
+              >
+                <Icon name="x" size={13} />
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+            {filtered.length} {filtered.length === 1 ? 'concepto' : 'conceptos'}
+          </div>
         </div>
+
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style={{ width: 140 }}>Clave</th>
+                <th style={{ width: '1%', whiteSpace: 'nowrap', minWidth: 130 }}>Clave</th>
                 <th>Descripción del Trámite o Servicio</th>
-                <th style={{ textAlign: 'right', width: 160 }}>Precio Unitario</th>
+                <th style={{ textAlign: 'right', width: 160, whiteSpace: 'nowrap' }}>Precio Unitario</th>
                 <th style={{ width: 40, textAlign: 'center' }}></th>
               </tr>
             </thead>
@@ -410,25 +463,39 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                     style={{ cursor: 'pointer', userSelect: 'none' }}
                     title="Doble clic para ver el desglose detallado de este concepto"
                   >
-                    <td>
-                      <span className="badge badge-gray" style={{ fontWeight: 600 }}>
+                    <td style={{ whiteSpace: 'nowrap', width: '1%', verticalAlign: 'middle' }}>
+                      <span 
+                        className="badge badge-gray mono" 
+                        style={{ 
+                          fontWeight: 600, 
+                          letterSpacing: '0.4px', 
+                          padding: '4px 10px',
+                          fontSize: 11.5,
+                          border: '1px solid var(--border)',
+                          background: 'var(--surface2)',
+                          color: 'var(--text)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
                         {c.clave}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text)' }}>
+                    <td style={{ color: 'var(--text)', verticalAlign: 'middle' }}>
                       {c.nombre && (
                         <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
                           {c.nombre}
                         </div>
                       )}
-                      <div style={{ color: c.nombre ? 'var(--text-2)' : 'var(--text)' }}>
+                      <div style={{ color: c.nombre ? 'var(--text-2)' : 'var(--text)', fontSize: 13 }}>
                         {c.descripcion}
                       </div>
                     </td>
-                    <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text)' }}>
+                    <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                       {money(c.precio)}
                     </td>
-                    <td style={{ textAlign: 'center', color: 'var(--text-3)' }}>
+                    <td style={{ textAlign: 'center', color: 'var(--text-3)', verticalAlign: 'middle' }}>
                       <Icon name="chevronright" size={14} />
                     </td>
                   </tr>

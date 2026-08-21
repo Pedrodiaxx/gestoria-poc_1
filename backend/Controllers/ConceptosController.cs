@@ -40,5 +40,7 @@ namespace Backend.Controllers
             await _sequenceReset.ResetSequenceAsync("Conceptos");
             return NoContent();
         }
+
+        
     }
 }

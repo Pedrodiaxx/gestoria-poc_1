@@ -37,8 +37,8 @@ namespace Data.DTOs
         public string UsoComplementario { get; set; } = string.Empty;
         public string ImpactoPrincipal { get; set; } = string.Empty;
 
-        /// <summary>Array de usos complementarios (hasta 3), deserializado desde JSON.</summary>
-        public List<string> UsosComplementarios { get; set; } = new();
+        /// <summary>Array de usos complementarios (hasta 3), deserializado desde JSON. Cada elemento es un objeto {giro, uso}.</summary>
+        public List<object> UsosComplementarios { get; set; } = new();
 
         /// <summary>Zona Primaria según el PDUM Mérida.</summary>
         public string ZonaPrimaria { get; set; } = string.Empty;

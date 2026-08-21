@@ -1,30 +1,11 @@
-import { useEffect } from 'react';
-import { fetchClientes, createCliente, updateCliente, deleteCliente } from '../services/clientesService';
+import { createCliente, updateCliente, deleteCliente } from '../services/clientesService';
 
 export function useClientes(setClientes, currentClientesList = []) {
-  useEffect(() => {
-    if (!setClientes) return;
-    const cargarClientes = async () => {
-      try {
-        const datosApi = await fetchClientes();
-        if (datosApi && datosApi.length > 0) {
-          setClientes(datosApi);
-        } else {
-          setClientes(prev => (prev && prev.length > 0) ? prev : (datosApi || []));
-        }
-      } catch (error) {
-        console.error("No se pudieron sincronizar los clientes:", error);
-      }
-    };
-    cargarClientes();
-  }, [setClientes]);
-
   const crearCliente = async (datosParaBackend) => {
     try {
       const clienteCreado = await createCliente(datosParaBackend);
       if (setClientes) {
         setClientes(prev => {
-          // Evitar duplicados si ya fue agregado localmente por algún flujo
           if (prev.some(c => c.id === clienteCreado.id)) {
             return prev.map(c => c.id === clienteCreado.id ? clienteCreado : c);
           }
@@ -39,16 +20,13 @@ export function useClientes(setClientes, currentClientesList = []) {
   };
 
   const actualizarCampoCliente = async (id, field, value) => {
-    // Buscar el cliente en la lista actual
     const clienteExistente = currentClientesList.find(c => c.id === id);
     if (!clienteExistente) {
       console.warn(`Cliente con ID ${id} no encontrado para actualizar.`);
       return;
     }
 
-    // Adaptar campo 'tel' a 'telefono' para el backend si corresponde
     const backendField = field === 'tel' ? 'telefono' : field;
-
     const clienteActualizado = {
       ...clienteExistente,
       [backendField]: value,
@@ -63,7 +41,6 @@ export function useClientes(setClientes, currentClientesList = []) {
       return dto;
     } catch (error) {
       console.error(`Error al actualizar campo ${field} del cliente ${id}:`, error);
-      // Aun si falla el endpoint backend, actualizar estado local para que la UI responda inmediatamente
       if (setClientes) {
         setClientes(prev => prev.map(c => c.id === id ? clienteActualizado : c));
       }

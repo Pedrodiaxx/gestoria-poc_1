@@ -23,7 +23,7 @@ namespace Backend.Controllers
             var resultado = await _service.GetAllAsync();
             return Ok(resultado);
         }
-
+  
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Cliente nuevoCliente)
         {

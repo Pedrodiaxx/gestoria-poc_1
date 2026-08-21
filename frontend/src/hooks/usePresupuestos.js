@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { fetchPresupuestos, createPresupuesto, updatePresupuesto, deletePresupuesto } from '../services/presupuestosService';
 
 export function usePresupuestos(setPresupuestos, currentSession) {
@@ -18,11 +18,8 @@ export function usePresupuestos(setPresupuestos, currentSession) {
     } catch (error) {
       console.error("No se pudieron sincronizar los presupuestos:", error);
     }
-  }, [setPresupuestos, currentSession]);
-
-  useEffect(() => {
-    sincronizarPresupuestos();
-  }, [sincronizarPresupuestos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setPresupuestos, currentSession?.clienteId, currentSession?.rol]);
 
   const crearPresupuesto = async (datosParaBackend) => {
     try {

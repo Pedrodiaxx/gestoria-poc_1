@@ -15,5 +15,6 @@ namespace Data
         public string? Telefono { get; set; }
         public string? Estatus { get; set; }
         public string? Tipo { get; set; }
+        public string? Figma { get;}
     }
 }

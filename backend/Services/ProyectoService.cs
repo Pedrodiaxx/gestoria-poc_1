@@ -114,7 +114,7 @@ namespace Backend.Services
                 .ToList();
 
             // Deserializar arrays JSON
-            var usosComplementarios = DeserializeJsonArray(p.UsosComplementariosJson);
+            var usosComplementarios = DeserializeJsonObjects(p.UsosComplementariosJson);
             var direccionesComplementarias = DeserializeJsonArray(p.DireccionesComplementariasJson);
 
             return new ProyectoDTO
@@ -159,7 +159,7 @@ namespace Backend.Services
         }
 
         /// <summary>
-        /// Deserializa un string JSON como array de strings.
+        /// Deserializa un string JSON como array de strings (para DireccionesComplementarias).
         /// Devuelve lista vacía si el string es null, vacío o inválido.
         /// </summary>
         private static List<string> DeserializeJsonArray(string? json)
@@ -173,6 +173,26 @@ namespace Backend.Services
             catch
             {
                 return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Deserializa un string JSON como array de objetos genéricos (para UsosComplementarios que son {giro, uso}).
+        /// Devuelve lista vacía si el string es null, vacío o inválido.
+        /// </summary>
+        private static List<object> DeserializeJsonObjects(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<object>();
+            try
+            {
+                // Intentar como array de objetos
+                var result = JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(json);
+                if (result == null) return new List<object>();
+                return result.Cast<object>().ToList();
+            }
+            catch
+            {
+                return new List<object>();
             }
         }
 

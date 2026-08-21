@@ -37,6 +37,7 @@ namespace Backend.Controllers
                 Estatus = h.Estatus,
                 FechaFinalizacion = h.FechaFinalizacion,
                 Notas = h.Notas
+                
             };
         }
 

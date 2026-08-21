@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   addClientCommand, deleteClientCommand, updateClientFieldCommand,
   addConceptCommand
@@ -156,10 +156,13 @@ export const AppContextProvider = ({
   const [presupuestos, setPresupuestos] = useState([]);
   const [tareas, setTareas] = useState([]);
 
-  // Sincronización exclusiva con el backend local (PostgreSQL)
+  // Sincronización exclusiva con el backend (PostgreSQL en Render)
   // La API es la ÚNICA fuente de verdad para todas las entidades de negocio.
+  const hasLoadedData = useRef(false);
   useEffect(() => {
-    if (!session) return;
+    if (!session || hasLoadedData.current) return;
+    hasLoadedData.current = true;
+
     const cargarTodo = async () => {
       try {
         const queryParams = {};
@@ -189,7 +192,8 @@ export const AppContextProvider = ({
       }
     };
     cargarTodo();
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, session?.rol]);
 
   // Persistencia local SOLO para roles (no respaldados por API aún)
   useEffect(() => {
@@ -371,6 +375,7 @@ export const AppContextProvider = ({
 
   const handleLogout = () => {
     setSession(null);
+    hasLoadedData.current = false;
     sessionStorage.removeItem('giu_active_tab');
     setActive('home');
   };
