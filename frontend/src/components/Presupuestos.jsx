@@ -781,10 +781,31 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
   return (
     <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <div className="page-title">Nuevo Presupuesto de Gestoría</div>
-          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-            Crea un presupuesto con el modelo de etapas administrativas para licencias urbanas.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button 
+            type="button"
+            className="btn btn-ghost" 
+            onClick={handleCancelar} 
+            title="Volver a presupuestos"
+            style={{ 
+              padding: '6px 8px', 
+              borderRadius: '6px', 
+              border: '1px solid var(--border)', 
+              background: 'var(--surface)', 
+              color: 'var(--text-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Icon name="arrowleft" size={16} />
+          </button>
+          <div>
+            <div className="page-title">Nuevo Presupuesto de Gestoría</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+              Crea un presupuesto con el modelo de etapas administrativas para licencias urbanas.
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -813,7 +834,6 @@ function FormNuevoPresupuesto({ onGuardar, onCancelar, clientes, proyectos, pres
           }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="download" size={14} /> Descargar PDF
           </button>
-          <button className="btn btn-secondary" onClick={handleCancelar}>Volver al Listado</button>
           {guardado ? (
             <div className="alert alert-green" style={{ padding: '8px 16px', margin: 0 }}><Icon name="check" size={14} /> Presupuesto Guardado</div>
           ) : (
@@ -1168,18 +1188,39 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
   return (
     <div style={{ width: '100%', paddingBottom: 60, boxSizing: 'border-box' }}>
       <div className="page-header flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <div className="page-title" style={{ fontSize: 19 }}>Detalle de Presupuesto: {titulo}</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="badge badge-gray">{p.id}</span>
-            {proj && <span className="badge badge-blue">{proj.nombre}</span>}
-            <span style={{
-              fontSize: 11,
-              background: p.estado === 'Aprobado' ? 'var(--accent-light)' : p.estado === 'Enviado' ? 'var(--blue-light)' : p.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
-              color: p.estado === 'Aprobado' ? 'var(--accent-text)' : p.estado === 'Enviado' ? 'var(--blue)' : p.estado === 'Rechazado' ? '#C0392B' : 'var(--text-3)',
-              padding: '2px 8px', borderRadius: 10, fontWeight: 600
-            }}>{p.estado}</span>
-            {p.isBaseline && <span className="badge badge-green">Línea Base Activa</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button 
+            type="button"
+            className="btn btn-ghost" 
+            onClick={onCerrar} 
+            title="Volver a presupuestos"
+            style={{ 
+              padding: '6px 8px', 
+              borderRadius: '6px', 
+              border: '1px solid var(--border)', 
+              background: 'var(--surface)', 
+              color: 'var(--text-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Icon name="arrowleft" size={16} />
+          </button>
+          <div>
+            <div className="page-title" style={{ fontSize: 19 }}>Detalle de Presupuesto: {titulo}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="badge badge-gray">{p.id}</span>
+              {proj && <span className="badge badge-blue">{proj.nombre}</span>}
+              <span style={{
+                fontSize: 11,
+                background: p.estado === 'Aprobado' ? 'var(--accent-light)' : p.estado === 'Enviado' ? 'var(--blue-light)' : p.estado === 'Rechazado' ? 'rgba(192,57,43,0.1)' : 'var(--surface2)',
+                color: p.estado === 'Aprobado' ? 'var(--accent-text)' : p.estado === 'Enviado' ? 'var(--blue)' : p.estado === 'Rechazado' ? '#C0392B' : 'var(--text-3)',
+                padding: '2px 8px', borderRadius: 10, fontWeight: 600
+              }}>{p.estado}</span>
+              {p.isBaseline && <span className="badge badge-green">Línea Base Activa</span>}
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -1206,7 +1247,6 @@ function VistaPresupuesto({ p, onCerrar, clientes, proyectos, onAjustar, onCambi
           }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="download" size={14} /> Descargar PDF
           </button>
-          <button className="btn btn-secondary" onClick={onCerrar}>Volver al Listado</button>
           {isEdited && (
             <button className="btn btn-primary" onClick={saveEdits} style={{ background: '#B87A0A', color: '#fff' }}>
               <Icon name="check" size={14} /> Guardar Cambios
