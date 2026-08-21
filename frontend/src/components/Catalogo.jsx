@@ -150,7 +150,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
             </button>
             <span style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>Catálogo</span>
             <span style={{ color: 'var(--text-3)', fontSize: 12 }}>/</span>
-            <span className="badge badge-gray" style={{ fontWeight: 600 }}>
+            <span style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 11.5, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 4, border: '1px solid rgba(42, 95, 63, 0.2)' }}>
               {c.clave}
             </span>
           </div>
@@ -272,7 +272,7 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
               <tbody>
                 <tr>
                   <td>
-                    <span className="badge badge-gray" style={{ fontWeight: 600 }}>
+                    <span style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 11.5, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 4, border: '1px solid rgba(42, 95, 63, 0.2)' }}>
                       {c.clave}
                     </span>
                   </td>
@@ -465,15 +465,16 @@ export function Catalogo({ conceptos: propsConceptos, setConceptos: propsSetConc
                   >
                     <td style={{ whiteSpace: 'nowrap', width: '1%', verticalAlign: 'middle' }}>
                       <span 
-                        className="badge badge-gray mono" 
                         style={{ 
-                          fontWeight: 600, 
+                          fontFamily: 'DM Mono',
+                          fontWeight: 700, 
                           letterSpacing: '0.4px', 
-                          padding: '4px 10px',
+                          padding: '3px 8px',
                           fontSize: 11.5,
-                          border: '1px solid var(--border)',
-                          background: 'var(--surface2)',
-                          color: 'var(--text)',
+                          borderRadius: 4,
+                          border: '1px solid rgba(42, 95, 63, 0.25)',
+                          background: 'var(--accent-light)',
+                          color: 'var(--accent)',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center'
