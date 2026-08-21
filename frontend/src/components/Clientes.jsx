@@ -1354,10 +1354,7 @@ export function Clientes() {
       {showManageStatuses && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowManageStatuses(false)}>
           <div className="modal" style={{ maxWidth: 460, animation: 'slideUpLogin 0.25s ease-out' }}>
-            <div className="modal-title">Administrar Estatus de Clientes</div>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
-              Crea, edita o elimina los estatus del catálogo de clientes.
-            </p>
+            <div className="modal-title" style={{ marginBottom: 14 }}>Administrar Estatus</div>
 
             {/* Status list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, maxHeight: 300, overflowY: 'auto' }}>

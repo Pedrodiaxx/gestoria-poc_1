@@ -2753,13 +2753,8 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
         onClick={e => e.stopPropagation()}
       >
         {/* Header Modal */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Nuevo Proyecto de Gestión</h3>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-3)' }}>
-              Completa los parámetros normativos y la información del cliente para inicializar el expediente.
-            </p>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Nuevo Proyecto</h3>
           <button
             className="btn btn-ghost"
             onClick={() => !isSubmitting && onClose && onClose()}
@@ -2770,19 +2765,19 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {/* SECCIÓN 1: DATO GENERALES */}
-          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 12 }}>
-              Información Básica del Trámite
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* SECCIÓN 1: DATOS GENERALES */}
+          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 14, borderRadius: 8, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 10 }}>
+              Datos Generales
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Nombre del Proyecto</label>
                 <input
                   className="form-control"
-                  placeholder="Ej: Plaza Comercial Los Encinos - Manifestación de Impacto"
+                  placeholder="Nombre del proyecto..."
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
                   disabled={isSubmitting}
@@ -2961,14 +2956,11 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
             <div className="form-group" style={{ margin: '14px 0 0 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 4 }}>
                 <label className="form-label" style={{ margin: 0, fontWeight: 500, fontSize: 13 }}>Nivel de Impacto</label>
-                {usosComplementarios.length > 0 && (
-                  <span style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 400 }}>Editable (giros complementarios activos)</span>
-                )}
               </div>
               <input
                 name="impactoPrincipal"
                 className="form-control"
-                placeholder="Autocalculado al seleccionar Giro y Uso Principal"
+                placeholder="Autocalculado"
                 value={impactoPrincipal}
                 readOnly={usosComplementarios.length === 0}
                 disabled={usosComplementarios.length === 0}
@@ -3002,18 +2994,18 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
             </div>
           </div>
 
-          {/* SECCIÓN 3: DIRECCIÓN E INFRAESTRUCTURA VIAL */}
-          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 12 }}>
-              Dirección e Infraestructura Vial
+          {/* SECCIÓN 3: UBICACIÓN E INFRAESTRUCTURA */}
+          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 14, borderRadius: 8, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 10 }}>
+              Ubicación e Infraestructura
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Dirección Principal</label>
                 <input
                   className="form-control"
-                  placeholder="Ej: Av. Andrés García Lavín #204, Col. San Ramón Norte"
+                  placeholder="Calle, número, colonia..."
                   value={ubicacion}
                   onChange={e => setUbicacion(e.target.value)}
                   disabled={isSubmitting}
@@ -3031,9 +3023,9 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                       className="btn btn-sm btn-ghost"
                       onClick={handleAddDireccionComp}
                       disabled={isSubmitting}
-                      style={{ padding: '2px 8px', fontSize: 12, color: 'var(--blue)' }}
+                      style={{ padding: '2px 8px', fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      + Agregar Dirección
+                      <Icon name="plus" size={12} /> Agregar Dirección
                     </button>
                   )}
                 </div>
@@ -3043,7 +3035,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                     <input
                       className="form-control"
                       style={{ flex: 1, fontSize: 13 }}
-                      placeholder={`Ej: Acceso posterior Calle 30 #104`}
+                      placeholder="Dirección complementaria..."
                       value={dir}
                       onChange={e => handleUpdateDireccionComp(idx, e.target.value)}
                       disabled={isSubmitting}
@@ -3061,7 +3053,7 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
                 ))}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ fontWeight: 500, fontSize: 13, marginBottom: 6 }}>Vialidad Principal</label>
                   <select
@@ -3097,11 +3089,11 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
               </div>
 
               {/* Áreas y Zonas de Compatibilidad */}
-              <div style={{ marginTop: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 10 }}>
-                  Áreas y Zonas de Compatibilidad
+              <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 8 }}>
+                  Compatibilidad Territorial
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label" style={{ fontWeight: 500, fontSize: 13, marginBottom: 6 }}>Área Compatibilidad</label>
                     <select
@@ -3147,20 +3139,20 @@ function ModalNuevoProyecto({ onClose, onGuardar, clientes = [], crearProyecto }
           </div>
 
           {/* SECCIÓN 4: ALCANCE Y DESCRIPCIÓN */}
-          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 12 }}>
-              Alcance y Descripción
+          <div style={{ background: 'var(--surface2, #F8FAFC)', padding: 14, borderRadius: 8, border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-2)', marginBottom: 10 }}>
+              Alcance y Notas
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Alcance y Descripción Detallada</label>
-                <textarea className="form-control" rows={3} placeholder="Define el objetivo, metros cuadrados o especificaciones clave del trámite..." value={alcance} onChange={e => setAlcance(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
+                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Alcance del Proyecto</label>
+                <textarea className="form-control" rows={3} placeholder="Especificaciones clave, metros cuadrados, etc..." value={alcance} onChange={e => setAlcance(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
               </div>
 
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Resumen Breve</label>
-                <input className="form-control" placeholder="Resumen corto..." value={descripcion} onChange={e => setDescripcion(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
+                <label className="form-label" style={{ fontWeight: 500, fontSize: 13 }}>Descripción Breve</label>
+                <input className="form-control" placeholder="Descripción breve..." value={descripcion} onChange={e => setDescripcion(e.target.value)} disabled={isSubmitting} style={{ fontSize: 13 }} />
               </div>
             </div>
           </div>
